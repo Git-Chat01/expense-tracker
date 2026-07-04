@@ -86,11 +86,17 @@
   display: none;
 }
 
+/* --- 列表视图禁止外层滚动，改为内部列表滚动 --- */
+#view-list.main-view {
+  overflow: hidden;
+}
+
 /* -----------------------------------------------------------------
    记录列表容器
    ----------------------------------------------------------------- */
 .list-content {
   flex: 1;
+  min-height: 0;   /* flexbox 中防止内容撑破容器 */
   padding: 0 var(--space-lg);
   overflow-y: auto;
 }
@@ -215,13 +221,10 @@
 }
 
 /* -----------------------------------------------------------------
-   底部汇总栏
+   底部汇总栏 — 吸附在列表最下方，不跟随内容滚动
    ----------------------------------------------------------------- */
 .list-summary {
-  position: sticky;
-  bottom: calc(var(--tab-bar-height) + var(--safe-area-bottom));
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
   padding: var(--space-md) var(--space-lg);
   background: var(--color-surface);
   border-top: 1px solid var(--color-border);
