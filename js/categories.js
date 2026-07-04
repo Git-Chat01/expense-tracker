@@ -125,9 +125,8 @@ const ExpenseCategories = (() => {
         const hasChildren = btn.dataset.hasChildren === 'true';
 
         if (hasChildren && _expandedParentId !== catId) {
-          // 点击一级分类 → 展开/切换子分类
+          // 点击一级分类 → 展开/切换子分类，不清除已选中的分类（浏览子类不代表要放弃选择）
           _expandedParentId = catId;
-          _selectedCategoryId = null; // 清除之前的选择
           renderGrid(containerId, subContainerId, _onSelectStored);
         } else if (hasChildren && _expandedParentId === catId) {
           // 再次点击同一个一级分类 → 收起

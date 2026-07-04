@@ -280,22 +280,16 @@ const ExpenseList = (() => {
     });
   }
 
-  /** 收起搜索栏 */
+  /** 收起搜索栏（仅折叠 UI，不自动清除关键词） */
   function _closeSearch() {
     const searchBar = document.getElementById('list-search');
     const searchToggle = document.getElementById('list-search-toggle');
     const searchClose = document.getElementById('list-search-close');
-    const searchInput = document.getElementById('list-search-input');
     if (!searchBar) return;
     searchBar.classList.remove('list-search--open');
     if (searchToggle) searchToggle.style.display = 'flex';
     if (searchClose) searchClose.style.display = 'none';
-    // 如果之前有关键词，清空并重搜
-    if (searchInput && searchInput.value.trim()) {
-      searchInput.value = '';
-      _filters.noteKeyword = '';
-      render();
-    }
+    // 不清空关键词 — 用户可能手误关闭搜索栏，下次展开时应保留
   }
 
   /** 排序循环：金额↓ → 金额↑ → 日期↓ → 日期↑ */
@@ -479,6 +473,8 @@ const ExpenseList = (() => {
 
     const chips = [];
 
+    // 关键词搜索也展示为 chip，用户关闭搜索栏后仍能看到筛选生效
+    if (_filters.noteKeyword) chips.push({ label: `🔍 ${_filters.noteKeyword}`, key: 'keyword' });
     if (_filters.dateFrom) chips.push({ label: `📅 ${_filters.dateFrom}~${_filters.dateTo || '今天'}`, key: 'date' });
     _filters.categoryIds.forEach(cid => {
       const cat = ExpenseDB.getCategory(cid);
@@ -513,7 +509,12 @@ const ExpenseList = (() => {
     container.querySelectorAll('.filter-chip__remove').forEach(btn => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.clear;
-        if (key === 'date') { _filters.dateFrom = ''; _filters.dateTo = ''; }
+        if (key === 'keyword') {
+          _filters.noteKeyword = '';
+          const si = document.getElementById('list-search-input');
+          if (si) si.value = '';
+        }
+        else if (key === 'date') { _filters.dateFrom = ''; _filters.dateTo = ''; }
         else if (key === 'ltype') { _filters.locationType = ''; }
         else if (key.startsWith('cat-')) {
           const cid = key.replace('cat-', '');
@@ -545,6 +546,12 @@ const ExpenseList = (() => {
         _filters.noteKeyword = '';
         const searchInput = document.getElementById('list-search-input');
         if (searchInput) searchInput.value = '';
+        // 重置排序为默认「金额↓」
+        _sortState = 0;
+        _filters.sortBy = 'amount';
+        _filters.sortOrder = 'desc';
+        const sortBtn = document.querySelector('#list-filter-bar .chip[data-filter="sort"]');
+        if (sortBtn) sortBtn.textContent = '🔤 金额↓';
         _showFilterChipHighlight('date');
         _showFilterChipHighlight('category');
         _showFilterChipHighlight('location');

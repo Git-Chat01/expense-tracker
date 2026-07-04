@@ -280,6 +280,14 @@ const ExpenseHome = (() => {
       const icon = cat ? cat.icon : '📌';
       const name = cat ? cat.name : '未分类';
       const metaParts = [];
+      // 显示日期/时间（今天/昨天直接显示时间，否则显示日期）
+      const today = _todayStr();
+      if (e.date === today) {
+        if (e.time) metaParts.push(`⏰${e.time}`);
+      } else {
+        const parts = e.date.split('-');
+        if (parts.length === 3) metaParts.push(`${parseInt(parts[1])}月${parseInt(parts[2])}日`);
+      }
       if (e.location) metaParts.push(`📍${e.location}`);
       if (e.paymentMethod) {
         const pm = ExpenseData.PAYMENT_METHODS.find(p => p.value === e.paymentMethod);
