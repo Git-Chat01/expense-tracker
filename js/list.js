@@ -33,6 +33,8 @@ const ExpenseList = (() => {
     const filtered = _applyFilters(allExpenses);
     _renderList(filtered);
     _renderSummary(filtered);
+    // 每次渲染都同步刷新筛选条件 chip 行（包括"清除筛选"按钮的显隐）
+    _renderActiveFilters();
   }
 
   /* -----------------------------------------------------------------
@@ -406,7 +408,6 @@ const ExpenseList = (() => {
 
         dropdown.remove();
         _openDropdownBtn = null;
-        _renderActiveFilters();
         _showFilterChipHighlight(filterType);
         render();
       });
@@ -423,7 +424,6 @@ const ExpenseList = (() => {
         _filters.dateTo = toInput ? toInput.value : '';
         dropdown.remove();
         _openDropdownBtn = null;
-        _renderActiveFilters();
         _showFilterChipHighlight(filterType);
         render();
       });
