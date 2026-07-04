@@ -73,9 +73,24 @@ const ExpenseApp = (() => {
     if (typeof ExpenseStats !== 'undefined') ExpenseStats.initPeriodSelector();
 
     // 7. 注册 Service Worker（PWA 离线缓存）
+    //    带版本号强制检查更新；skipWaiting+claim 确保新 SW 立即接管
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').then(function(reg) {
-        console.log('SW registered:', reg.scope);
+      navigator.serviceWorker.register('sw.js?v=3').then(function(reg) {
+        // 检测到 SW 更新 → 提示用户刷新
+        reg.addEventListener('updatefound', function() {
+          var newWorker = reg.installing;
+          if (!newWorker) return;
+          newWorker.addEventListener('statechange', function() {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // 新 SW 已安装，旧 SW 仍在控制 → 提示用户
+              console.log('SW 有更新，关掉 PWA 再打开即可生效');
+              // 如果页面可见，弹一个 toast 提示
+              if (typeof _toast === 'function') {
+                _toast('有新版本，退出重开即可', 'info');
+              }
+            }
+          });
+        });
       }).catch(function(err) {
         console.warn('SW registration failed:', err);
       });
