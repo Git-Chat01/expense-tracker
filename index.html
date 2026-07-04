@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#F5F5F7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="消费轨迹">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <title>消费轨迹</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/add.css">
+  <link rel="stylesheet" href="css/list.css">
+  <link rel="stylesheet" href="css/stats.css">
+</head>
+<body>
+
+<!-- ================================================================
+     App 容器
+     ================================================================ -->
+<div id="app" class="app-container">
+
+  <!-- ==============================================================
+       首页 View
+       ============================================================== -->
+  <main id="view-home" class="main-view main-view--active">
+    <!-- 标题栏 -->
+    <header class="home-header">
+      <h1 class="home-header__title">消费轨迹</h1>
+      <span class="home-header__date" id="home-date"></span>
+    </header>
+
+    <!-- 今日消费 -->
+    <section class="home-section">
+      <div class="home-today card">
+        <p class="home-today__label">今日消费</p>
+        <p class="home-today__amount amount amount--large" id="home-today-amount">¥0</p>
+        <p class="home-today__count" id="home-today-count">0 笔</p>
+      </div>
+    </section>
+
+    <!-- 本月消费 + 预算进度 -->
+    <section class="home-section">
+      <div class="home-month card" id="home-month-card">
+        <div class="home-month__header">
+          <span class="home-month__label">本月消费</span>
+          <span class="home-month__budget-label" id="home-budget-label">未设预算</span>
+        </div>
+        <p class="home-month__amount amount" id="home-month-amount">¥0</p>
+        <div class="home-month__progress progress-bar" id="home-budget-bar" style="display:none">
+          <div class="progress-bar__fill progress-bar__fill--safe" id="home-budget-fill" style="width:0%"></div>
+        </div>
+        <div class="home-month__detail" id="home-budget-detail" style="display:none">
+          <span id="home-budget-remaining"></span>
+          <span>·</span>
+          <span id="home-budget-daily"></span>
+        </div>
+        <button class="btn btn--ghost btn--small home-month__set-budget" id="home-set-budget">
+          + 设置月度预算
+        </button>
+      </div>
+    </section>
+
+    <!-- 智能提醒（仅在预算超标时出现，平时隐藏） -->
+    <section class="home-section" id="home-alerts-section" style="display:none">
+      <h2 class="home-section__title" style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);font-weight:400">预算提醒</h2>
+      <div class="home-alerts" id="home-alerts"></div>
+    </section>
+
+    <!-- 最近记录 -->
+    <section class="home-section">
+      <h2 class="home-section__title">最近记录</h2>
+      <div class="home-recent card" id="home-recent">
+        <div class="empty-state">
+          <div class="empty-state__icon">📝</div>
+          <p class="empty-state__text">还没有消费记录</p>
+          <p class="empty-state__hint">去「记账」Tab 添加第一笔吧</p>
+        </div>
+      </div>
+      <button class="btn btn--ghost btn--small home-recent__all" id="home-view-all" style="display:none">
+        查看全部 →
+      </button>
+    </section>
+
+    <!-- 数据管理（备份 / 恢复） -->
+    <section class="home-section" style="padding-bottom:var(--space-md)">
+      <div class="home-backup card" style="padding:var(--space-md)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
+          <span style="font-size:var(--font-size-sm);font-weight:600;color:var(--color-text-secondary)">💾 数据安全</span>
+          <span id="home-backup-badge" style="font-size:var(--font-size-xs);color:var(--color-text-tertiary)"></span>
+        </div>
+        <p style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);margin-bottom:var(--space-sm);line-height:1.5">
+          数据仅保存在当前浏览器中。换手机或清缓存前请先导出备份。
+        </p>
+        <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-sm)">
+          <button class="btn btn--ghost btn--small" id="home-export-btn" style="flex:1">📤 分享备份</button>
+          <button class="btn btn--ghost btn--small" id="home-import-btn" style="flex:1;color:var(--color-warning)">📋 粘贴恢复</button>
+        </div>
+        <!-- 导入粘贴区（默认隐藏） -->
+        <div id="home-import-area" style="display:none">
+          <textarea class="input" id="home-import-textarea" placeholder="在此粘贴之前导出的备份内容…" rows="3" style="font-size:var(--font-size-xs);font-family:var(--font-mono);resize:vertical;width:100%;margin-bottom:var(--space-sm)"></textarea>
+          <div style="display:flex;gap:var(--space-sm)">
+            <button class="btn btn--primary btn--small" id="home-import-confirm" style="flex:1">确认导入</button>
+            <button class="btn btn--ghost btn--small" id="home-import-cancel">取消</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==============================================================
+       记账 View（移动端优先：金额 → 日期 → 分类 → 键盘 → 折叠区）
+       ============================================================== -->
+  <main id="view-add" class="main-view">
+    <div class="add-container">
+      <!-- 1. 日期 + 金额（共同吸顶，滚动时始终可见） -->
+      <div class="add-header">
+        <div class="add-date-row">
+          <button class="add-date-quick" id="add-date-quick" type="button">
+            📅 <span id="add-date-label">今天</span> <span id="add-time-label"></span> ▾
+          </button>
+          <div class="add-date-inputs" id="add-date-inputs" style="display:none">
+            <input type="date" class="input" id="add-date">
+            <input type="time" class="input" id="add-time">
+          </div>
+        </div>
+        <div class="add-amount-display">
+          <span class="add-amount__currency">¥</span>
+          <span class="add-amount__value" id="add-amount-display">0</span>
+          <span class="add-amount__decimal" id="add-amount-decimal">.00</span>
+        </div>
+      </div>
+
+      <!-- 3. 分类选择区 -->
+      <div class="add-category-area">
+        <div class="add-section__label">
+          <span>消费分类 <span class="add-required">*必选</span></span>
+          <button class="btn btn--ghost btn--small" id="add-manage-categories">⚙️ 管理</button>
+        </div>
+        <!-- 选中后摘要（替代网格，大幅节省空间） -->
+        <div class="add-category-summary" id="add-category-summary" style="display:none">
+          <span class="add-category-summary__icon" id="add-category-summary-icon"></span>
+          <span class="add-category-summary__text" id="add-category-summary-text"></span>
+          <button class="add-category-summary__edit" id="add-category-summary-edit">修改</button>
+        </div>
+        <!-- 子分类行（初始隐藏，选一级分类后展开） -->
+        <div class="add-subcategories scroll-x" id="add-subcategories" style="display:none"></div>
+        <!-- 一级分类网格 -->
+        <div class="add-category-grid" id="add-category-grid"></div>
+      </div>
+
+      <!-- 4. 支付方式（紧凑 chip 行） -->
+      <div class="add-payment-row">
+        <span class="add-compact-label">💳</span>
+        <div class="add-payment-methods scroll-x" id="add-payment-methods"></div>
+      </div>
+
+      <!-- 5. 地点 + 备注（紧凑输入行） -->
+      <div class="add-compact-fields">
+        <span class="add-compact-label">📍</span>
+        <input type="text" class="input input--compact" id="add-location" placeholder="地点（选填）" maxlength="50">
+        <div class="add-location-type" id="add-location-type">
+          <button class="chip" data-ltype="offline">🏪 线下</button>
+          <button class="chip" data-ltype="online">🌐 线上</button>
+        </div>
+      </div>
+      <div class="add-compact-fields">
+        <span class="add-compact-label">📝</span>
+        <input type="text" class="input input--compact" id="add-note" placeholder="备注（选填）" maxlength="100">
+      </div>
+
+      <!-- 6. 数字键盘 -->
+      <div class="add-numpad numpad" id="add-numpad">
+        <button class="numpad__key" data-key="1">1</button>
+        <button class="numpad__key" data-key="2">2</button>
+        <button class="numpad__key" data-key="3">3</button>
+        <button class="numpad__key numpad__key--fn" data-key="backspace">⌫</button>
+
+        <button class="numpad__key" data-key="4">4</button>
+        <button class="numpad__key" data-key="5">5</button>
+        <button class="numpad__key" data-key="6">6</button>
+        <button class="numpad__key numpad__key--submit" data-key="submit">保存</button>
+
+        <button class="numpad__key" data-key="7">7</button>
+        <button class="numpad__key" data-key="8">8</button>
+        <button class="numpad__key" data-key="9">9</button>
+
+        <button class="numpad__key" data-key="0">0</button>
+        <button class="numpad__key" data-key=".">.</button>
+        <button class="numpad__key numpad__key--fn" data-key="clear">C</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==============================================================
+       账单 View
+       ============================================================== -->
+  <main id="view-list" class="main-view">
+    <!-- 搜索栏（默认折叠，点击图标展开） -->
+    <div class="list-search" id="list-search">
+      <button class="list-search__toggle" id="list-search-toggle" aria-label="搜索">🔍</button>
+      <div class="list-search__input-wrap" id="list-search-input-wrap">
+        <input type="text" class="input input--search" id="list-search-input" placeholder="搜索备注关键词...">
+      </div>
+      <button class="list-search__close" id="list-search-close" style="display:none" aria-label="关闭搜索">✕</button>
+    </div>
+
+    <!-- 筛选栏（每个 chip 独立定位容器，下拉不偏移） -->
+    <div class="list-filters scroll-x" id="list-filter-bar">
+      <div class="list-filter-group"><button class="chip" data-filter="date">📅 日期</button></div>
+      <div class="list-filter-group"><button class="chip" data-filter="category">🏷 分类</button></div>
+      <div class="list-filter-group"><button class="chip" data-filter="location">📍 地点</button></div>
+      <div class="list-filter-group"><button class="chip" data-filter="locationType">🌐 类型</button></div>
+      <div class="list-filter-group"><button class="chip" data-filter="payment">💳 支付</button></div>
+      <div class="list-filter-group"><button class="chip chip--active" data-filter="sort">🔤 金额↓</button></div>
+    </div>
+
+    <!-- 已选筛选条件 -->
+    <div class="list-active-filters scroll-x" id="list-active-filters"></div>
+
+    <!-- 记录列表 -->
+    <div class="list-content" id="list-content">
+      <div class="empty-state">
+        <div class="empty-state__icon">📋</div>
+        <p class="empty-state__text">还没有消费记录</p>
+        <p class="empty-state__hint">去「记账」Tab 添加第一笔吧</p>
+      </div>
+    </div>
+
+    <!-- 底部汇总（固定） -->
+    <div class="list-summary" id="list-summary" style="display:none">
+      <span id="list-summary-count">共 0 笔</span>
+      <span class="list-summary__divider">|</span>
+      <span>合计 <strong class="amount" id="list-summary-total">¥0</strong></span>
+    </div>
+  </main>
+
+  <!-- ==============================================================
+       统计 View
+       ============================================================== -->
+  <main id="view-stats" class="main-view">
+    <div class="stats-container" id="stats-container">
+      <!-- 时间选择 -->
+      <div class="stats-period">
+        <button class="chip chip--active" data-period="month">本月</button>
+        <button class="chip" data-period="3month">近3月</button>
+        <button class="chip" data-period="12month">近12月</button>
+      </div>
+
+      <!-- 概览卡片 -->
+      <div class="stats-overview">
+        <div class="stats-card">
+          <p class="stats-card__label">总支出</p>
+          <p class="stats-card__value" id="stats-card-total">¥0</p>
+        </div>
+        <div class="stats-card">
+          <p class="stats-card__label">日均</p>
+          <p class="stats-card__value" id="stats-card-daily">¥0</p>
+        </div>
+        <div class="stats-card">
+          <p class="stats-card__label">笔数</p>
+          <p class="stats-card__value" id="stats-card-count">0</p>
+        </div>
+      </div>
+
+      <!-- 动态区域（图表 + 排行，由 stats.js 控制） -->
+      <div id="stats-dynamic">
+        <!-- 分类占比 -->
+        <section class="stats-chart-section">
+          <h2 class="stats-chart-section__title">分类占比</h2>
+          <div class="stats-chart-wrapper">
+            <canvas id="stats-category-chart"></canvas>
+            <div id="stats-category-fallback" class="stats-fallback" style="display:none"></div>
+          </div>
+        </section>
+
+        <!-- 月度趋势 -->
+        <section class="stats-chart-section">
+          <h2 class="stats-chart-section__title">月度趋势</h2>
+          <div class="stats-chart-wrapper">
+            <canvas id="stats-trend-chart"></canvas>
+            <div id="stats-trend-fallback" class="stats-fallback" style="display:none"></div>
+          </div>
+        </section>
+
+        <!-- 地点排行 -->
+        <section class="stats-chart-section">
+          <h2 class="stats-chart-section__title">地点排行</h2>
+          <div class="stats-ranking-list" id="stats-location-list">
+            <div style="text-align:center;padding:16px;color:var(--color-text-tertiary);font-size:var(--font-size-sm)">暂无地点数据</div>
+          </div>
+        </section>
+
+        <!-- 支付方式分布 -->
+        <section class="stats-chart-section">
+          <h2 class="stats-chart-section__title">支付方式</h2>
+          <div class="stats-chart-wrapper">
+            <canvas id="stats-payment-chart"></canvas>
+            <div id="stats-payment-fallback" class="stats-fallback" style="display:none"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- ==============================================================
+       Toast 容器
+       ============================================================== -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- ==============================================================
+       覆盖层：预算设置
+       ============================================================== -->
+  <div class="page-overlay" id="overlay-budget">
+    <div class="page-overlay__header">
+      <button class="page-overlay__back" id="overlay-budget-back">←</button>
+      <span class="page-overlay__title">预算设置</span>
+    </div>
+    <div class="page-overlay__body" id="overlay-budget-body">
+      <!-- JS 动态渲染 -->
+    </div>
+  </div>
+
+  <!-- ==============================================================
+       覆盖层：分类管理
+       ============================================================== -->
+  <div class="page-overlay" id="overlay-categories">
+    <div class="page-overlay__header">
+      <span class="page-overlay__title">分类管理</span>
+      <button class="btn btn--ghost btn--small" id="overlay-categories-add">+ 新增</button>
+      <button class="page-overlay__back" id="overlay-categories-back">✕</button>
+    </div>
+    <div class="page-overlay__body" id="overlay-categories-body">
+      <!-- JS 动态渲染 -->
+    </div>
+  </div>
+
+  <!-- ==============================================================
+       编辑消费记录 — 底部弹出面板（Bottom Sheet）
+       ============================================================== -->
+  <!-- 半透明背景遮罩 -->
+  <div class="bottom-sheet-backdrop" id="overlay-edit-backdrop"></div>
+
+  <div class="bottom-sheet" id="overlay-edit">
+    <!-- 拖拽手柄（纯视觉提示，无交互） -->
+    <div class="bottom-sheet__handle-bar">
+      <div class="bottom-sheet__handle"></div>
+    </div>
+    <!-- 头部 -->
+    <div class="bottom-sheet__header">
+      <button class="bottom-sheet__btn-back" id="overlay-edit-back">←</button>
+      <span class="bottom-sheet__title">编辑记录</span>
+      <button class="btn btn--danger btn--small" id="overlay-edit-delete">删除</button>
+    </div>
+    <!-- 内容（JS 动态渲染） -->
+    <div class="bottom-sheet__body" id="overlay-edit-body"></div>
+  </div>
+
+  <!-- ==============================================================
+       底部 Tab Bar
+       ============================================================== -->
+  <nav class="tab-bar">
+    <div class="tab-bar__item tab-bar__item--active" data-view="home">
+      <span class="tab-bar__icon">💰</span>
+      <span class="tab-bar__label">首页</span>
+    </div>
+    <div class="tab-bar__item" data-view="add">
+      <span class="tab-bar__icon">✏️</span>
+      <span class="tab-bar__label">记账</span>
+    </div>
+    <div class="tab-bar__item" data-view="list">
+      <span class="tab-bar__icon">📋</span>
+      <span class="tab-bar__label">账单</span>
+    </div>
+    <div class="tab-bar__item" data-view="stats">
+      <span class="tab-bar__icon">📊</span>
+      <span class="tab-bar__label">统计</span>
+    </div>
+  </nav>
+
+</div><!-- #app -->
+
+<!-- ================================================================
+     JavaScript（按依赖顺序加载）
+     ================================================================ -->
+<script src="js/storage.js"></script>
+<script src="js/data.js"></script>
+<script src="js/home.js"></script>
+<script src="js/categories.js?v=3"></script>
+<script src="js/list.js"></script>
+<script src="js/stats.js"></script>
+<script src="js/app.js"></script>
+
+<!-- Chart.js CDN（统计模块依赖） -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
+</script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+/* ================================================================
+   消费轨迹系统 — list.css
+   账单列表：搜索栏、筛选栏、日期分组、记录行、底部汇总
+   ================================================================ */
+
+/* -----------------------------------------------------------------
+   搜索栏（默认折叠为图标，点击展开输入框）
+   ----------------------------------------------------------------- */
+.list-search {
+  display: flex;
+  align-items: center;
+  padding: var(--space-sm) var(--space-lg);
+  gap: var(--space-sm);
+}
+
+.list-search__toggle {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  background: none;
+  border: none;
+  border-radius: var(--radius-round);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.list-search__toggle:hover {
+  background: var(--color-divider);
+}
+
+.list-search__input-wrap {
+  flex: 1;
+  display: none;
+  min-width: 0;
+}
+
+.list-search--open .list-search__input-wrap {
+  display: block;
+}
+
+/* 折叠式搜索框：图标已是独立按钮，不需要预留图标空间 */
+.list-search__input-wrap .input--search {
+  padding-left: var(--space-md);
+}
+
+/* 搜索展开后的关闭按钮 */
+.list-search__close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-round);
+  cursor: pointer;
+}
+
+.list-search__close:hover {
+  background: var(--color-divider);
+}
+
+/* -----------------------------------------------------------------
+   筛选栏
+   ----------------------------------------------------------------- */
+.list-filters {
+  padding: 0 var(--space-lg) var(--space-sm);
+}
+
+/* -----------------------------------------------------------------
+   已选筛选条件
+   ----------------------------------------------------------------- */
+.list-active-filters {
+  padding: 0 var(--space-lg) var(--space-sm);
+  min-height: 0;
+}
+
+.list-active-filters:empty {
+  display: none;
+}
+
+/* -----------------------------------------------------------------
+   记录列表容器
+   ----------------------------------------------------------------- */
+.list-content {
+  flex: 1;
+  padding: 0 var(--space-lg);
+  overflow-y: auto;
+}
+
+/* --- 日期分组头 --- */
+.list-group-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--space-md) 0 var(--space-xs);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  position: sticky;
+  top: 0;
+  background: var(--color-bg);
+  z-index: 2;
+}
+
+.list-group-header__date {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.list-group-header__summary {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* --- 单条记录 --- */
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: 6px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  gap: var(--space-sm);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.list-item:hover {
+  background: var(--color-divider);
+}
+
+.list-item:active {
+  background: var(--color-border);
+}
+
+.list-item__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-divider);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.list-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.list-item__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: 2px;
+}
+
+.list-item__name {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.list-item__meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-sm);
+  margin-top: 2px;
+  overflow: hidden;
+}
+
+.list-item__meta mark {
+  background: #FFF3B0;
+  color: var(--color-text-primary);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.list-item__note {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.list-item__amount {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.list-item__amount--large {
+  color: var(--color-danger);
+}
+
+/* --- 无匹配结果空状态 --- */
+.list-content .empty-state {
+  padding: var(--space-xxxl) var(--space-xl);
+}
+
+/* -----------------------------------------------------------------
+   底部汇总栏
+   ----------------------------------------------------------------- */
+.list-summary {
+  position: sticky;
+  bottom: calc(var(--tab-bar-height) + var(--safe-area-bottom));
+  left: 0;
+  right: 0;
+  padding: var(--space-md) var(--space-lg);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  z-index: 10;
+}
+
+.list-summary__divider {
+  color: var(--color-border);
+}
+
+/* -----------------------------------------------------------------
+   筛选下拉面板（独立宽度，不被父级 wrapper 限制）
+   ----------------------------------------------------------------- */
+.list-dropdown {
+  /* position / top / left / min-width 由 JS 动态计算 */
+  position: absolute;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: var(--space-sm);
+}
+
+.list-dropdown__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: background var(--transition-fast);
+  white-space: nowrap;
+}
+
+.list-dropdown__item:hover {
+  background: var(--color-divider);
+}
+
+.list-dropdown__item--active {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+/* 筛选栏 chip 独立定位容器（下拉的锚点） */
+.list-filter-group {
+  position: relative;
+  flex-shrink: 0;
+}
