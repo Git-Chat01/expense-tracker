@@ -16,6 +16,9 @@ const ExpenseStats = (() => {
   // Chart.js 实例引用（用于销毁重绘）
   let _charts = {};
 
+  // 环形图点击高亮：记录每个图表当前选中的扇区索引
+  const _selectedArc = {}; // { canvasId: index | null }
+
   // 调色板
   const COLORS = [
     '#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE',
@@ -334,8 +337,59 @@ const ExpenseStats = (() => {
       }
     });
     _charts = {};
+    // 清空环形图选中状态
+    Object.keys(_selectedArc).forEach(k => { _selectedArc[k] = null; });
     // 同时清理 HTML 手绘图例
     document.querySelectorAll('.stats-chart-legend').forEach(function(el) { el.remove(); });
+  }
+
+  /** 环形图点击：选中/取消选中扇区，弹出一段 + 其他扇区半透明 */
+  function _handleArcClick(canvasId, elements, dataLen) {
+    const chart = _charts[canvasId];
+    if (!chart) return;
+
+    if (elements.length > 0) {
+      const idx = elements[0].index;
+      _selectedArc[canvasId] = (_selectedArc[canvasId] === idx) ? null : idx;
+    } else {
+      _selectedArc[canvasId] = null;
+    }
+    _applyArcSelection(chart, dataLen, canvasId);
+  }
+
+  /** 将选中/取消效果应用到环形图上 */
+  function _applyArcSelection(chart, dataLen, canvasId) {
+    const ds = chart.data.datasets[0];
+    const selIdx = _selectedArc[canvasId];
+    const offsets = new Array(dataLen).fill(0);
+    const borders = new Array(dataLen).fill(2);
+    const origColors = COLORS.slice(0, dataLen);
+
+    if (selIdx !== null && selIdx !== undefined) {
+      offsets[selIdx] = 16;          // 选中扇区弹出
+      borders[selIdx] = 3;           // 选中扇区边框加粗
+      ds.borderColor = borders.map((_, i) => i === selIdx ? '#444' : 'rgba(255,255,255,0.4)');
+      // 未选中扇区 → 加半透明白色遮罩使其变淡
+      ds.backgroundColor = origColors.map((c, i) =>
+        i === selIdx ? c : _dimColor(c, 0.35)
+      );
+    } else {
+      ds.borderColor = dataLen > 0 ? new Array(dataLen).fill('#fff') : [];
+      ds.backgroundColor = origColors;
+    }
+
+    ds.offset = offsets;
+    ds.borderWidth = borders;
+    chart.update('none');
+  }
+
+  /** 将 hex 颜色转为带 alpha 的 rgba 字符串（混合白色底达到"减淡"效果） */
+  function _dimColor(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    // 在白色底上叠加半透明颜色 ≈ 颜色变淡
+    return `rgba(${r},${g},${b},${alpha})`;
   }
 
   // HTML 手绘图例：绕过 Chart.js 内置图例的 pointStyle 宽高不一致问题，
@@ -402,13 +456,18 @@ const ExpenseStats = (() => {
             datasets: [{
               data: data,
               backgroundColor: COLORS.slice(0, data.length),
-              borderWidth: 2,
-              borderColor: '#fff',
+              borderWidth: data.map(() => 2),
+              borderColor: data.map(() => '#fff'),
+              offset: data.map(() => 0),
+              hoverOffset: 10,
             }],
           },
           options: {
             responsive: true,
             maintainAspectRatio: true,
+            onClick: function(event, elements) {
+              _handleArcClick(canvasId, elements, data.length);
+            },
             plugins: {
               legend: { display: false },
             },
