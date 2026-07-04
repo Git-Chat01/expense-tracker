@@ -3,7 +3,7 @@
    PWA 离线缓存：首次访问后，无网络也能打开
    ================================================================ */
 
-const CACHE_NAME = 'expense-tracker-v3';
+const CACHE_NAME = 'expense-tracker-v4';
 
 // 需要预缓存的核心文件
 const PRE_CACHE = [
@@ -67,43 +67,35 @@ self.addEventListener('activate', (event) => {
 });
 
 /* -----------------------------------------------------------------
-   请求拦截：缓存优先，网络回退
+   请求拦截：网络优先，缓存回退
+   这样每次打开 PWA（有网时）都能拿到最新版本，不会卡在旧缓存里
+   离线时仍可使用缓存版本
    ----------------------------------------------------------------- */
 self.addEventListener('fetch', (event) => {
-  // 只处理 GET 请求
   if (event.request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) {
-        // 缓存命中 → 后台更新（下次访问拿到最新版本）
-        const fetched = fetch(event.request).then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, clone);
-            });
-          }
-          return response;
-        }).catch(() => null);
-        return cached;
-      }
+  // SW 脚本本身的更新请求不走缓存（浏览器自行处理，这里显式放行）
+  if (event.request.url.includes('sw.js')) return;
 
-      // 缓存未命中 → 走网络，失败回退
-      return fetch(event.request).then((response) => {
-        if (response && response.status === 200) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, clone);
-          });
-        }
-        return response;
-      }).catch(() => {
-        // 网络不可用且缓存也无 → 对于 HTML 请求返回离线页
-        if (event.request.headers.get('accept').includes('text/html')) {
+  event.respondWith(
+    fetch(event.request).then((response) => {
+      // 网络请求成功 → 更新缓存，返回最新内容
+      if (response && response.status === 200) {
+        const clone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          cache.put(event.request, clone);
+        });
+      }
+      return response;
+    }).catch(() => {
+      // 网络不可用 → 使用缓存
+      return caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        // HTML 请求特殊回退
+        if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
           return caches.match('index.html');
         }
-        return new Response('Offline', { status: 503 });
+        return new Response('离线不可用', { status: 503 });
       });
     })
   );
