@@ -44,7 +44,7 @@ self.addEventListener('install', (event) => {
 });
 
 /* -----------------------------------------------------------------
-   激活：清理旧版本缓存
+   激活：清理旧版本缓存 + 通知页面刷新
    ----------------------------------------------------------------- */
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -52,9 +52,18 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       );
+    }).then(() => {
+      // 接管所有客户端后，通知页面有新版本可用
+      return self.clients.claim();
+    }).then(() => {
+      // 通知所有打开的页面：SW 已更新，请刷新
+      self.clients.matchAll().then(function(clients) {
+        clients.forEach(function(client) {
+          client.postMessage({ type: 'SW_UPDATED' });
+        });
+      });
     })
   );
-  self.clients.claim();
 });
 
 /* -----------------------------------------------------------------
