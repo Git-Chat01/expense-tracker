@@ -63,7 +63,7 @@
    图表区块
    ----------------------------------------------------------------- */
 .stats-chart-section {
-  margin-bottom: var(--space-xl);
+  margin-bottom: calc(var(--space-xl) + var(--space-sm));
 }
 
 .stats-chart-section__title {
@@ -86,7 +86,7 @@
 .stats-chart-wrapper {
   background: var(--color-surface);
   border-radius: var(--radius-md);
-  padding: var(--space-lg);
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
   box-shadow: var(--shadow-sm);
   min-height: 100px;
   display: flex;
@@ -107,8 +107,8 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px 14px;
-  margin-top: 8px;
+  gap: 8px 16px;
+  margin-top: var(--space-md);
   width: 100%;
 }
 

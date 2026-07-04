@@ -357,39 +357,27 @@ const ExpenseStats = (() => {
     _applyArcSelection(chart, dataLen, canvasId);
   }
 
-  /** 将选中/取消效果应用到环形图上 */
+  /** 将选中/取消效果应用到环形图上（简洁风：只弹出 + 加粗描边，不改变颜色） */
   function _applyArcSelection(chart, dataLen, canvasId) {
     const ds = chart.data.datasets[0];
     const selIdx = _selectedArc[canvasId];
     const offsets = new Array(dataLen).fill(0);
     const borders = new Array(dataLen).fill(2);
-    const origColors = COLORS.slice(0, dataLen);
 
     if (selIdx !== null && selIdx !== undefined) {
-      offsets[selIdx] = 16;          // 选中扇区弹出
-      borders[selIdx] = 3;           // 选中扇区边框加粗
-      ds.borderColor = borders.map((_, i) => i === selIdx ? '#444' : 'rgba(255,255,255,0.4)');
-      // 未选中扇区 → 加半透明白色遮罩使其变淡
-      ds.backgroundColor = origColors.map((c, i) =>
-        i === selIdx ? c : _dimColor(c, 0.35)
-      );
+      offsets[selIdx] = 8;           // 选中扇区轻微弹出
+      borders[selIdx] = 4;           // 选中扇区边框加粗
+      ds.borderColor = borders.map((_, i) => i === selIdx ? '#333' : '#fff');
+      // 不改变颜色，所有扇区保持原色
+      ds.backgroundColor = COLORS.slice(0, dataLen);
     } else {
       ds.borderColor = dataLen > 0 ? new Array(dataLen).fill('#fff') : [];
-      ds.backgroundColor = origColors;
+      ds.backgroundColor = COLORS.slice(0, dataLen);
     }
 
     ds.offset = offsets;
     ds.borderWidth = borders;
     chart.update('none');
-  }
-
-  /** 将 hex 颜色转为带 alpha 的 rgba 字符串（混合白色底达到"减淡"效果） */
-  function _dimColor(hex, alpha) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    // 在白色底上叠加半透明颜色 ≈ 颜色变淡
-    return `rgba(${r},${g},${b},${alpha})`;
   }
 
   // HTML 手绘图例：绕过 Chart.js 内置图例的 pointStyle 宽高不一致问题，
