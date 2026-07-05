@@ -22,6 +22,9 @@ const ExpenseStats = (() => {
   // 环形图扇区元数据（用于点击后在圆环中心显示详情）
   const _segmentMeta = {}; // { canvasId: [{ name, amount, pct, color, isHighest }, ...] }
 
+  // 当前时段的汇总对比数据（用于环形图中心总支出显示）
+  let _periodSummary = null; // { currentTotal, prevTotal, changePct, label, compareLabel }
+
   // 调色板
   const COLORS = [
     '#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE',
@@ -58,6 +61,54 @@ const ExpenseStats = (() => {
     return { month: '本月', '3month': '近 3 个月', '12month': '近 12 个月' }[_period] || '本月';
   }
 
+  /** 日期 → "YYYY-MM-DD" 字符串 */
+  function _ymd(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  /** 计算当前时段与上一时段的支出对比 */
+  function _calcPeriodSummary(currentExpenses, currentFrom, currentTo) {
+    const currentTotal = currentExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const [fy, fm] = currentFrom.split('-').map(Number);
+    let prevFrom, prevTo;
+
+    if (_period === 'month') {
+      // 上个月：1号 ~ 月末
+      const prevLast = new Date(fy, fm - 1, 0);
+      prevTo = _ymd(prevLast);
+      prevFrom = `${prevLast.getFullYear()}-${String(prevLast.getMonth() + 1).padStart(2, '0')}-01`;
+    } else if (_period === '3month') {
+      // 上一个 3 个月周期
+      const prevLast = new Date(fy, fm - 1, 0);
+      prevTo = _ymd(prevLast);
+      const prevFirst = new Date(prevLast.getFullYear(), prevLast.getMonth() - 2, 1);
+      prevFrom = _ymd(prevFirst);
+    } else {
+      // 上一个 12 个月周期
+      const prevLast = new Date(fy, fm - 1, 0);
+      prevTo = _ymd(prevLast);
+      const prevFirst = new Date(prevLast.getFullYear() - 1, prevLast.getMonth() + 1, 1);
+      prevFrom = _ymd(prevFirst);
+    }
+
+    const prevExpenses = ExpenseDB.getExpensesByDateRange(prevFrom, prevTo);
+    const prevTotal = prevExpenses.reduce((sum, e) => sum + e.amount, 0);
+    let changePct;
+    if (prevTotal > 0) {
+      changePct = Math.round((currentTotal - prevTotal) / prevTotal * 100);
+    } else {
+      changePct = currentTotal > 0 ? 100 : 0;
+    }
+
+    return {
+      currentTotal: Math.round(currentTotal),
+      prevTotal: Math.round(prevTotal),
+      changePct,
+      label: _periodLabel(),
+      compareLabel: { month: '上月', '3month': '上季度', '12month': '上年' }[_period],
+    };
+  }
+
   /* -----------------------------------------------------------------
      渲染入口
      ----------------------------------------------------------------- */
@@ -70,6 +121,9 @@ const ExpenseStats = (() => {
 
     // 始终更新概览卡片
     _renderOverview(expenses, from, to);
+
+    // 计算时段对比（供环形图中心总支出显示）
+    _periodSummary = _calcPeriodSummary(expenses, from, to);
 
     // 无数据时显示空状态（仅替换动态区域，保留时段选择器和概览卡片）
     if (expenses.length === 0) {
@@ -369,8 +423,9 @@ const ExpenseStats = (() => {
     // 清空环形图选中状态和元数据
     Object.keys(_selectedArc).forEach(k => { _selectedArc[k] = null; });
     Object.keys(_segmentMeta).forEach(k => { delete _segmentMeta[k]; });
-    // 移除所有中心浮层
+    // 移除所有中心浮层和扇区详情条
     document.querySelectorAll('.stats-chart-center').forEach(function(el) { el.remove(); });
+    document.querySelectorAll('.stats-chart-detail').forEach(function(el) { el.remove(); });
     // 同时清理 HTML 手绘图例
     document.querySelectorAll('.stats-chart-legend').forEach(function(el) { el.remove(); });
   }
@@ -404,59 +459,94 @@ const ExpenseStats = (() => {
     const offsets = new Array(dataLen).fill(0);
 
     if (selIdx !== null && selIdx !== undefined) {
-      offsets[selIdx] = 15;          // 选中扇区向外弹出
-      // 选中扇区保持原色，其余扇区微微变淡（alpha=0.4），靠对比度体现"高亮"
+      offsets[selIdx] = 15;
       ds.backgroundColor = COLORS.slice(0, dataLen).map((c, i) =>
         i === selIdx ? c : _hexToRgba(c, 0.4)
       );
     } else {
-      // 取消选中：全部恢复原色
       ds.backgroundColor = COLORS.slice(0, dataLen);
     }
 
-    // 所有扇区统一白色边框，宽度一致
     ds.borderColor = dataLen > 0 ? new Array(dataLen).fill('#fff') : [];
     ds.borderWidth = new Array(dataLen).fill(2);
     ds.offset = offsets;
     chart.update('none');
 
-    // 同步更新圆环中心浮层
-    _renderCenterOverlay(canvasId, selIdx);
+    // 中心始终显示总支出 + 对比；详情条显示选中扇区信息
+    _renderCenterTotal(canvasId);
+    _renderSegmentDetail(canvasId, selIdx);
   }
 
-  /** 确保画布容器内存在中心浮层 DOM（预创建，默认隐藏） */
-  function _ensureCenterOverlay(canvasId) {
+  /** 确保画布容器内存在中心浮层 + 详情条 DOM（预创建，默认隐藏） */
+  function _ensureOverlays(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
     let wrap = canvas.closest('.stats-chart-canvas-wrap');
-    // 兼容旧 DOM：canvas 直接放在 .stats-chart-wrapper 里，没有 canvas-wrap 包裹层
+    // 兼容旧 DOM：动态创建包裹层
     if (!wrap) {
       const wrapper = canvas.closest('.stats-chart-wrapper');
       if (!wrapper) return;
-      // 动态创建包裹层，把 canvas 包进去
       wrap = document.createElement('div');
       wrap.className = 'stats-chart-canvas-wrap';
       canvas.parentNode.insertBefore(wrap, canvas);
       wrap.appendChild(canvas);
     }
-    // 避免重复创建中心浮层
-    if (wrap.querySelector('.stats-chart-center')) return;
-    const el = document.createElement('div');
-    el.className = 'stats-chart-center';
-    el.style.display = 'none';
-    wrap.appendChild(el);
+    // 中心总支出浮层
+    if (!wrap.querySelector('.stats-chart-center')) {
+      const el = document.createElement('div');
+      el.className = 'stats-chart-center';
+      wrap.appendChild(el);
+    }
+    // 图表下方的扇区详情条（挂在 .stats-chart-wrapper 上而非 canvas-wrap 内，
+    // 确保它在 canvas 下方、图例上方）
+    const wrapper = canvas.closest('.stats-chart-wrapper');
+    if (wrapper && !wrapper.querySelector('.stats-chart-detail')) {
+      const detail = document.createElement('div');
+      detail.className = 'stats-chart-detail';
+      detail.style.display = 'none';
+      // 插入到 canvas-wrap 之后、图例之前
+      const canvasWrap = wrapper.querySelector('.stats-chart-canvas-wrap');
+      if (canvasWrap) {
+        canvasWrap.after(detail);
+      } else {
+        wrapper.appendChild(detail);
+      }
+    }
   }
 
-  /** 根据选中扇区渲染圆环中心的详情浮层（selIdx 为 null 时隐藏） */
-  function _renderCenterOverlay(canvasId, selIdx) {
+  /** 渲染环形图中心的时段总支出（始终显示，不随点击变化） */
+  function _renderCenterTotal(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
-    const wrap = canvas.closest('.stats-chart-canvas-wrap');
-    if (!wrap) return;
-    const el = wrap.querySelector('.stats-chart-center');
+    const el = canvas.closest('.stats-chart-canvas-wrap')?.querySelector('.stats-chart-center');
     if (!el) return;
 
-    // 取消选中 → 隐藏浮层
+    const s = _periodSummary;
+    if (!s) { el.style.display = 'none'; return; }
+
+    const sign = s.changePct > 0 ? '+' : '';
+    const arrow = s.changePct > 0 ? '↑' : (s.changePct < 0 ? '↓' : '→');
+    const changeColor = s.changePct > 0 ? 'var(--color-danger)' : (s.changePct < 0 ? 'var(--color-success)' : 'var(--color-text-tertiary)');
+
+    el.innerHTML = `
+      <div class="stats-chart-center__label">${s.label}总支出</div>
+      <div class="stats-chart-center__total">¥${s.currentTotal.toLocaleString()}</div>
+      <div class="stats-chart-center__compare" style="color:${changeColor}">
+        较${s.compareLabel} ${arrow}${sign}${Math.abs(s.changePct)}%
+      </div>
+    `;
+    el.style.display = 'flex';
+  }
+
+  /** 渲染图表下方的扇区详情条（selIdx 为 null 时隐藏） */
+  function _renderSegmentDetail(canvasId, selIdx) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const wrapper = canvas.closest('.stats-chart-wrapper');
+    if (!wrapper) return;
+    const el = wrapper.querySelector('.stats-chart-detail');
+    if (!el) return;
+
     if (selIdx === null || selIdx === undefined) {
       el.style.display = 'none';
       el.innerHTML = '';
@@ -464,19 +554,17 @@ const ExpenseStats = (() => {
     }
 
     const meta = _segmentMeta[canvasId];
-    if (!meta || selIdx >= meta.length) {
-      el.style.display = 'none';
-      return;
-    }
+    if (!meta || selIdx >= meta.length) { el.style.display = 'none'; return; }
 
     const seg = meta[selIdx];
     el.innerHTML = `
-      <div class="stats-chart-center__name">${seg.name}</div>
-      <div class="stats-chart-center__amount" style="color:${seg.color}">
-        <span class="stats-chart-center__currency">¥</span><span class="stats-chart-center__number">${seg.amount}</span>
-      </div>
-      <div class="stats-chart-center__pct">占比 ${seg.pct}%</div>
-      ${seg.isHighest ? '<div class="stats-chart-center__badge">👑 本月支出最高</div>' : ''}
+      <span class="stats-chart-detail__icon" style="background:${seg.color}"></span>
+      <span class="stats-chart-detail__name">${seg.name}</span>
+      <span class="stats-chart-detail__amount" style="color:${seg.color}">
+        <small>¥</small>${seg.amount.toLocaleString()}
+      </span>
+      <span class="stats-chart-detail__pct">占比 ${seg.pct}%</span>
+      ${seg.isHighest ? '<span class="stats-chart-detail__badge">👑 最高支出</span>' : ''}
     `;
     el.style.display = 'flex';
   }
@@ -570,8 +658,10 @@ const ExpenseStats = (() => {
         _renderHtmlLegend(canvasId, labels, data);
         // 存储扇区元数据（供点击中心浮层使用）
         if (meta) _segmentMeta[canvasId] = meta;
-        // 预创建中心浮层 DOM（默认隐藏，选中扇区时显示）
-        _ensureCenterOverlay(canvasId);
+        // 预创建中心浮层 + 扇区详情条 DOM
+        _ensureOverlays(canvasId);
+        // 渲染中心总支出（始终显示）
+        _renderCenterTotal(canvasId);
       } else if (type === 'line') {
         _charts[canvasId] = new Chart(ctx, {
           type: 'line',

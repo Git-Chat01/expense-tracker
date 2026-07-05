@@ -109,7 +109,7 @@
 }
 
 /* -----------------------------------------------------------------
-   环形图中心浮层（点击扇区后显示分类/金额/占比/最高标记）
+   环形图中心浮层 — 始终显示本期总支出 + 对比
    ----------------------------------------------------------------- */
 .stats-chart-center {
   position: absolute;
@@ -117,55 +117,89 @@
   left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
-  pointer-events: none;       /* 不阻挡 canvas 点击事件 */
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  /* 轻微背景防止 canvas 颜色透出干扰文字可读性 */
-  background: rgba(255,255,255,0.85);
+  gap: 4px;
+  background: rgba(255,255,255,0.9);
   border-radius: 50%;
-  width: 100px;
-  height: 100px;
+  width: 96px;
+  height: 96px;
 }
 
-.stats-chart-center__name {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-primary);
-  line-height: 1.3;
-}
-
-.stats-chart-center__amount {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: var(--font-size-lg);
-  line-height: 1.2;
-  display: flex;
-  align-items: baseline;
-  gap: 1px;
-}
-
-.stats-chart-center__currency {
-  font-size: var(--font-size-xs);
+.stats-chart-center__label {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
   font-weight: 500;
 }
 
-.stats-chart-center__number {
-  /* 继承父级字号（较大） */
+.stats-chart-center__total {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.2;
 }
 
-.stats-chart-center__pct {
+.stats-chart-center__compare {
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* -----------------------------------------------------------------
+   扇区详情条 — 点击环形图扇区后显示在图表下方
+   ----------------------------------------------------------------- */
+.stats-chart-detail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-sm);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stats-chart-detail__icon {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stats-chart-detail__name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.stats-chart-detail__amount {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.stats-chart-detail__amount small {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.stats-chart-detail__pct {
   color: var(--color-text-secondary);
 }
 
-.stats-chart-center__badge {
-  font-size: 10px;
+.stats-chart-detail__badge {
   color: var(--color-primary);
   font-weight: 600;
-  margin-top: 2px;
   white-space: nowrap;
 }
 
