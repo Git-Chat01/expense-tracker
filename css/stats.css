@@ -271,7 +271,7 @@
   background: #f0f4ff;
   border-radius: 8px;
   margin-left: -4px;
-  margin-right: -4px;
+  margin-right: 4px;   /* 给滚动条留空间，避免亮块压住滚动条 */
   padding-left: 8px;
   padding-right: 8px;
 }
