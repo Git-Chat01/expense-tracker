@@ -274,13 +274,16 @@
   margin-right: -4px;
   padding-left: 8px;
   padding-right: 8px;
-  /* 亮块伸缩：0.2s，比滚动条出现稍快，视觉上"提前让位" */
-  transition: margin-right 0.2s ease;
 }
 
-/* 内容溢出 → 亮块先内缩，滚动条随后才出现 */
+/* 有滚动条 → 亮块每次出现都从满宽开始收缩，动画比滚动条快一步 */
 .stats-chart-legend--scrolling .stats-chart-legend__item--active {
-  margin-right: 4px;
+  animation: legend-shrink 0.2s ease forwards;
+}
+
+@keyframes legend-shrink {
+  from { margin-right: -4px; }
+  to   { margin-right:  4px; }
 }
 
 .stats-chart-legend__item--active:first-child {
