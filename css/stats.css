@@ -161,7 +161,7 @@
    自定义 HTML tooltip（替换 Chart.js 内置，支持分行颜色 + 小 ¥ + 分隔线）
    ----------------------------------------------------------------- */
 .stats-tooltip {
-  position: absolute;
+  position: fixed;
   z-index: 9999;
   background: #fff;
   border: 1px solid #e0e0e0;

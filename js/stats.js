@@ -492,8 +492,9 @@ const ExpenseStats = (() => {
     var realCanvas = document.getElementById(canvasId);
     var pos = realCanvas ? realCanvas.getBoundingClientRect() : chart.canvas.getBoundingClientRect();
     var arc = chart.getDatasetMeta(0).data[index];
-    var cx = pos.left + window.scrollX + (arc.x || pos.width / 2);
-    var cy = pos.top + window.scrollY + (arc.y || pos.height / 2);
+    // position:fixed 直接视口坐标，不需要 + scroll
+    var cx = pos.left + (arc.x || pos.width / 2);
+    var cy = pos.top + (arc.y || pos.height / 2);
 
     // 向外偏移（沿 arc 中点角度的方向）
     var midAngle = (arc.startAngle + arc.endAngle) / 2;
