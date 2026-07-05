@@ -522,7 +522,7 @@ const ExpenseStats = (() => {
 
     el.innerHTML = `
       <div class="stats-chart-center__label">${s.label}总支出</div>
-      <div class="stats-chart-center__total">¥${s.currentTotal.toLocaleString()}</div>
+      <div class="stats-chart-center__total"><span class="stats-chart-center__currency">¥</span>${s.currentTotal.toLocaleString()}</div>
       <div class="stats-chart-center__compare" style="color:${changeColor}">
         较${s.compareLabel} ${arrow}${sign}${Math.abs(s.changePct)}%
       </div>

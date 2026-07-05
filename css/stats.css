@@ -136,10 +136,19 @@
 
 .stats-chart-center__total {
   font-family: var(--font-mono);
-  font-size: var(--font-size-lg);
+  font-size: 20px;
   font-weight: 700;
   color: var(--color-text-primary);
   line-height: 1.2;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1px;
+}
+
+.stats-chart-center__currency {
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .stats-chart-center__compare {
