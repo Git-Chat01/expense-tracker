@@ -518,8 +518,8 @@ const ExpenseStats = (() => {
     }
     el.innerHTML = html;
 
-    // 左侧细色条跟扇区同色，柔和地把 tooltip 锚定到饼图
-    el.style.borderLeft = '2px solid ' + seg.color;
+    // 左侧柔光投影（扇区颜色半透明），像光环一样把 tooltip 和扇区连起来
+    el.style.boxShadow = 'inset 5px 0 14px -4px ' + seg.color + '40, 0 4px 16px rgba(0,0,0,0.12)';
 
     // 定位：用 document.getElementById 直接取 canvas（不依赖 chart.canvas 引用）
     var realCanvas = document.getElementById(canvasId);
