@@ -518,8 +518,8 @@ const ExpenseStats = (() => {
     }
     el.innerHTML = html;
 
-    // 边框跟扇区同色，一眼看出 tooltip 属于哪个扇区
-    el.style.borderColor = seg.color;
+    // 左侧细色条跟扇区同色，柔和地把 tooltip 锚定到饼图
+    el.style.borderLeft = '2px solid ' + seg.color;
 
     // 定位：用 document.getElementById 直接取 canvas（不依赖 chart.canvas 引用）
     var realCanvas = document.getElementById(canvasId);
