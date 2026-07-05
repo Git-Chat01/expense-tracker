@@ -594,79 +594,24 @@ const ExpenseStats = (() => {
     el.style.display = 'flex';
   }
 
-  /** 自定义 HTML tooltip（替换内置 tooltip，实现分行颜色 + 小 ¥ + 分隔线） */
+  /** Chart.js external tooltip 回调 — 已弃用，tooltip 全部由 _showTooltipManually / _handleArcClick 手动管理。
+   *  仅保留 tooltip DOM 的创建和取消选中时的隐藏逻辑，不做任何显示/定位操作。
+   *  这样彻底杜绝 Chart.js 内部事件链对 tooltip 位置和内容的干扰（尤其是跨图错位）。 */
   function _externalTooltip(canvasId, context) {
-    const tooltipModel = context.tooltip;
-    const chart = context.chart;
-
-    // 获取或创建 tooltip DOM 元素
-    let el = document.getElementById('stats-tooltip');
-    if (!el) {
-      el = document.createElement('div');
+    // 预创建 tooltip DOM（如果尚不存在）
+    if (!document.getElementById('stats-tooltip')) {
+      var el = document.createElement('div');
       el.id = 'stats-tooltip';
       el.className = 'stats-tooltip';
       document.body.appendChild(el);
     }
 
-    // tooltip 不可见 → 但如果有手动选中的扇区则不隐藏（tooltip 由 _showTooltipManually 管理）
-    // chart.update() 会触发此回调且 opacity===0，不能让它覆盖手动显示的 tooltip
-    if (tooltipModel.opacity === 0) {
-      if (_selectedArc[canvasId] === null || _selectedArc[canvasId] === undefined) {
-        el.style.opacity = '0';
-      }
-      return;
-    }
-
-    // 只有点击选中扇区后才显示 tooltip，防止 Chart.js 内部事件（hover/点击冒泡）
-    // 在我们 onClick 之前抢先弹出 tooltip，导致取消选中后仍残留
+    // 取消选中时（_selectedArc 为空），如果 Chart.js 还在尝试显示 tooltip（hover/内部事件），强制隐藏
     if (_selectedArc[canvasId] === null || _selectedArc[canvasId] === undefined) {
-      el.style.opacity = '0';
-      return;
+      var tip = document.getElementById('stats-tooltip');
+      if (tip) tip.style.opacity = '0';
     }
-
-    // 获取扇区元数据
-    const pts = tooltipModel.dataPoints;
-    if (!pts || !pts.length) { el.style.opacity = '0'; return; }
-    const idx = pts[0].dataIndex;
-    const meta = _segmentMeta[canvasId];
-    const seg = meta ? meta[idx] : null;
-    if (!seg) { el.style.opacity = '0'; return; }
-
-    // 构建 HTML
-    let html = '';
-    html += `<div class="stats-tooltip__title" style="color:${seg.color}">${seg.name}</div>`;
-    html += `<div class="stats-tooltip__amount" style="color:${seg.color}"><span class="stats-tooltip__currency">¥</span>${seg.amount.toLocaleString()}</div>`;
-    html += `<div class="stats-tooltip__pct">占比 ${seg.pct}%</div>`;
-    if (seg.isHighest) {
-      html += `<div class="stats-tooltip__divider"></div>`;
-      html += `<div class="stats-tooltip__badge">👑 最高支出</div>`;
-    }
-    el.innerHTML = html;
-
-    // 计算位置：canvas 坐标 → 页面坐标
-    const pos = chart.canvas.getBoundingClientRect();
-    let left = pos.left + window.scrollX + tooltipModel.caretX;
-    let top = pos.top + window.scrollY + tooltipModel.caretY;
-
-    // 根据对齐方向偏移，避免 tooltip 遮挡光标/扇区
-    el.style.display = 'block';
-    el.style.opacity = '1';
-    // 先显示才能读取尺寸
-    const tw = el.offsetWidth;
-    const th = el.offsetHeight;
-    if (tooltipModel.xAlign === 'left')  left -= tw + 8;
-    if (tooltipModel.xAlign === 'right') left += 8;
-    if (tooltipModel.yAlign === 'top')   top -= th + 8;
-    if (tooltipModel.yAlign === 'bottom') top += 8;
-
-    // 不超出视口
-    if (left < 8) left = 8;
-    if (top < 8) top = 8;
-    if (left + tw > window.innerWidth - 8)  left = window.innerWidth - tw - 8;
-    if (top + th > window.innerHeight - 8)  top = window.innerHeight - th - 8;
-
-    el.style.left = left + 'px';
-    el.style.top = top + 'px';
+    // 选中状态下不做任何操作 — tooltip 内容/位置完全由 _showTooltipManually 控制
   }
 
   // HTML 手绘图例：绕过 Chart.js 内置图例的 pointStyle 宽高不一致问题，
