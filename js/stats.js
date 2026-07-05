@@ -357,26 +357,23 @@ const ExpenseStats = (() => {
     _applyArcSelection(chart, dataLen, canvasId);
   }
 
-  /** 将选中/取消效果应用到环形图上（简洁风：只弹出 + 加粗描边，不改变颜色） */
+  /** 将选中/取消效果应用到环形图上（选中扇区向外弹出，白色边框，保持原色） */
   function _applyArcSelection(chart, dataLen, canvasId) {
     const ds = chart.data.datasets[0];
     const selIdx = _selectedArc[canvasId];
     const offsets = new Array(dataLen).fill(0);
-    const borders = new Array(dataLen).fill(2);
 
     if (selIdx !== null && selIdx !== undefined) {
-      offsets[selIdx] = 8;           // 选中扇区轻微弹出
-      borders[selIdx] = 4;           // 选中扇区边框加粗
-      ds.borderColor = borders.map((_, i) => i === selIdx ? '#333' : '#fff');
-      // 不改变颜色，所有扇区保持原色
+      offsets[selIdx] = 15;          // 选中扇区向外弹出
       ds.backgroundColor = COLORS.slice(0, dataLen);
     } else {
-      ds.borderColor = dataLen > 0 ? new Array(dataLen).fill('#fff') : [];
       ds.backgroundColor = COLORS.slice(0, dataLen);
     }
 
+    // 所有扇区统一白色边框，宽度一致
+    ds.borderColor = dataLen > 0 ? new Array(dataLen).fill('#fff') : [];
+    ds.borderWidth = new Array(dataLen).fill(2);
     ds.offset = offsets;
-    ds.borderWidth = borders;
     chart.update('none');
   }
 
