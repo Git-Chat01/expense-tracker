@@ -691,10 +691,18 @@ const ExpenseStats = (() => {
             if (lastItem) {
               var legendRect = _legend.getBoundingClientRect();
               var lastRect = lastItem.getBoundingClientRect();
-              // 最后一项底部超出图例内容区底部 → 溢出 → 有滚动条
+              // 最后一项底部超出图例可视区底部 → 溢出 → 有滚动条
               hasScrollbar = (lastRect.bottom - legendRect.bottom) > 1;
             }
             _legend.scrollTop = savedScroll;
+            // 诊断日志：F12 控制台查看各检测值
+            console.log('[亮块检测] scrollHeight=' + _legend.scrollHeight +
+              ' clientHeight=' + _legend.clientHeight +
+              ' overflow=' + (_legend.scrollHeight > _legend.clientHeight) +
+              ' lastBottom=' + (lastItem ? Math.round(lastItem.getBoundingClientRect().bottom) : '?') +
+              ' legendBottom=' + Math.round(legendRect.bottom) +
+              ' hasScrollbar=' + hasScrollbar +
+              ' marginRight=' + (hasScrollbar ? '4px' : '-4px'));
             activeTarget.style.marginRight = hasScrollbar ? '4px' : '-4px';
           }
         }
