@@ -83,7 +83,7 @@ const ExpenseApp = (() => {
         }
       });
 
-      navigator.serviceWorker.register('sw.js?v=32').then(function(reg) {
+      navigator.serviceWorker.register('sw.js?v=33').then(function(reg) {
         // 检测到 SW 更新 → 提示用户
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
@@ -115,7 +115,11 @@ const ExpenseApp = (() => {
     // 切换 view 显示
     document.querySelectorAll('.main-view').forEach(v => v.classList.remove('main-view--active'));
     const target = document.getElementById(`view-${viewId}`);
-    if (target) target.classList.add('main-view--active');
+    if (target) {
+      target.classList.add('main-view--active');
+      // 切 Tab 时回到顶部（否则会停留在上次的滚动位置，体验很反人类）
+      target.scrollTop = 0;
+    }
 
     // 切换 tab 高亮
     document.querySelectorAll('.tab-bar__item').forEach(t => t.classList.remove('tab-bar__item--active'));
