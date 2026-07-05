@@ -19,6 +19,9 @@ const ExpenseStats = (() => {
   // 环形图点击高亮：记录每个图表当前选中的扇区索引
   const _selectedArc = {}; // { canvasId: index | null }
 
+  // 环形图扇区元数据（用于点击后在圆环中心显示详情）
+  const _segmentMeta = {}; // { canvasId: [{ name, amount, pct, color, isHighest }, ...] }
+
   // 调色板
   const COLORS = [
     '#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE',
@@ -99,7 +102,9 @@ const ExpenseStats = (() => {
       <section class="stats-chart-section">
         <h2 class="stats-chart-section__title">分类占比</h2>
         <div class="stats-chart-wrapper">
-          <canvas id="stats-category-chart"></canvas>
+          <div class="stats-chart-canvas-wrap">
+            <canvas id="stats-category-chart"></canvas>
+          </div>
           <div id="stats-category-fallback" class="stats-fallback" style="display:none"></div>
         </div>
       </section>
@@ -117,7 +122,9 @@ const ExpenseStats = (() => {
       <section class="stats-chart-section">
         <h2 class="stats-chart-section__title">支付方式</h2>
         <div class="stats-chart-wrapper">
-          <canvas id="stats-payment-chart"></canvas>
+          <div class="stats-chart-canvas-wrap">
+            <canvas id="stats-payment-chart"></canvas>
+          </div>
           <div id="stats-payment-fallback" class="stats-fallback" style="display:none"></div>
         </div>
       </section>`;
@@ -213,7 +220,18 @@ const ExpenseStats = (() => {
     const labels = top8.map(c => `${c.icon} ${c.name}`);
     const data = top8.map(c => Math.round(c.total * 100) / 100);
 
-    _drawOrFallback('stats-category-chart', 'stats-category-fallback', labels, data, 'doughnut');
+    // 构建扇区元数据（用于点击后在环形图中心显示详情）
+    const total = data.reduce((s, v) => s + v, 0);
+    const maxTotal = top8.length > 0 ? Math.max(...top8.map(c => c.total)) : 0;
+    const meta = top8.map((c, i) => ({
+      name: c.name,
+      amount: Math.round(c.total),
+      pct: total > 0 ? Math.round(c.total / total * 100) : 0,
+      color: COLORS[i % COLORS.length],
+      isHighest: c.total === maxTotal && c.total > 0,
+    }));
+
+    _drawOrFallback('stats-category-chart', 'stats-category-fallback', labels, data, 'doughnut', meta);
   }
 
   /* -----------------------------------------------------------------
@@ -323,7 +341,18 @@ const ExpenseStats = (() => {
     const labels = sorted.map(c => c.name);
     const data = sorted.map(c => Math.round(c.total * 100) / 100);
 
-    _drawOrFallback('stats-payment-chart', 'stats-payment-fallback', labels, data, 'doughnut');
+    // 构建扇区元数据（用于点击后在环形图中心显示详情）
+    const total = data.reduce((s, v) => s + v, 0);
+    const maxTotal = sorted.length > 0 ? Math.max(...sorted.map(c => c.total)) : 0;
+    const meta = sorted.map((c, i) => ({
+      name: c.name,
+      amount: Math.round(c.total),
+      pct: total > 0 ? Math.round(c.total / total * 100) : 0,
+      color: COLORS[i % COLORS.length],
+      isHighest: c.total === maxTotal && c.total > 0,
+    }));
+
+    _drawOrFallback('stats-payment-chart', 'stats-payment-fallback', labels, data, 'doughnut', meta);
   }
 
   /* -----------------------------------------------------------------
@@ -337,8 +366,11 @@ const ExpenseStats = (() => {
       }
     });
     _charts = {};
-    // 清空环形图选中状态
+    // 清空环形图选中状态和元数据
     Object.keys(_selectedArc).forEach(k => { _selectedArc[k] = null; });
+    Object.keys(_segmentMeta).forEach(k => { delete _segmentMeta[k]; });
+    // 移除所有中心浮层
+    document.querySelectorAll('.stats-chart-center').forEach(function(el) { el.remove(); });
     // 同时清理 HTML 手绘图例
     document.querySelectorAll('.stats-chart-legend').forEach(function(el) { el.remove(); });
   }
@@ -387,6 +419,57 @@ const ExpenseStats = (() => {
     ds.borderWidth = new Array(dataLen).fill(2);
     ds.offset = offsets;
     chart.update('none');
+
+    // 同步更新圆环中心浮层
+    _renderCenterOverlay(canvasId, selIdx);
+  }
+
+  /** 确保画布容器内存在中心浮层 DOM（预创建，默认隐藏） */
+  function _ensureCenterOverlay(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const wrap = canvas.closest('.stats-chart-canvas-wrap');
+    if (!wrap) return;
+    // 避免重复创建
+    if (wrap.querySelector('.stats-chart-center')) return;
+    const el = document.createElement('div');
+    el.className = 'stats-chart-center';
+    el.style.display = 'none';
+    wrap.appendChild(el);
+  }
+
+  /** 根据选中扇区渲染圆环中心的详情浮层（selIdx 为 null 时隐藏） */
+  function _renderCenterOverlay(canvasId, selIdx) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const wrap = canvas.closest('.stats-chart-canvas-wrap');
+    if (!wrap) return;
+    const el = wrap.querySelector('.stats-chart-center');
+    if (!el) return;
+
+    // 取消选中 → 隐藏浮层
+    if (selIdx === null || selIdx === undefined) {
+      el.style.display = 'none';
+      el.innerHTML = '';
+      return;
+    }
+
+    const meta = _segmentMeta[canvasId];
+    if (!meta || selIdx >= meta.length) {
+      el.style.display = 'none';
+      return;
+    }
+
+    const seg = meta[selIdx];
+    el.innerHTML = `
+      <div class="stats-chart-center__name">${seg.name}</div>
+      <div class="stats-chart-center__amount" style="color:${seg.color}">
+        <span class="stats-chart-center__currency">¥</span><span class="stats-chart-center__number">${seg.amount}</span>
+      </div>
+      <div class="stats-chart-center__pct">占比 ${seg.pct}%</div>
+      ${seg.isHighest ? '<div class="stats-chart-center__badge">👑 本月支出最高</div>' : ''}
+    `;
+    el.style.display = 'flex';
   }
 
   // HTML 手绘图例：绕过 Chart.js 内置图例的 pointStyle 宽高不一致问题，
@@ -394,7 +477,9 @@ const ExpenseStats = (() => {
   function _renderHtmlLegend(canvasId, labels, data) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return;
-    var wrapper = canvas.parentElement;
+    // canvas 外层有 .stats-chart-canvas-wrap，图例要挂在 .stats-chart-wrapper 上
+    var wrapper = canvas.closest('.stats-chart-wrapper');
+    if (!wrapper) return;
     // 移除旧图例（重绘时）
     var oldLegend = wrapper.querySelector('.stats-chart-legend');
     if (oldLegend) oldLegend.remove();
@@ -413,7 +498,7 @@ const ExpenseStats = (() => {
     wrapper.appendChild(legendEl);
   }
 
-  function _drawOrFallback(canvasId, fallbackId, labels, data, type) {
+  function _drawOrFallback(canvasId, fallbackId, labels, data, type, meta) {
     // 先销毁该 ID 的旧图表
     if (_charts[canvasId]) {
       try { _charts[canvasId].destroy(); } catch (e) { /* ignore */ }
@@ -474,6 +559,10 @@ const ExpenseStats = (() => {
         // Chart.js 内置图例对 doughnut 的 pointStyle 渲染有宽高不一致问题，
         // 改用纯 HTML 手绘图例，CSS border-radius:50% 保真正圆
         _renderHtmlLegend(canvasId, labels, data);
+        // 存储扇区元数据（供点击中心浮层使用）
+        if (meta) _segmentMeta[canvasId] = meta;
+        // 预创建中心浮层 DOM（默认隐藏，选中扇区时显示）
+        _ensureCenterOverlay(canvasId);
       } else if (type === 'line') {
         _charts[canvasId] = new Chart(ctx, {
           type: 'line',

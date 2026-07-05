@@ -95,9 +95,78 @@
   justify-content: center;
 }
 
+.stats-chart-canvas-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .stats-chart-wrapper canvas {
   max-width: 280px;
   width: 100%;
+}
+
+/* -----------------------------------------------------------------
+   环形图中心浮层（点击扇区后显示分类/金额/占比/最高标记）
+   ----------------------------------------------------------------- */
+.stats-chart-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;       /* 不阻挡 canvas 点击事件 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  /* 轻微背景防止 canvas 颜色透出干扰文字可读性 */
+  background: rgba(255,255,255,0.85);
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+}
+
+.stats-chart-center__name {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+.stats-chart-center__amount {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  line-height: 1.2;
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+}
+
+.stats-chart-center__currency {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+
+.stats-chart-center__number {
+  /* 继承父级字号（较大） */
+}
+
+.stats-chart-center__pct {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.stats-chart-center__badge {
+  font-size: 10px;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin-top: 2px;
+  white-space: nowrap;
 }
 
 /* -----------------------------------------------------------------
