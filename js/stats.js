@@ -306,13 +306,14 @@ const ExpenseStats = (() => {
     sorted.slice(8).forEach(c => { otherTotal += c.total; });
     if (otherTotal > 0) top8.push({ name: '其他', icon: '📦', total: otherTotal });
 
-    const labels = top8.map(c => `${c.icon} ${c.name}`);
+    const labels = top8.map(c => c.name);
     const data = top8.map(c => Math.round(c.total * 100) / 100);
 
     // 构建扇区元数据（用于点击后在环形图中心显示详情）
     const total = data.reduce((s, v) => s + v, 0);
     const maxTotal = top8.length > 0 ? Math.max(...top8.map(c => c.total)) : 0;
     const meta = top8.map((c, i) => ({
+      icon: c.icon,
       name: c.name,
       amount: Math.round(c.total),
       pct: total > 0 ? Math.round(c.total / total * 100) : 0,
@@ -509,7 +510,7 @@ const ExpenseStats = (() => {
 
     // 构建 HTML
     var html = '';
-    html += '<div class="stats-tooltip__title" style="color:' + seg.color + '">' + seg.name + '</div>';
+    html += '<div class="stats-tooltip__title" style="color:' + seg.color + '">' + (seg.icon || '') + ' ' + seg.name + '</div>';
     html += '<div class="stats-tooltip__amount" style="color:' + seg.color + '"><span class="stats-tooltip__currency">¥</span>' + seg.amount.toLocaleString() + '</div>';
     html += '<div class="stats-tooltip__pct">占比 ' + seg.pct + '%</div>';
     if (seg.isHighest) {
