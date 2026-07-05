@@ -613,8 +613,18 @@ const ExpenseStats = (() => {
             plugins: {
               legend: { display: false },
               tooltip: {
-                // 点击后 tooltip 保持（通过 setActiveElements），移开鼠标也保持直到取消选中
+                // 实色白底 + 阴影，不透明；位置贴近扇区外侧，不遮挡圆环中心
+                backgroundColor: '#fff',
+                titleColor: '#333',
+                bodyColor: '#555',
+                borderColor: '#e0e0e0',
+                borderWidth: 1,
+                padding: 12,
+                cornerRadius: 8,
                 displayColors: false,
+                position: 'nearest',
+                titleAlign: 'center',
+                bodyAlign: 'center',
                 callbacks: {
                   title: function(items) {
                     const m = _segmentMeta[canvasId];
