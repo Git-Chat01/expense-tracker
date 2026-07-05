@@ -234,18 +234,30 @@
   gap: 10px;
   padding: 8px 4px;
   border-bottom: 1px solid #f0f0f0;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
 }
 
 .stats-chart-legend__item:last-child {
   border-bottom: none;
 }
 
+/* 动画进行中时禁用交互，防止用户连点导致错乱 */
+.stats-chart-legend--animating {
+  pointer-events: none;
+}
+
 .stats-chart-legend__item--active {
   background: #f0f4ff;
   border-radius: 8px;
-  margin: 0 -4px;
+  margin-left: -4px;
+  margin-right: -4px;
   padding-left: 8px;
   padding-right: 8px;
+}
+
+.stats-chart-legend__item--active:first-child {
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .stats-chart-legend__item--active .stats-chart-legend__name {

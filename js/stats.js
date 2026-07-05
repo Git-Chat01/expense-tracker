@@ -470,7 +470,7 @@ const ExpenseStats = (() => {
     }
 
     _applyArcSelection(chart, dataLen, canvasId);
-    _highlightLegendItem(canvasId, selIdx);
+    _animateLegend(canvasId, selIdx);
   }
 
   /** 手动显示 tooltip（不依赖 Chart.js 事件链，直接 DOM 操作） */
@@ -555,28 +555,86 @@ const ExpenseStats = (() => {
           }
         }
         // 同时清除对应图例的高亮
-        _highlightLegendItem(canvasId, null);
+        _animateLegend(canvasId, null);
       }
     });
   }
 
-  /** 图例高亮联动：选中饼图扇区时，对应图例行亮起，取消时全部恢复 */
-  function _highlightLegendItem(canvasId, index) {
+  /** 图例电梯动画 + 高亮联动。
+   *  FLIP 技术：先记录位置 → 改 DOM 顺序 → 用 transform 补偿 → 过渡归位。
+   *  选中扇区时对应图例行平滑升到最上面，取消时滑回原位。 */
+  function _animateLegend(canvasId, index) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return;
     var wrapper = canvas.closest('.stats-chart-wrapper');
     if (!wrapper) return;
     var legend = wrapper.querySelector('.stats-chart-legend');
     if (!legend) return;
-    var items = legend.querySelectorAll('.stats-chart-legend__item');
-    for (var i = 0; i < items.length; i++) {
-      if (i === index) {
-        items[i].classList.add('stats-chart-legend__item--active');
-      } else {
-        items[i].classList.remove('stats-chart-legend__item--active');
+
+    legend.classList.add('stats-chart-legend--animating');
+
+    // 清除所有高亮
+    var allItems = legend.querySelectorAll('.stats-chart-legend__item');
+    for (var i = 0; i < allItems.length; i++) {
+      allItems[i].classList.remove('stats-chart-legend__item--active');
+    }
+
+    // FIRST: 记录所有项目当前位置
+    var firsts = [];
+    for (var f = 0; f < allItems.length; f++) {
+      firsts.push(allItems[f].getBoundingClientRect().top);
+    }
+
+    // 改变 DOM 顺序
+    if (index !== null && index !== undefined) {
+      // 选中：把目标行挪到最顶
+      var target = legend.querySelector('.stats-chart-legend__item[data-idx="' + index + '"]');
+      if (target && legend.firstChild !== target) {
+        legend.insertBefore(target, legend.firstChild);
+      }
+      if (target) target.classList.add('stats-chart-legend__item--active');
+    } else {
+      // 取消：恢复原始顺序（按 data-idx 排序）
+      var sorted = [];
+      for (var s = 0; s < allItems.length; s++) {
+        sorted.push(allItems[s]);
+      }
+      sorted.sort(function(a, b) {
+        return (parseInt(a.getAttribute('data-idx')) || 0) - (parseInt(b.getAttribute('data-idx')) || 0);
+      });
+      for (var j = sorted.length - 1; j >= 0; j--) {
+        if (sorted[j] !== legend.firstChild || j > 0) {
+          legend.insertBefore(sorted[j], legend.firstChild);
+        }
       }
     }
-    // index 为 null/undefined 时全部取消高亮
+
+    // LAST: 记录新位置
+    var lasts = [];
+    var newItems = legend.querySelectorAll('.stats-chart-legend__item');
+    for (var l = 0; l < newItems.length; l++) {
+      lasts.push(newItems[l].getBoundingClientRect().top);
+    }
+
+    // INVERT: 用 transform 补偿位移差
+    for (var k = 0; k < newItems.length; k++) {
+      var delta = firsts[k] - lasts[k];
+      if (Math.abs(delta) > 0.5) {
+        newItems[k].style.transition = 'none';
+        newItems[k].style.transform = 'translateY(' + delta + 'px)';
+      }
+    }
+
+    // PLAY: 去掉 transform 让过渡动画把元素拉到新位置
+    requestAnimationFrame(function() {
+      requestAnimationFrame(function() {
+        for (var m = 0; m < newItems.length; m++) {
+          newItems[m].style.transition = '';
+          newItems[m].style.transform = '';
+        }
+        legend.classList.remove('stats-chart-legend--animating');
+      });
+    });
   }
 
   /** hex 颜色转 rgba，用于控制透明度 */
@@ -698,7 +756,7 @@ const ExpenseStats = (() => {
       var color = COLORS[i % COLORS.length];
       // 格式：¥1,200 — 带千分位
       var amountStr = '¥' + amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-      return '<div class="stats-chart-legend__item">'
+      return '<div class="stats-chart-legend__item" data-idx="' + i + '">'
         + '<span class="stats-chart-legend__dot" style="background:' + color + '"></span>'
         + '<span class="stats-chart-legend__name">' + label + '</span>'
         + '<span class="stats-chart-legend__pct">' + pct + '%</span>'
