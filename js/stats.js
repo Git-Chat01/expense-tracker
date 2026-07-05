@@ -482,12 +482,15 @@ const ExpenseStats = (() => {
       html += '<div class="stats-tooltip__divider"></div>';
       html += '<div class="stats-tooltip__badge">👑 最高支出</div>';
     }
+    // DIAG: 显示坐标到 tooltip 里
+    html += '<div style="font-size:8px;color:#999;margin-top:4px">diag: ' + canvasId + '</div>';
     el.innerHTML = html;
     // DIAG: 临时背景色标记来源
     el.style.backgroundColor = diagBg;
 
-    // 定位：基于当前 chart 的 canvas，获取选中 arc 的中心坐标
-    var pos = chart.canvas.getBoundingClientRect();
+    // 定位：用 document.getElementById 直接取 canvas（不依赖 chart.canvas 引用）
+    var realCanvas = document.getElementById(canvasId);
+    var pos = realCanvas ? realCanvas.getBoundingClientRect() : chart.canvas.getBoundingClientRect();
     var arc = chart.getDatasetMeta(0).data[index];
     var cx = pos.left + window.scrollX + (arc.x || pos.width / 2);
     var cy = pos.top + window.scrollY + (arc.y || pos.height / 2);
