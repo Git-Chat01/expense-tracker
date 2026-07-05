@@ -472,8 +472,6 @@ const ExpenseStats = (() => {
     }
 
     // 构建 HTML
-    var isPayment = canvasId.indexOf('payment') >= 0;
-    var diagBg = isPayment ? '#e8f5e9' : '#e3f2fd'; // 绿色=支付，蓝色=分类（诊断用）
     var html = '';
     html += '<div class="stats-tooltip__title" style="color:' + seg.color + '">' + seg.name + '</div>';
     html += '<div class="stats-tooltip__amount" style="color:' + seg.color + '"><span class="stats-tooltip__currency">¥</span>' + seg.amount.toLocaleString() + '</div>';
@@ -482,11 +480,7 @@ const ExpenseStats = (() => {
       html += '<div class="stats-tooltip__divider"></div>';
       html += '<div class="stats-tooltip__badge">👑 最高支出</div>';
     }
-    // DIAG: 显示坐标到 tooltip 里
-    html += '<div style="font-size:8px;color:#999;margin-top:4px">diag: ' + canvasId + '</div>';
     el.innerHTML = html;
-    // DIAG: 临时背景色标记来源
-    el.style.backgroundColor = diagBg;
 
     // 定位：用 document.getElementById 直接取 canvas（不依赖 chart.canvas 引用）
     var realCanvas = document.getElementById(canvasId);
