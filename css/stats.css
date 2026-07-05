@@ -165,6 +165,7 @@
   z-index: 9999;
   background: #fff;
   border: 1px solid #e0e0e0;
+  border-left: 3px solid var(--tooltip-color, #5470C6);
   border-radius: 12px;
   padding: 14px 18px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);

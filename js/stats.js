@@ -518,6 +518,9 @@ const ExpenseStats = (() => {
     }
     el.innerHTML = html;
 
+    // 左侧色条跟扇区同色，增强视觉关联
+    el.style.setProperty('--tooltip-color', seg.color);
+
     // 定位：用 document.getElementById 直接取 canvas（不依赖 chart.canvas 引用）
     var realCanvas = document.getElementById(canvasId);
     var pos = realCanvas ? realCanvas.getBoundingClientRect() : chart.canvas.getBoundingClientRect();
@@ -526,9 +529,9 @@ const ExpenseStats = (() => {
     var cx = pos.left + (arc.x || pos.width / 2);
     var cy = pos.top + (arc.y || pos.height / 2);
 
-    // 向外偏移（沿 arc 中点角度的方向）
+    // 向外偏移（沿 arc 中点角度的方向），紧贴圆环外
     var midAngle = (arc.startAngle + arc.endAngle) / 2;
-    var outerR = (arc.outerRadius || 0) + 16; // 稍微超出圆环外
+    var outerR = (arc.outerRadius || 0) + 6; // 仅超出圆环 6px，保持亲近感
     var offsetX = Math.cos(midAngle) * outerR;
     var offsetY = Math.sin(midAngle) * outerR;
 
