@@ -225,7 +225,7 @@
   margin-top: var(--space-md);
   width: 100%;
   max-height: 200px;
-  overflow-y: hidden;        /* 默认隐藏滚动条，等亮块缩好再放出来 */
+  overflow-y: auto;
   /* 微浮雕效果 — 和 tooltip 详情页风格统一，不用硬边框 */
   border-radius: 8px;
   padding: 4px 8px;
@@ -274,16 +274,12 @@
   margin-right: -4px;
   padding-left: 8px;
   padding-right: 8px;
+  transition: margin-right 0.2s ease;
 }
 
-/* 有滚动条 → 亮块每次出现都从满宽开始收缩，动画比滚动条快一步 */
+/* 有滚动条 → 亮块缩短，避免和滚动条重叠 */
 .stats-chart-legend--scrolling .stats-chart-legend__item--active {
-  animation: legend-shrink 0.2s ease forwards;
-}
-
-@keyframes legend-shrink {
-  from { margin-right: -4px; }
-  to   { margin-right:  4px; }
+  margin-right: 4px;
 }
 
 .stats-chart-legend__item--active:first-child {
