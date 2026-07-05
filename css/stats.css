@@ -224,7 +224,7 @@
 .stats-chart-legend {
   margin-top: var(--space-md);
   width: 100%;
-  max-height: 320px;
+  max-height: 200px;
   overflow-y: auto;
 }
 
