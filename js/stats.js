@@ -481,7 +481,10 @@ const ExpenseStats = (() => {
     ds.borderColor = dataLen > 0 ? new Array(dataLen).fill('#fff') : [];
     ds.borderWidth = new Array(dataLen).fill(2);
     ds.offset = offsets;
-    chart.update('none');
+
+    // 选中时用 'active' 模式确保 external tooltip 回调被触发
+    // 取消选中时用 'none' 过渡（tooltip 已手动隐藏）
+    chart.update(selIdx !== null && selIdx !== undefined ? 'active' : 'none');
 
     // 中心始终显示总支出 + 对比（click 不会改变）
     _renderCenterTotal(canvasId);
