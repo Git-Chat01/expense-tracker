@@ -287,14 +287,18 @@
   font-weight: 600;
   color: var(--color-text-primary);
   white-space: nowrap;
+  width: 80px;
+  text-align: right;
+  flex-shrink: 0;
 }
 
 .stats-chart-legend__pct {
   font-size: var(--font-size-xs);
   color: var(--color-text-tertiary);
-  min-width: 36px;
+  width: 42px;
   text-align: right;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* -----------------------------------------------------------------
