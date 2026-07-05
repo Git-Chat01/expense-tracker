@@ -165,7 +165,6 @@
   z-index: 9999;
   background: #fff;
   border: 1px solid #e0e0e0;
-  border-left: 3px solid var(--tooltip-color, #5470C6);
   border-radius: 12px;
   padding: 14px 18px;
   box-shadow: 0 4px 16px rgba(0,0,0,0.12);
@@ -174,6 +173,19 @@
   opacity: 0;
   transition: opacity 0.12s ease;
   min-width: 100px;
+  overflow: hidden;
+}
+
+/* 左侧色条 — 跟扇区同色，视觉上把 tooltip 和饼图扇区锚定在一起 */
+.stats-tooltip::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--tooltip-color, #5470C6);
+  border-radius: 12px 0 0 12px;
 }
 
 .stats-tooltip__title {
