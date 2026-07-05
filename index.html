@@ -7,16 +7,16 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="消费轨迹">
-  <link rel="apple-touch-icon" href="icon-192.png?v=35">
+  <link rel="apple-touch-icon" href="icon-192.png?v=36">
   <link rel="manifest" href="manifest.json?v=1">
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=35">
-  <link rel="stylesheet" href="css/home.css?v=35">
-  <link rel="stylesheet" href="css/add.css?v=35">
-  <link rel="stylesheet" href="css/list.css?v=35">
-  <link rel="stylesheet" href="css/stats.css?v=35">
+  <link rel="stylesheet" href="css/common.css?v=36">
+  <link rel="stylesheet" href="css/home.css?v=36">
+  <link rel="stylesheet" href="css/add.css?v=36">
+  <link rel="stylesheet" href="css/list.css?v=36">
+  <link rel="stylesheet" href="css/stats.css?v=36">
 </head>
 <body>
 
@@ -114,7 +114,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260706-29 · 修复切Tab滚动重置：延迟到render+双重rAF后执行
+      v20260706-30 · 四连击强制滚回顶部：立即+rAF+rAF+setTimeout
     </div>
   </main>
 
@@ -418,13 +418,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=35"></script>
-<script src="js/data.js?v=35"></script>
-<script src="js/home.js?v=35"></script>
-<script src="js/categories.js?v=35"></script>
-<script src="js/list.js?v=35"></script>
-<script src="js/stats.js?v=35"></script>
-<script src="js/app.js?v=35"></script>
+<script src="js/storage.js?v=36"></script>
+<script src="js/data.js?v=36"></script>
+<script src="js/home.js?v=36"></script>
+<script src="js/categories.js?v=36"></script>
+<script src="js/list.js?v=36"></script>
+<script src="js/stats.js?v=36"></script>
+<script src="js/app.js?v=36"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">

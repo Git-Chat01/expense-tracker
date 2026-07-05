@@ -83,7 +83,7 @@ const ExpenseApp = (() => {
         }
       });
 
-      navigator.serviceWorker.register('sw.js?v=35').then(function(reg) {
+      navigator.serviceWorker.register('sw.js?v=36').then(function(reg) {
         // 检测到 SW 更新 → 提示用户
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
@@ -109,12 +109,15 @@ const ExpenseApp = (() => {
 
   /** 将视图及其内部所有嵌套滚动容器滚回顶部。
    *  部分页面（统计、账单列表）有 stats-container / list-content 等内层
-   *  overflow-y:auto 容器，光滚 main-view 不够，需要递归清理所有子级的 scrollTop。 */
+   *  overflow-y:auto 容器，光滚 main-view 不够，需要递归清理所有子级的 scrollTop。
+   *  同时用 scrollTop 和 scrollTo(0,0) 双保险（部分浏览器两者行为有差异）。 */
   function _scrollViewToTop(viewEl) {
     viewEl.scrollTop = 0;
+    viewEl.scrollTo(0, 0);
     var all = viewEl.getElementsByTagName('*');
     for (var i = 0; i < all.length; i++) {
-      if (all[i].scrollTop > 0) all[i].scrollTop = 0;
+      all[i].scrollTop = 0;
+      try { all[i].scrollTo(0, 0); } catch (e) { /* ignore */ }
     }
   }
 
@@ -152,14 +155,20 @@ const ExpenseApp = (() => {
       if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
     }
 
-    // 切 Tab 后回到顶部。必须在 render 之后执行，因为：
-    // 1. render 可能触发布局变化（图表绘制等）
-    // 2. 浏览器从 display:none → display:flex 后会异步恢复滚动位置
-    // 用双重 rAF 确保在浏览器完成所有布局和滚动恢复后再清零
+    // 切 Tab 后强制回到顶部。多时间点反复清零，因为：
+    // - display:none→flex 后浏览器会异步恢复旧滚动位置（DOM 级别，晚于微任务）
+    // - 移动端 Safari 的滚动恢复甚至可能在 rAF 之后
+    // - render() 中的 DOM 操作也可能引起额外布局
+    // 策略：立即 + rAF + rAF + setTimeout(100ms) 四连击，确保最终归零
     if (target) {
+      _scrollViewToTop(target);
       requestAnimationFrame(function () {
+        _scrollViewToTop(target);
         requestAnimationFrame(function () {
           _scrollViewToTop(target);
+          setTimeout(function () {
+            _scrollViewToTop(target);
+          }, 100);
         });
       });
     }
