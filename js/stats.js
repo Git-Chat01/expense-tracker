@@ -25,6 +25,9 @@ const ExpenseStats = (() => {
   // 当前时段的汇总对比数据（用于环形图中心总支出显示）
   let _periodSummary = null; // { currentTotal, prevTotal, changePct, label, compareLabel }
 
+  // 滚动关闭 tooltip 的监听器是否已绑定（只绑一次，避免重复）
+  let _scrollDismissBound = false;
+
   // 调色板
   const COLORS = [
     '#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE',
@@ -133,6 +136,18 @@ const ExpenseStats = (() => {
 
     // 确保动态区域结构存在（如果之前被空状态替换了，需要重建）
     _ensureDynamicStructure();
+
+    // 首次渲染时绑定滚动关闭 tooltip 的监听器（只绑一次）
+    if (!_scrollDismissBound) {
+      _scrollDismissBound = true;
+      // stats-container 有自己的 overflow-y:auto，是最主要的滚动源
+      var container = document.querySelector('.stats-container');
+      if (container) {
+        container.addEventListener('scroll', _dismissTooltip, { passive: true });
+      }
+      // 移动端 window 滚动也需要兜底
+      window.addEventListener('scroll', _dismissTooltip, { passive: true });
+    }
 
     _renderCategoryChart(expenses);
     _renderTrendChart(from, to);
@@ -515,6 +530,31 @@ const ExpenseStats = (() => {
 
     el.style.left = left + 'px';
     el.style.top = top + 'px';
+  }
+
+  /** 滚动时关闭 tooltip，同时重置所有环形图的选中状态。
+   *  避免 tooltip 跟着视口跑、和饼图脱节的尴尬体验。 */
+  function _dismissTooltip() {
+    var tip = document.getElementById('stats-tooltip');
+    // 如果 tooltip 本来就是隐藏的，跳过（避免不必要的 DOM/图表操作）
+    if (!tip || tip.style.opacity === '0') return;
+
+    tip.style.opacity = '0';
+
+    // 重置所有图表的选中状态，恢复正常的扇区颜色
+    Object.keys(_selectedArc).forEach(function(canvasId) {
+      if (_selectedArc[canvasId] !== null && _selectedArc[canvasId] !== undefined) {
+        _selectedArc[canvasId] = null;
+        var chart = _charts[canvasId];
+        if (chart) {
+          chart.setActiveElements([]);
+          var meta = chart.getDatasetMeta(0);
+          if (meta && meta.data) {
+            _applyArcSelection(chart, meta.data.length, canvasId);
+          }
+        }
+      }
+    });
   }
 
   /** hex 颜色转 rgba，用于控制透明度 */
