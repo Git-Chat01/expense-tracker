@@ -445,14 +445,74 @@ const ExpenseStats = (() => {
     const selIdx = _selectedArc[canvasId];
     if (selIdx !== null && selIdx !== undefined) {
       chart.setActiveElements([{ datasetIndex: 0, index: selIdx }]);
+      // 不依赖 Chart.js 事件链触发 external 回调（update 不会触发 afterEvent），
+      // 而是直接手动构建并显示 tooltip，确保定位使用当前 chart 的 canvas
+      _showTooltipManually(canvasId, chart, selIdx);
     } else {
       chart.setActiveElements([]);
-      // 手动隐藏 tooltip DOM，避免 Chart.js 未及时触发 external 回调
       var tip = document.getElementById('stats-tooltip');
       if (tip) tip.style.opacity = '0';
     }
 
     _applyArcSelection(chart, dataLen, canvasId);
+  }
+
+  /** 手动显示 tooltip（不依赖 Chart.js 事件链，直接 DOM 操作） */
+  function _showTooltipManually(canvasId, chart, index) {
+    var meta = _segmentMeta[canvasId];
+    if (!meta || !meta[index]) return;
+
+    var seg = meta[index];
+    var el = document.getElementById('stats-tooltip');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'stats-tooltip';
+      el.className = 'stats-tooltip';
+      document.body.appendChild(el);
+    }
+
+    // 构建 HTML（与 _externalTooltip 一致）
+    var html = '';
+    html += '<div class="stats-tooltip__title" style="color:' + seg.color + '">' + seg.name + '</div>';
+    html += '<div class="stats-tooltip__amount" style="color:' + seg.color + '"><span class="stats-tooltip__currency">¥</span>' + seg.amount.toLocaleString() + '</div>';
+    html += '<div class="stats-tooltip__pct">占比 ' + seg.pct + '%</div>';
+    if (seg.isHighest) {
+      html += '<div class="stats-tooltip__divider"></div>';
+      html += '<div class="stats-tooltip__badge">👑 最高支出</div>';
+    }
+    el.innerHTML = html;
+
+    // 定位：基于当前 chart 的 canvas，获取选中 arc 的中心坐标
+    var pos = chart.canvas.getBoundingClientRect();
+    var arc = chart.getDatasetMeta(0).data[index];
+    var cx = pos.left + window.scrollX + (arc.x || pos.width / 2);
+    var cy = pos.top + window.scrollY + (arc.y || pos.height / 2);
+
+    // 向外偏移（沿 arc 中点角度的方向）
+    var midAngle = (arc.startAngle + arc.endAngle) / 2;
+    var outerR = (arc.outerRadius || 0) + 16; // 稍微超出圆环外
+    var offsetX = Math.cos(midAngle) * outerR;
+    var offsetY = Math.sin(midAngle) * outerR;
+
+    el.style.display = 'block';
+    el.style.opacity = '1';
+    // 先显示才能量尺寸
+    var left = cx + offsetX;
+    var top = cy + offsetY;
+    // 根据 tooltip 在目标点哪一侧微调
+    var tw = el.offsetWidth;
+    var th = el.offsetHeight;
+    if (offsetX < 0) left -= tw;      // 目标在左侧，tooltip 向右对齐
+    if (offsetY < 0) top -= th;       // 目标在上方，tooltip 向下对齐
+
+    // 不超出视口
+    if (left < 8) left = 8;
+    if (top < 8) top = 8;
+    if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+    if (top + th > window.innerHeight - 8) top = window.innerHeight - th - 8;
+
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
   }
 
   /** hex 颜色转 rgba，用于控制透明度 */
@@ -481,10 +541,7 @@ const ExpenseStats = (() => {
     ds.borderColor = dataLen > 0 ? new Array(dataLen).fill('#fff') : [];
     ds.borderWidth = new Array(dataLen).fill(2);
     ds.offset = offsets;
-
-    // 选中时用 'active' 模式确保 external tooltip 回调被触发
-    // 取消选中时用 'none' 过渡（tooltip 已手动隐藏）
-    chart.update(selIdx !== null && selIdx !== undefined ? 'active' : 'none');
+    chart.update('none');
 
     // 中心始终显示总支出 + 对比（click 不会改变）
     _renderCenterTotal(canvasId);
