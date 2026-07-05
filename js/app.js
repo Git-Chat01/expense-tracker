@@ -83,7 +83,7 @@ const ExpenseApp = (() => {
         }
       });
 
-      navigator.serviceWorker.register('sw.js?v=34').then(function(reg) {
+      navigator.serviceWorker.register('sw.js?v=35').then(function(reg) {
         // 检测到 SW 更新 → 提示用户
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
@@ -127,11 +127,7 @@ const ExpenseApp = (() => {
     // 切换 view 显示
     document.querySelectorAll('.main-view').forEach(v => v.classList.remove('main-view--active'));
     const target = document.getElementById(`view-${viewId}`);
-    if (target) {
-      target.classList.add('main-view--active');
-      // 切 Tab 时回到顶部（同时处理像 stats-container / list-content 等嵌套滚动容器）
-      _scrollViewToTop(target);
-    }
+    if (target) target.classList.add('main-view--active');
 
     // 切换 tab 高亮
     document.querySelectorAll('.tab-bar__item').forEach(t => t.classList.remove('tab-bar__item--active'));
@@ -154,6 +150,18 @@ const ExpenseApp = (() => {
       if (typeof ExpenseList !== 'undefined') ExpenseList.render();
     } else if (viewId === 'stats') {
       if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
+    }
+
+    // 切 Tab 后回到顶部。必须在 render 之后执行，因为：
+    // 1. render 可能触发布局变化（图表绘制等）
+    // 2. 浏览器从 display:none → display:flex 后会异步恢复滚动位置
+    // 用双重 rAF 确保在浏览器完成所有布局和滚动恢复后再清零
+    if (target) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          _scrollViewToTop(target);
+        });
+      });
     }
   }
 
