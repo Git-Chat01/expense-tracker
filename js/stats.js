@@ -11,7 +11,7 @@ const ExpenseStats = (() => {
   /* -----------------------------------------------------------------
      状态
      ----------------------------------------------------------------- */
-  let _period = 'month'; // 'month' | '3month' | '12month'
+  let _period = 'month'; // 'day' | 'week' | 'month' | '3month' | '12month'
 
   // Chart.js 实例引用（用于销毁重绘）
   let _charts = {};
@@ -45,7 +45,14 @@ const ExpenseStats = (() => {
     const todayStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
     let from;
-    if (_period === 'month') {
+    if (_period === 'day') {
+      from = todayStr;
+    } else if (_period === 'week') {
+      // 近 7 天（含今天）
+      const wd = new Date(y, m - 1, d);
+      wd.setDate(wd.getDate() - 6);
+      from = _ymd(wd);
+    } else if (_period === 'month') {
       from = `${y}-${String(m).padStart(2, '0')}-01`;
     } else if (_period === '3month') {
       // 近 3 个月：当前月 + 往前 2 个月 = 3 个完整月份
@@ -61,7 +68,7 @@ const ExpenseStats = (() => {
   }
 
   function _periodLabel() {
-    return { month: '本月', '3month': '近 3 个月', '12month': '近 12 个月' }[_period] || '本月';
+    return { day: '今日', week: '本周', month: '本月', '3month': '近 3 个月', '12month': '近 12 个月' }[_period] || '本月';
   }
 
   /** 日期 → "YYYY-MM-DD" 字符串 */
@@ -73,9 +80,22 @@ const ExpenseStats = (() => {
   function _calcPeriodSummary(currentExpenses, currentFrom, currentTo) {
     const currentTotal = currentExpenses.reduce((sum, e) => sum + e.amount, 0);
     const [fy, fm] = currentFrom.split('-').map(Number);
+    const fd = parseInt(currentTo.split('-')[2], 10);
     let prevFrom, prevTo;
 
-    if (_period === 'month') {
+    if (_period === 'day') {
+      // 昨天
+      const yesterday = new Date(fy, fm - 1, fd - 1);
+      prevFrom = _ymd(yesterday);
+      prevTo = _ymd(yesterday);
+    } else if (_period === 'week') {
+      // 上周（前 7 天）
+      const prevLast = new Date(fy, fm - 1, fd - 7);
+      prevTo = _ymd(prevLast);
+      const prevFirst = new Date(prevLast);
+      prevFirst.setDate(prevFirst.getDate() - 6);
+      prevFrom = _ymd(prevFirst);
+    } else if (_period === 'month') {
       // 上个月：1号 ~ 月末
       const prevLast = new Date(fy, fm - 1, 0);
       prevTo = _ymd(prevLast);
@@ -108,7 +128,7 @@ const ExpenseStats = (() => {
       prevTotal: Math.round(prevTotal),
       changePct,
       label: _periodLabel(),
-      compareLabel: { month: '上月', '3month': '上季度', '12month': '上年' }[_period],
+      compareLabel: { day: '昨日', week: '上周', month: '上月', '3month': '上季度', '12month': '上年' }[_period],
     };
   }
 
