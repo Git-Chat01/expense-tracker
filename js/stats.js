@@ -518,12 +518,14 @@ const ExpenseStats = (() => {
 
     const sign = s.changePct > 0 ? '+' : '';
     const arrow = s.changePct > 0 ? '↑' : (s.changePct < 0 ? '↓' : '→');
+    // "较上月"固定文字保持中性色，后面的箭头/±/百分比走红涨绿跌
+    const changeColor = s.changePct > 0 ? '#ee6666' : (s.changePct < 0 ? '#91cc75' : '');
 
     el.innerHTML = `
       <div class="stats-chart-center__label">${s.label}总支出</div>
       <div class="stats-chart-center__total"><span class="stats-chart-center__currency">¥</span>${s.currentTotal.toLocaleString()}</div>
       <div class="stats-chart-center__compare">
-        较${s.compareLabel} ${arrow}${sign}${Math.abs(s.changePct)}%
+        较${s.compareLabel} <span style="color:${changeColor}">${arrow}${sign}${Math.abs(s.changePct)}%</span>
       </div>
     `;
     el.style.display = 'flex';
