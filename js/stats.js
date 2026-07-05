@@ -792,20 +792,28 @@ const ExpenseStats = (() => {
         + '</div>';
     }).join('');
     wrapper.appendChild(legendEl);
-    // 监听滚动：拖动时亮块内缩，松手停稳后弹回
-    _bindLegendScroll(legendEl);
+    // 检测内容是否溢出，溢出则先缩亮块再放滚动条
+    _anticipateScrollbar(legendEl);
   }
 
-  /** 监听图例滚动 — 滚动中加 --scrolling 类让亮块内缩，停稳 500ms 后恢复 */
-  function _bindLegendScroll(legendEl) {
+  /**
+   * 滚动条预期出现/消失时的亮块协调动画：
+   * - 溢出时：亮块先内缩（0.2s），动画跑到一半（100ms）再出滚动条 → 视觉上亮块"提前让位"
+   * - 不溢出：亮块保持满宽，不启动动画
+   */
+  function _anticipateScrollbar(legendEl) {
     if (!legendEl) return;
-    var scrollTimer = null;
-    legendEl.addEventListener('scroll', function() {
-      if (scrollTimer) clearTimeout(scrollTimer);
-      legendEl.classList.add('stats-chart-legend--scrolling');
-      scrollTimer = setTimeout(function() {
-        legendEl.classList.remove('stats-chart-legend--scrolling');
-      }, 500);
+    // 等浏览器完成布局
+    requestAnimationFrame(function() {
+      if (legendEl.scrollHeight > legendEl.clientHeight) {
+        // 内容溢出 → 亮块先缩
+        legendEl.classList.add('stats-chart-legend--scrolling');
+        // 100ms 后亮块已明显内缩，此时放滚动条不显突兀
+        setTimeout(function() {
+          legendEl.style.overflowY = 'auto';
+        }, 100);
+      }
+      // 不溢出 → overflow-y 保持 hidden，无滚动条，亮块满宽
     });
   }
 
