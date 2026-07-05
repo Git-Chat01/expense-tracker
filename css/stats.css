@@ -122,11 +122,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  background: rgba(255,255,255,0.9);
-  border-radius: 50%;
-  width: 96px;
-  height: 96px;
+  gap: 2px;
+  /* 无背景无边框，纯文字悬浮，不遮挡 tooltip */
+  width: 90px;
+  height: 90px;
 }
 
 .stats-chart-center__label {
