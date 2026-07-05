@@ -530,6 +530,71 @@ const ExpenseStats = (() => {
     el.style.display = 'flex';
   }
 
+  /** 自定义 HTML tooltip（替换内置 tooltip，实现分行颜色 + 小 ¥ + 分隔线） */
+  function _externalTooltip(canvasId, context) {
+    const tooltipModel = context.tooltip;
+    const chart = context.chart;
+
+    // 获取或创建 tooltip DOM 元素
+    let el = document.getElementById('stats-tooltip');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'stats-tooltip';
+      el.className = 'stats-tooltip';
+      document.body.appendChild(el);
+    }
+
+    // tooltip 不可见 → 隐藏
+    if (tooltipModel.opacity === 0) {
+      el.style.opacity = '0';
+      return;
+    }
+
+    // 获取扇区元数据
+    const pts = tooltipModel.dataPoints;
+    if (!pts || !pts.length) { el.style.opacity = '0'; return; }
+    const idx = pts[0].dataIndex;
+    const meta = _segmentMeta[canvasId];
+    const seg = meta ? meta[idx] : null;
+    if (!seg) { el.style.opacity = '0'; return; }
+
+    // 构建 HTML
+    let html = '';
+    html += `<div class="stats-tooltip__title" style="color:${seg.color}">${seg.name}</div>`;
+    html += `<div class="stats-tooltip__amount" style="color:${seg.color}"><span class="stats-tooltip__currency">¥</span>${seg.amount.toLocaleString()}</div>`;
+    html += `<div class="stats-tooltip__pct">占比 ${seg.pct}%</div>`;
+    if (seg.isHighest) {
+      html += `<div class="stats-tooltip__divider"></div>`;
+      html += `<div class="stats-tooltip__badge">👑 最高支出</div>`;
+    }
+    el.innerHTML = html;
+
+    // 计算位置：canvas 坐标 → 页面坐标
+    const pos = chart.canvas.getBoundingClientRect();
+    let left = pos.left + window.scrollX + tooltipModel.caretX;
+    let top = pos.top + window.scrollY + tooltipModel.caretY;
+
+    // 根据对齐方向偏移，避免 tooltip 遮挡光标/扇区
+    el.style.display = 'block';
+    el.style.opacity = '1';
+    // 先显示才能读取尺寸
+    const tw = el.offsetWidth;
+    const th = el.offsetHeight;
+    if (tooltipModel.xAlign === 'left')  left -= tw + 8;
+    if (tooltipModel.xAlign === 'right') left += 8;
+    if (tooltipModel.yAlign === 'top')   top -= th + 8;
+    if (tooltipModel.yAlign === 'bottom') top += 8;
+
+    // 不超出视口
+    if (left < 8) left = 8;
+    if (top < 8) top = 8;
+    if (left + tw > window.innerWidth - 8)  left = window.innerWidth - tw - 8;
+    if (top + th > window.innerHeight - 8)  top = window.innerHeight - th - 8;
+
+    el.style.left = left + 'px';
+    el.style.top = top + 'px';
+  }
+
   // HTML 手绘图例：绕过 Chart.js 内置图例的 pointStyle 宽高不一致问题，
   // 用 CSS border-radius:50% 渲染真正的正圆
   function _renderHtmlLegend(canvasId, labels, data) {
@@ -613,32 +678,10 @@ const ExpenseStats = (() => {
             plugins: {
               legend: { display: false },
               tooltip: {
-                // 实色白底 + 阴影，不透明；位置贴近扇区外侧，不遮挡圆环中心
-                backgroundColor: '#fff',
-                titleColor: '#333',
-                bodyColor: '#555',
-                borderColor: '#e0e0e0',
-                borderWidth: 1,
-                padding: 12,
-                cornerRadius: 8,
-                displayColors: false,
+                enabled: false,   // 关闭内置 tooltip，改用 external 自定义 HTML
                 position: 'nearest',
-                titleAlign: 'center',
-                bodyAlign: 'center',
-                callbacks: {
-                  title: function(items) {
-                    const m = _segmentMeta[canvasId];
-                    const seg = m ? m[items[0].dataIndex] : null;
-                    return seg ? seg.name : items[0].label;
-                  },
-                  label: function(context) {
-                    const m = _segmentMeta[canvasId];
-                    const seg = m ? m[context.dataIndex] : null;
-                    if (!seg) return '¥' + context.raw;
-                    var lines = ['¥' + seg.amount, '占比 ' + seg.pct + '%'];
-                    if (seg.isHighest) lines.push('👑 最高支出');
-                    return lines;
-                  }
+                external: function(context) {
+                  _externalTooltip(canvasId, context);
                 }
               },
             },
