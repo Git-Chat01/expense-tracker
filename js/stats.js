@@ -612,10 +612,11 @@ const ExpenseStats = (() => {
 
     legend.classList.add('stats-chart-legend--animating');
 
-    // 清除所有高亮
+    // 清除所有高亮 + 内联 margin
     var allItems = legend.querySelectorAll('.stats-chart-legend__item');
     for (var i = 0; i < allItems.length; i++) {
       allItems[i].classList.remove('stats-chart-legend__item--active');
+      allItems[i].style.marginRight = '';  // 重置内联 margin
     }
 
     // FIRST: 记录所有项目当前位置
@@ -631,7 +632,12 @@ const ExpenseStats = (() => {
       if (target && legend.firstChild !== target) {
         legend.insertBefore(target, legend.firstChild);
       }
-      if (target) target.classList.add('stats-chart-legend__item--active');
+      if (target) {
+        target.classList.add('stats-chart-legend__item--active');
+        // 有滚动条 → 亮块缩短（避免重叠），无滚动条 → 亮块满宽
+        // 直接设内联 marginRight，transition 自动播动画
+        target.style.marginRight = (legend.scrollHeight > legend.clientHeight) ? '4px' : '-4px';
+      }
     } else {
       // 取消：恢复原始顺序（按 data-idx 排序）
       var sorted = [];
@@ -803,20 +809,6 @@ const ExpenseStats = (() => {
         + '</div>';
     }).join('');
     wrapper.appendChild(legendEl);
-    // 检测溢出 → 切换 --scrolling 类（驱动亮块伸缩过渡动画）
-    _syncScrollbarState(legendEl);
-  }
-
-  /** 根据内容是否溢出切换 --scrolling 类，触发亮块 margin-right 过渡 */
-  function _syncScrollbarState(legendEl) {
-    if (!legendEl) return;
-    requestAnimationFrame(function() {
-      if (legendEl.scrollHeight > legendEl.clientHeight) {
-        legendEl.classList.add('stats-chart-legend--scrolling');
-      } else {
-        legendEl.classList.remove('stats-chart-legend--scrolling');
-      }
-    });
   }
 
   function _drawOrFallback(canvasId, fallbackId, labels, data, type, meta) {

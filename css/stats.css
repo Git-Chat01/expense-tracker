@@ -275,11 +275,9 @@
   padding-left: 8px;
   padding-right: 8px;
   transition: margin-right 0.2s ease;
-}
-
-/* 有滚动条 → 亮块缩短，避免和滚动条重叠 */
-.stats-chart-legend--scrolling .stats-chart-legend__item--active {
-  margin-right: 4px;
+  /* margin-right 由 JS 根据滚动条状态动态设置：
+     -4px（满宽，无滚动条）↔ 4px（缩短，有滚动条）
+     transition 负责平滑过渡 */
 }
 
 .stats-chart-legend__item--active:first-child {
