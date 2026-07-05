@@ -840,5 +840,5 @@ const ExpenseStats = (() => {
   /* =================================================================
      公开 API
      ================================================================= */
-  return { render, setPeriod, initPeriodSelector };
+  return { render, setPeriod, initPeriodSelector, dismissTooltip: _dismissTooltip };
 })();

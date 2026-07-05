@@ -83,7 +83,7 @@ const ExpenseApp = (() => {
         }
       });
 
-      navigator.serviceWorker.register('sw.js?v=31').then(function(reg) {
+      navigator.serviceWorker.register('sw.js?v=32').then(function(reg) {
         // 检测到 SW 更新 → 提示用户
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
@@ -107,6 +107,11 @@ const ExpenseApp = (() => {
      Tab 导航
      ----------------------------------------------------------------- */
   function navigate(viewId) {
+    // 离开统计页时关闭 tooltip（否则 tooltip 是挂在 body 上的，不会随页面切换消失）
+    if (_currentView === 'stats' && viewId !== 'stats' && typeof ExpenseStats !== 'undefined') {
+      ExpenseStats.dismissTooltip();
+    }
+
     // 切换 view 显示
     document.querySelectorAll('.main-view').forEach(v => v.classList.remove('main-view--active'));
     const target = document.getElementById(`view-${viewId}`);
