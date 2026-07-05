@@ -94,8 +94,8 @@ const ExpenseStats = (() => {
     let dyn = document.getElementById('stats-dynamic');
     if (!dyn) return;
 
-    // 如果已经有 canvas 元素，说明结构完好，无需重建
-    if (document.getElementById('stats-category-chart')) return;
+    // 结构和包裹层都齐全才跳过重建（旧版 DOM 缺 .stats-chart-canvas-wrap，必须重建）
+    if (document.getElementById('stats-category-chart') && document.querySelector('.stats-chart-canvas-wrap')) return;
 
     // 重建完整的图表区域结构
     dyn.innerHTML = `
@@ -428,9 +428,18 @@ const ExpenseStats = (() => {
   function _ensureCenterOverlay(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
-    const wrap = canvas.closest('.stats-chart-canvas-wrap');
-    if (!wrap) return;
-    // 避免重复创建
+    let wrap = canvas.closest('.stats-chart-canvas-wrap');
+    // 兼容旧 DOM：canvas 直接放在 .stats-chart-wrapper 里，没有 canvas-wrap 包裹层
+    if (!wrap) {
+      const wrapper = canvas.closest('.stats-chart-wrapper');
+      if (!wrapper) return;
+      // 动态创建包裹层，把 canvas 包进去
+      wrap = document.createElement('div');
+      wrap.className = 'stats-chart-canvas-wrap';
+      canvas.parentNode.insertBefore(wrap, canvas);
+      wrap.appendChild(canvas);
+    }
+    // 避免重复创建中心浮层
     if (wrap.querySelector('.stats-chart-center')) return;
     const el = document.createElement('div');
     el.className = 'stats-chart-center';
