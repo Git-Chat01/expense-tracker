@@ -518,12 +518,11 @@ const ExpenseStats = (() => {
 
     const sign = s.changePct > 0 ? '+' : '';
     const arrow = s.changePct > 0 ? '↑' : (s.changePct < 0 ? '↓' : '→');
-    const changeColor = s.changePct > 0 ? 'var(--color-danger)' : (s.changePct < 0 ? 'var(--color-success)' : 'var(--color-text-tertiary)');
 
     el.innerHTML = `
       <div class="stats-chart-center__label">${s.label}总支出</div>
       <div class="stats-chart-center__total"><span class="stats-chart-center__currency">¥</span>${s.currentTotal.toLocaleString()}</div>
-      <div class="stats-chart-center__compare" style="color:${changeColor}">
+      <div class="stats-chart-center__compare">
         较${s.compareLabel} ${arrow}${sign}${Math.abs(s.changePct)}%
       </div>
     `;
