@@ -518,8 +518,8 @@ const ExpenseStats = (() => {
     }
     el.innerHTML = html;
 
-    // 左侧色条跟扇区同色，增强视觉关联
-    el.style.setProperty('--tooltip-color', seg.color);
+    // 边框跟扇区同色，一眼看出 tooltip 属于哪个扇区
+    el.style.borderColor = seg.color;
 
     // 定位：用 document.getElementById 直接取 canvas（不依赖 chart.canvas 引用）
     var realCanvas = document.getElementById(canvasId);
