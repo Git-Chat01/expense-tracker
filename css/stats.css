@@ -226,6 +226,27 @@
   width: 100%;
   max-height: 200px;
   overflow-y: auto;
+  /* 加一个淡淡的边框包裹，让"可滚动区域"有视觉边界 */
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 4px 8px;
+  background: #fafafa;
+}
+
+/* 自定义滚动条 — 可见的小滑块就是"可滚动"的视觉暗示 */
+.stats-chart-legend::-webkit-scrollbar {
+  width: 5px;
+}
+.stats-chart-legend::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+.stats-chart-legend::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+.stats-chart-legend::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
 }
 
 .stats-chart-legend__item {
