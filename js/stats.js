@@ -683,8 +683,8 @@ const ExpenseStats = (() => {
         if (_index !== null && _index !== undefined) {
           var activeTarget = _legend.querySelector('.stats-chart-legend__item[data-idx="' + _index + '"]');
           if (activeTarget) {
-            // 用 clientWidth < offsetWidth 判断滚动条是否真实占用空间（比 scrollHeight 更可靠）
-            var hasScrollbar = _legend.clientWidth < _legend.offsetWidth;
+            // 内容高度 > 可视高度 → 滚动条存在 → 亮块缩进不重叠
+            var hasScrollbar = _legend.scrollHeight > _legend.clientHeight;
             activeTarget.style.marginRight = hasScrollbar ? '4px' : '-4px';
           }
         }
