@@ -83,7 +83,7 @@ const ExpenseApp = (() => {
         }
       });
 
-      navigator.serviceWorker.register('sw.js?v=33').then(function(reg) {
+      navigator.serviceWorker.register('sw.js?v=34').then(function(reg) {
         // 检测到 SW 更新 → 提示用户
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
@@ -106,6 +106,18 @@ const ExpenseApp = (() => {
   /* -----------------------------------------------------------------
      Tab 导航
      ----------------------------------------------------------------- */
+
+  /** 将视图及其内部所有嵌套滚动容器滚回顶部。
+   *  部分页面（统计、账单列表）有 stats-container / list-content 等内层
+   *  overflow-y:auto 容器，光滚 main-view 不够，需要递归清理所有子级的 scrollTop。 */
+  function _scrollViewToTop(viewEl) {
+    viewEl.scrollTop = 0;
+    var all = viewEl.getElementsByTagName('*');
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].scrollTop > 0) all[i].scrollTop = 0;
+    }
+  }
+
   function navigate(viewId) {
     // 离开统计页时关闭 tooltip（否则 tooltip 是挂在 body 上的，不会随页面切换消失）
     if (_currentView === 'stats' && viewId !== 'stats' && typeof ExpenseStats !== 'undefined') {
@@ -117,8 +129,8 @@ const ExpenseApp = (() => {
     const target = document.getElementById(`view-${viewId}`);
     if (target) {
       target.classList.add('main-view--active');
-      // 切 Tab 时回到顶部（否则会停留在上次的滚动位置，体验很反人类）
-      target.scrollTop = 0;
+      // 切 Tab 时回到顶部（同时处理像 stats-container / list-content 等嵌套滚动容器）
+      _scrollViewToTop(target);
     }
 
     // 切换 tab 高亮
