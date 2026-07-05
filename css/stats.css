@@ -226,11 +226,10 @@
   width: 100%;
   max-height: 200px;
   overflow-y: auto;
-  /* 加一个淡淡的边框包裹，让"可滚动区域"有视觉边界 */
-  border: 1px solid #eee;
+  /* 微浮雕效果 — 和 tooltip 详情页风格统一，不用硬边框 */
   border-radius: 8px;
   padding: 4px 8px;
-  background: #fafafa;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.06);
 }
 
 /* 自定义滚动条 — 可见的小滑块就是"可滚动"的视觉暗示 */
