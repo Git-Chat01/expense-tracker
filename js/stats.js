@@ -683,8 +683,15 @@ const ExpenseStats = (() => {
         if (_index !== null && _index !== undefined) {
           var activeTarget = _legend.querySelector('.stats-chart-legend__item[data-idx="' + _index + '"]');
           if (activeTarget) {
-            // 内容高度 > 可视高度 → 滚动条存在 → 亮块缩进不重叠
-            var hasScrollbar = _legend.scrollHeight > _legend.clientHeight;
+            // 直接判断最后一项是否超出图例可视区底部 —— 纯几何检测，不依赖 scrollHeight
+            var hasScrollbar = false;
+            var lastItem = _legend.querySelector('.stats-chart-legend__item:last-child');
+            if (lastItem) {
+              var legendRect = _legend.getBoundingClientRect();
+              var lastRect = lastItem.getBoundingClientRect();
+              // 最后一项底部超出图例底部 >1px → 内容溢出 → 有滚动条
+              hasScrollbar = (lastRect.bottom - legendRect.bottom) > 1;
+            }
             activeTarget.style.marginRight = hasScrollbar ? '4px' : '-4px';
           }
         }
