@@ -656,15 +656,14 @@ const ExpenseStats = (() => {
     // 选中状态下不做任何操作 — tooltip 内容/位置完全由 _showTooltipManually 控制
   }
 
-  // HTML 手绘图例：绕过 Chart.js 内置图例的 pointStyle 宽高不一致问题，
-  // 用 CSS border-radius:50% 渲染真正的正圆
+  /** HTML 手绘图例（替代 Chart.js 内置图例）。
+   *  竖排列表，每条一行：圆点 + 名称 ｜ 金额 + 百分比。
+   *  分类多了不换行不乱，支持滚动。 */
   function _renderHtmlLegend(canvasId, labels, data) {
     var canvas = document.getElementById(canvasId);
     if (!canvas) return;
-    // canvas 外层有 .stats-chart-canvas-wrap，图例要挂在 .stats-chart-wrapper 上
     var wrapper = canvas.closest('.stats-chart-wrapper');
     if (!wrapper) return;
-    // 移除旧图例（重绘时）
     var oldLegend = wrapper.querySelector('.stats-chart-legend');
     if (oldLegend) oldLegend.remove();
 
@@ -672,11 +671,16 @@ const ExpenseStats = (() => {
     var legendEl = document.createElement('div');
     legendEl.className = 'stats-chart-legend';
     legendEl.innerHTML = labels.map(function(label, i) {
+      var amount = Math.round(data[i] * 100) / 100;
       var pct = total > 0 ? Math.round(data[i] / total * 100) : 0;
       var color = COLORS[i % COLORS.length];
+      // 格式：¥1,200 — 带千分位
+      var amountStr = '¥' + amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
       return '<div class="stats-chart-legend__item">'
         + '<span class="stats-chart-legend__dot" style="background:' + color + '"></span>'
-        + '<span class="stats-chart-legend__text">' + label + ' ' + pct + '%</span>'
+        + '<span class="stats-chart-legend__name">' + label + '</span>'
+        + '<span class="stats-chart-legend__amount">' + amountStr + '</span>'
+        + '<span class="stats-chart-legend__pct">' + pct + '%</span>'
         + '</div>';
     }).join('');
     wrapper.appendChild(legendEl);

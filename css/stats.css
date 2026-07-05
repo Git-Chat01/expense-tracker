@@ -219,32 +219,56 @@
 
 /* -----------------------------------------------------------------
    HTML 手绘图例（替代 Chart.js 内置图例，保证圆点为正圆）
+   竖排列表 — 每条一行：圆点 + 名称 | 金额 + 百分比
    ----------------------------------------------------------------- */
 .stats-chart-legend {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px 16px;
   margin-top: var(--space-md);
   width: 100%;
+  max-height: 320px;
+  overflow-y: auto;
 }
 
 .stats-chart-legend__item {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stats-chart-legend__item:last-child {
+  border-bottom: none;
 }
 
 .stats-chart-legend__dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 
-.stats-chart-legend__text {
+.stats-chart-legend__name {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats-chart-legend__amount {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+}
+
+.stats-chart-legend__pct {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  min-width: 36px;
+  text-align: right;
   white-space: nowrap;
 }
 
