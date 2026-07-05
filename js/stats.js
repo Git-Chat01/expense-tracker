@@ -447,6 +447,9 @@ const ExpenseStats = (() => {
       chart.setActiveElements([{ datasetIndex: 0, index: selIdx }]);
     } else {
       chart.setActiveElements([]);
+      // 手动隐藏 tooltip DOM，避免 Chart.js 未及时触发 external 回调
+      var tip = document.getElementById('stats-tooltip');
+      if (tip) tip.style.opacity = '0';
     }
 
     _applyArcSelection(chart, dataLen, canvasId);
