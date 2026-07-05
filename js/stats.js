@@ -423,14 +423,13 @@ const ExpenseStats = (() => {
     // 清空环形图选中状态和元数据
     Object.keys(_selectedArc).forEach(k => { _selectedArc[k] = null; });
     Object.keys(_segmentMeta).forEach(k => { delete _segmentMeta[k]; });
-    // 移除所有中心浮层和扇区详情条
+    // 移除所有中心浮层
     document.querySelectorAll('.stats-chart-center').forEach(function(el) { el.remove(); });
-    document.querySelectorAll('.stats-chart-detail').forEach(function(el) { el.remove(); });
     // 同时清理 HTML 手绘图例
     document.querySelectorAll('.stats-chart-legend').forEach(function(el) { el.remove(); });
   }
 
-  /** 环形图点击：选中/取消选中扇区，弹出一段 + 其他扇区半透明 */
+  /** 环形图点击：选中/取消选中扇区，同时保持 tooltip 显示 */
   function _handleArcClick(canvasId, elements, dataLen) {
     const chart = _charts[canvasId];
     if (!chart) return;
@@ -441,6 +440,15 @@ const ExpenseStats = (() => {
     } else {
       _selectedArc[canvasId] = null;
     }
+
+    // 点击后保持 tooltip 显示（选中扇区），或隐藏（取消选中）
+    const selIdx = _selectedArc[canvasId];
+    if (selIdx !== null && selIdx !== undefined) {
+      chart.setActiveElements([{ datasetIndex: 0, index: selIdx }]);
+    } else {
+      chart.setActiveElements([]);
+    }
+
     _applyArcSelection(chart, dataLen, canvasId);
   }
 
@@ -472,9 +480,8 @@ const ExpenseStats = (() => {
     ds.offset = offsets;
     chart.update('none');
 
-    // 中心始终显示总支出 + 对比；详情条显示选中扇区信息
+    // 中心始终显示总支出 + 对比（click 不会改变）
     _renderCenterTotal(canvasId);
-    _renderSegmentDetail(canvasId, selIdx);
   }
 
   /** 确保画布容器内存在中心浮层 + 详情条 DOM（预创建，默认隐藏） */
@@ -496,21 +503,6 @@ const ExpenseStats = (() => {
       const el = document.createElement('div');
       el.className = 'stats-chart-center';
       wrap.appendChild(el);
-    }
-    // 图表下方的扇区详情条（挂在 .stats-chart-wrapper 上而非 canvas-wrap 内，
-    // 确保它在 canvas 下方、图例上方）
-    const wrapper = canvas.closest('.stats-chart-wrapper');
-    if (wrapper && !wrapper.querySelector('.stats-chart-detail')) {
-      const detail = document.createElement('div');
-      detail.className = 'stats-chart-detail';
-      detail.style.display = 'none';
-      // 插入到 canvas-wrap 之后、图例之前
-      const canvasWrap = wrapper.querySelector('.stats-chart-canvas-wrap');
-      if (canvasWrap) {
-        canvasWrap.after(detail);
-      } else {
-        wrapper.appendChild(detail);
-      }
     }
   }
 
@@ -534,37 +526,6 @@ const ExpenseStats = (() => {
       <div class="stats-chart-center__compare" style="color:${changeColor}">
         较${s.compareLabel} ${arrow}${sign}${Math.abs(s.changePct)}%
       </div>
-    `;
-    el.style.display = 'flex';
-  }
-
-  /** 渲染图表下方的扇区详情条（selIdx 为 null 时隐藏） */
-  function _renderSegmentDetail(canvasId, selIdx) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
-    const wrapper = canvas.closest('.stats-chart-wrapper');
-    if (!wrapper) return;
-    const el = wrapper.querySelector('.stats-chart-detail');
-    if (!el) return;
-
-    if (selIdx === null || selIdx === undefined) {
-      el.style.display = 'none';
-      el.innerHTML = '';
-      return;
-    }
-
-    const meta = _segmentMeta[canvasId];
-    if (!meta || selIdx >= meta.length) { el.style.display = 'none'; return; }
-
-    const seg = meta[selIdx];
-    el.innerHTML = `
-      <span class="stats-chart-detail__icon" style="background:${seg.color}"></span>
-      <span class="stats-chart-detail__name">${seg.name}</span>
-      <span class="stats-chart-detail__amount" style="color:${seg.color}">
-        <small>¥</small>${seg.amount.toLocaleString()}
-      </span>
-      <span class="stats-chart-detail__pct">占比 ${seg.pct}%</span>
-      ${seg.isHighest ? '<span class="stats-chart-detail__badge">👑 最高支出</span>' : ''}
     `;
     el.style.display = 'flex';
   }
@@ -644,11 +605,32 @@ const ExpenseStats = (() => {
           options: {
             responsive: true,
             maintainAspectRatio: true,
+            // 悬停模式：鼠标离开后 tooltip 消失（避免卡住）
+            hover: { mode: 'nearest', intersect: true },
             onClick: function(event, elements) {
               _handleArcClick(canvasId, elements, data.length);
             },
             plugins: {
               legend: { display: false },
+              tooltip: {
+                // 点击后 tooltip 保持（通过 setActiveElements），移开鼠标也保持直到取消选中
+                displayColors: false,
+                callbacks: {
+                  title: function(items) {
+                    const m = _segmentMeta[canvasId];
+                    const seg = m ? m[items[0].dataIndex] : null;
+                    return seg ? seg.name : items[0].label;
+                  },
+                  label: function(context) {
+                    const m = _segmentMeta[canvasId];
+                    const seg = m ? m[context.dataIndex] : null;
+                    if (!seg) return '¥' + context.raw;
+                    var lines = ['¥' + seg.amount, '占比 ' + seg.pct + '%'];
+                    if (seg.isHighest) lines.push('👑 最高支出');
+                    return lines;
+                  }
+                }
+              },
             },
             cutout: '60%',
           },
