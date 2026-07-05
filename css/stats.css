@@ -271,9 +271,16 @@
   background: #f0f4ff;
   border-radius: 8px;
   margin-left: -4px;
-  margin-right: 4px;   /* 给滚动条留空间，避免亮块压住滚动条 */
+  margin-right: -4px;
   padding-left: 8px;
   padding-right: 8px;
+  /* margin-right 过渡动画 — 滚动条出现/消失时平滑伸缩 */
+  transition: margin-right 0.3s ease;
+}
+
+/* 有滚动条时亮块主动内缩，避免压住滚动条 */
+.stats-chart-legend--has-scrollbar .stats-chart-legend__item--active {
+  margin-right: 4px;
 }
 
 .stats-chart-legend__item--active:first-child {

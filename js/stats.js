@@ -661,6 +661,7 @@ const ExpenseStats = (() => {
           newItems[m].style.transform = '';
         }
         legend.classList.remove('stats-chart-legend--animating');
+        _checkLegendOverflow(legend);
       });
     });
   }
@@ -792,6 +793,18 @@ const ExpenseStats = (() => {
         + '</div>';
     }).join('');
     wrapper.appendChild(legendEl);
+    // 检测是否有滚动条，给亮块做伸缩动画
+    _checkLegendOverflow(legendEl);
+  }
+
+  /** 检测图例是否溢出（有滚动条），切换 CSS 类驱动亮块伸缩动画 */
+  function _checkLegendOverflow(legendEl) {
+    if (!legendEl) return;
+    if (legendEl.scrollHeight > legendEl.clientHeight) {
+      legendEl.classList.add('stats-chart-legend--has-scrollbar');
+    } else {
+      legendEl.classList.remove('stats-chart-legend--has-scrollbar');
+    }
   }
 
   function _drawOrFallback(canvasId, fallbackId, labels, data, type, meta) {
