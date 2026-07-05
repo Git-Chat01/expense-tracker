@@ -240,6 +240,19 @@
   border-bottom: none;
 }
 
+.stats-chart-legend__item--active {
+  background: #f0f4ff;
+  border-radius: 8px;
+  margin: 0 -4px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.stats-chart-legend__item--active .stats-chart-legend__name {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
 .stats-chart-legend__dot {
   width: 10px;
   height: 10px;

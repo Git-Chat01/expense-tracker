@@ -470,6 +470,7 @@ const ExpenseStats = (() => {
     }
 
     _applyArcSelection(chart, dataLen, canvasId);
+    _highlightLegendItem(canvasId, selIdx);
   }
 
   /** 手动显示 tooltip（不依赖 Chart.js 事件链，直接 DOM 操作） */
@@ -553,8 +554,29 @@ const ExpenseStats = (() => {
             _applyArcSelection(chart, meta.data.length, canvasId);
           }
         }
+        // 同时清除对应图例的高亮
+        _highlightLegendItem(canvasId, null);
       }
     });
+  }
+
+  /** 图例高亮联动：选中饼图扇区时，对应图例行亮起，取消时全部恢复 */
+  function _highlightLegendItem(canvasId, index) {
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var wrapper = canvas.closest('.stats-chart-wrapper');
+    if (!wrapper) return;
+    var legend = wrapper.querySelector('.stats-chart-legend');
+    if (!legend) return;
+    var items = legend.querySelectorAll('.stats-chart-legend__item');
+    for (var i = 0; i < items.length; i++) {
+      if (i === index) {
+        items[i].classList.add('stats-chart-legend__item--active');
+      } else {
+        items[i].classList.remove('stats-chart-legend__item--active');
+      }
+    }
+    // index 为 null/undefined 时全部取消高亮
   }
 
   /** hex 颜色转 rgba，用于控制透明度 */
@@ -679,8 +701,8 @@ const ExpenseStats = (() => {
       return '<div class="stats-chart-legend__item">'
         + '<span class="stats-chart-legend__dot" style="background:' + color + '"></span>'
         + '<span class="stats-chart-legend__name">' + label + '</span>'
-        + '<span class="stats-chart-legend__amount">' + amountStr + '</span>'
         + '<span class="stats-chart-legend__pct">' + pct + '%</span>'
+        + '<span class="stats-chart-legend__amount">' + amountStr + '</span>'
         + '</div>';
     }).join('');
     wrapper.appendChild(legendEl);
