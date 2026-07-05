@@ -661,7 +661,6 @@ const ExpenseStats = (() => {
           newItems[m].style.transform = '';
         }
         legend.classList.remove('stats-chart-legend--animating');
-        _checkLegendOverflow(legend);
       });
     });
   }
@@ -793,20 +792,21 @@ const ExpenseStats = (() => {
         + '</div>';
     }).join('');
     wrapper.appendChild(legendEl);
-    // 等浏览器完成布局后再检测溢出（否则 scrollHeight 可能为 0）
-    requestAnimationFrame(function() {
-      _checkLegendOverflow(legendEl);
-    });
+    // 监听滚动：拖动时亮块内缩，松手停稳后弹回
+    _bindLegendScroll(legendEl);
   }
 
-  /** 检测图例是否溢出（有滚动条），切换 CSS 类驱动亮块伸缩动画 */
-  function _checkLegendOverflow(legendEl) {
+  /** 监听图例滚动 — 滚动中加 --scrolling 类让亮块内缩，停稳 500ms 后恢复 */
+  function _bindLegendScroll(legendEl) {
     if (!legendEl) return;
-    if (legendEl.scrollHeight > legendEl.clientHeight) {
-      legendEl.classList.add('stats-chart-legend--has-scrollbar');
-    } else {
-      legendEl.classList.remove('stats-chart-legend--has-scrollbar');
-    }
+    var scrollTimer = null;
+    legendEl.addEventListener('scroll', function() {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      legendEl.classList.add('stats-chart-legend--scrolling');
+      scrollTimer = setTimeout(function() {
+        legendEl.classList.remove('stats-chart-legend--scrolling');
+      }, 500);
+    });
   }
 
   function _drawOrFallback(canvasId, fallbackId, labels, data, type, meta) {

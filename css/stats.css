@@ -278,8 +278,8 @@
   transition: margin-right 0.3s ease;
 }
 
-/* 有滚动条时亮块主动内缩，避免压住滚动条 */
-.stats-chart-legend--has-scrollbar .stats-chart-legend__item--active {
+/* 滚动时亮块内缩，松手停稳后弹回 */
+.stats-chart-legend--scrolling .stats-chart-legend__item--active {
   margin-right: 4px;
 }
 
