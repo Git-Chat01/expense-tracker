@@ -83,7 +83,7 @@ const ExpenseApp = (() => {
         }
       });
 
-      navigator.serviceWorker.register('sw.js?v=36').then(function(reg) {
+      navigator.serviceWorker.register('sw.js?v=37').then(function(reg) {
         // 检测到 SW 更新 → 提示用户
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
@@ -107,17 +107,30 @@ const ExpenseApp = (() => {
      Tab 导航
      ----------------------------------------------------------------- */
 
-  /** 将视图及其内部所有嵌套滚动容器滚回顶部。
-   *  部分页面（统计、账单列表）有 stats-container / list-content 等内层
-   *  overflow-y:auto 容器，光滚 main-view 不够，需要递归清理所有子级的 scrollTop。
-   *  同时用 scrollTop 和 scrollTo(0,0) 双保险（部分浏览器两者行为有差异）。 */
+  /** 将整个页面（window + body + html + 视图 + 所有子容器）滚回顶部。
+   *  移动端浏览器（尤其是 iOS Safari）的实际滚动经常发生在 window 或 body/html
+   *  层级，而不是 .main-view——光滚视图容器远远不够。 */
   function _scrollViewToTop(viewEl) {
-    viewEl.scrollTop = 0;
-    viewEl.scrollTo(0, 0);
-    var all = viewEl.getElementsByTagName('*');
+    // 第一层：window / document 级别（移动端滚动最常出现在这里）
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.documentElement.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+    document.body.scrollTo(0, 0);
+
+    // 第二层：视图容器
+    if (viewEl) {
+      viewEl.scrollTop = 0;
+      viewEl.scrollTo(0, 0);
+    }
+
+    // 第三层：所有子元素（stats-container / list-content 等嵌套滚动容器）
+    var all = document.querySelectorAll('.main-view--active *');
     for (var i = 0; i < all.length; i++) {
-      all[i].scrollTop = 0;
-      try { all[i].scrollTo(0, 0); } catch (e) { /* ignore */ }
+      if (all[i].scrollTop > 0) {
+        all[i].scrollTop = 0;
+        try { all[i].scrollTo(0, 0); } catch (e) { /* ignore */ }
+      }
     }
   }
 
