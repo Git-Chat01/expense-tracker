@@ -678,37 +678,39 @@ const ExpenseStats = (() => {
           newItems[m].style.transition = '';
           newItems[m].style.transform = '';
         }
-        // FLIP 结束后检测滚动条状态，设亮块宽度：
-        // 有滚动条 → marginRight:4px（缩进不重叠） / 无滚动条 → marginRight:-4px（满宽）
+        // FLIP 结束后设亮块为满宽（默认无滚动条遮挡）。
+        // 用户滑动图例时 _setupLegendScrollWatch 会动态缩进，停滑后恢复。
         if (_index !== null && _index !== undefined) {
           var activeTarget = _legend.querySelector('.stats-chart-legend__item[data-idx="' + _index + '"]');
           if (activeTarget) {
-            // 临时滚回顶部再检测 —— 避免当前滚动位置干扰 getBoundingClientRect
-            var savedScroll = _legend.scrollTop;
-            _legend.scrollTop = 0;
-            var hasScrollbar = false;
-            var lastItem = _legend.querySelector('.stats-chart-legend__item:last-child');
-            if (lastItem) {
-              var legendRect = _legend.getBoundingClientRect();
-              var lastRect = lastItem.getBoundingClientRect();
-              // 最后一项底部超出图例可视区底部 → 溢出 → 有滚动条
-              hasScrollbar = (lastRect.bottom - legendRect.bottom) > 1;
-            }
-            _legend.scrollTop = savedScroll;
-            // 诊断日志：F12 控制台查看各检测值
-            console.log('[亮块检测] scrollHeight=' + _legend.scrollHeight +
-              ' clientHeight=' + _legend.clientHeight +
-              ' overflow=' + (_legend.scrollHeight > _legend.clientHeight) +
-              ' lastBottom=' + (lastItem ? Math.round(lastItem.getBoundingClientRect().bottom) : '?') +
-              ' legendBottom=' + Math.round(legendRect.bottom) +
-              ' hasScrollbar=' + hasScrollbar +
-              ' marginRight=' + (hasScrollbar ? '4px' : '-4px'));
-            activeTarget.style.marginRight = hasScrollbar ? '4px' : '-4px';
+            activeTarget.style.marginRight = '-4px';
           }
         }
         _legend.classList.remove('stats-chart-legend--animating');
       });
     });
+  }
+
+  /** 图例滚动监听：移动端滚动条为 overlay 模式，只在手指滑动时出现。
+   *  滑动中 → 亮块缩进避让滚动条；停止滑动 600ms 后 → 亮块恢复满宽。 */
+  function _setupLegendScrollWatch(legendEl) {
+    var scrollEndTimer = null;
+    legendEl.addEventListener('scroll', function() {
+      var active = legendEl.querySelector('.stats-chart-legend__item--active');
+      if (!active) return;
+
+      // 滚动中：亮块缩进（marginRight:4px），给 overlay 滚动条让空间
+      active.style.marginRight = '4px';
+
+      // 停止滚动 600ms 后恢复满宽（等 overlay 滚动条淡出消失）
+      clearTimeout(scrollEndTimer);
+      scrollEndTimer = setTimeout(function() {
+        var currentActive = legendEl.querySelector('.stats-chart-legend__item--active');
+        if (currentActive) {
+          currentActive.style.marginRight = '-4px';
+        }
+      }, 600);
+    }, { passive: true });
   }
 
   /** hex 颜色转 rgba，用于控制透明度 */
@@ -838,6 +840,8 @@ const ExpenseStats = (() => {
         + '</div>';
     }).join('');
     wrapper.appendChild(legendEl);
+    // 绑定滚动监听：移动端滚动条为 overlay 模式，滑动时出现/停止时消失
+    _setupLegendScrollWatch(legendEl);
   }
 
   function _drawOrFallback(canvasId, fallbackId, labels, data, type, meta) {
