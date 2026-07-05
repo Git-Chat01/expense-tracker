@@ -542,6 +542,10 @@ const ExpenseStats = (() => {
     var th = el.offsetHeight;
     if (offsetX < 0) left -= tw;      // 目标在左侧，tooltip 向右对齐
     if (offsetY < 0) top -= th;       // 目标在上方，tooltip 向下对齐
+    // 弧在下方：如果 tooltip 超出 canvas 底部会挡到图例，翻转到弧上方
+    if (offsetY > 0 && top + th > pos.bottom - 4) {
+      top = cy - offsetY - th;
+    }
 
     // 不超出视口
     if (left < 8) left = 8;
