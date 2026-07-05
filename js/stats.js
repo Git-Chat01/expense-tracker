@@ -608,9 +608,12 @@ const ExpenseStats = (() => {
       document.body.appendChild(el);
     }
 
-    // tooltip 不可见 → 隐藏
+    // tooltip 不可见 → 但如果有手动选中的扇区则不隐藏（tooltip 由 _showTooltipManually 管理）
+    // chart.update() 会触发此回调且 opacity===0，不能让它覆盖手动显示的 tooltip
     if (tooltipModel.opacity === 0) {
-      el.style.opacity = '0';
+      if (_selectedArc[canvasId] === null || _selectedArc[canvasId] === undefined) {
+        el.style.opacity = '0';
+      }
       return;
     }
 
