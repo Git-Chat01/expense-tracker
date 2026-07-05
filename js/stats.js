@@ -634,9 +634,7 @@ const ExpenseStats = (() => {
       }
       if (target) {
         target.classList.add('stats-chart-legend__item--active');
-        // 有滚动条 → 亮块缩短（避免重叠），无滚动条 → 亮块满宽
-        // 直接设内联 marginRight，transition 自动播动画
-        target.style.marginRight = (legend.scrollHeight > legend.clientHeight) ? '4px' : '-4px';
+        // marginRight 统一在 PLAY 阶段设置（等 transition 恢复后再设，动画才生效）
       }
     } else {
       // 取消：恢复原始顺序（按 data-idx 排序）
@@ -671,13 +669,26 @@ const ExpenseStats = (() => {
     }
 
     // PLAY: 去掉 transform 让过渡动画把元素拉到新位置
+    // 同时在此阶段设置 marginRight（transition 已恢复，动画才能正常播放）
+    var _legend = legend;
+    var _index = index;
     requestAnimationFrame(function() {
       requestAnimationFrame(function() {
         for (var m = 0; m < newItems.length; m++) {
           newItems[m].style.transition = '';
           newItems[m].style.transform = '';
         }
-        legend.classList.remove('stats-chart-legend--animating');
+        // FLIP 结束后检测滚动条状态，设亮块宽度：
+        // 有滚动条 → marginRight:4px（缩进不重叠） / 无滚动条 → marginRight:-4px（满宽）
+        if (_index !== null && _index !== undefined) {
+          var activeTarget = _legend.querySelector('.stats-chart-legend__item[data-idx="' + _index + '"]');
+          if (activeTarget) {
+            // 用 clientWidth < offsetWidth 判断滚动条是否真实占用空间（比 scrollHeight 更可靠）
+            var hasScrollbar = _legend.clientWidth < _legend.offsetWidth;
+            activeTarget.style.marginRight = hasScrollbar ? '4px' : '-4px';
+          }
+        }
+        _legend.classList.remove('stats-chart-legend--animating');
       });
     });
   }
