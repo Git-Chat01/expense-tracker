@@ -494,6 +494,17 @@ const ExpenseStats = (() => {
     _animateLegend(canvasId, selIdx);
   }
 
+  /** 自动选中第一个扇区（不弹 tooltip，只为让亮块始终存在） */
+  function _autoSelectFirst(canvasId, dataLen) {
+    if (dataLen === 0) return;
+    var chart = _charts[canvasId];
+    if (!chart) return;
+    _selectedArc[canvasId] = 0;
+    chart.setActiveElements([{ datasetIndex: 0, index: 0 }]);
+    _applyArcSelection(chart, dataLen, canvasId);
+    _animateLegend(canvasId, 0);
+  }
+
   /** 手动显示 tooltip（不依赖 Chart.js 事件链，直接 DOM 操作） */
   function _showTooltipManually(canvasId, chart, index) {
     var meta = _segmentMeta[canvasId];
@@ -893,6 +904,8 @@ const ExpenseStats = (() => {
         _ensureOverlays(canvasId);
         // 渲染中心总支出（始终显示）
         _renderCenterTotal(canvasId);
+        // 自动选中第一个扇区（让亮块始终存在，滚动条变化时动画可见）
+        _autoSelectFirst(canvasId, data.length);
       } else if (type === 'line') {
         _charts[canvasId] = new Chart(ctx, {
           type: 'line',
