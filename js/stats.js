@@ -357,7 +357,15 @@ const ExpenseStats = (() => {
     _applyArcSelection(chart, dataLen, canvasId);
   }
 
-  /** 将选中/取消效果应用到环形图上（选中扇区向外弹出，白色边框，保持原色） */
+  /** hex 颜色转 rgba，用于控制透明度 */
+  function _hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  /** 将选中/取消效果应用到环形图上（选中扇区外扩 + 其余微微变淡） */
   function _applyArcSelection(chart, dataLen, canvasId) {
     const ds = chart.data.datasets[0];
     const selIdx = _selectedArc[canvasId];
@@ -365,8 +373,12 @@ const ExpenseStats = (() => {
 
     if (selIdx !== null && selIdx !== undefined) {
       offsets[selIdx] = 15;          // 选中扇区向外弹出
-      ds.backgroundColor = COLORS.slice(0, dataLen);
+      // 选中扇区保持原色，其余扇区微微变淡（alpha=0.4），靠对比度体现"高亮"
+      ds.backgroundColor = COLORS.slice(0, dataLen).map((c, i) =>
+        i === selIdx ? c : _hexToRgba(c, 0.4)
+      );
     } else {
+      // 取消选中：全部恢复原色
       ds.backgroundColor = COLORS.slice(0, dataLen);
     }
 
