@@ -554,6 +554,13 @@ const ExpenseStats = (() => {
       return;
     }
 
+    // 只有点击选中扇区后才显示 tooltip，防止 Chart.js 内部事件（hover/点击冒泡）
+    // 在我们 onClick 之前抢先弹出 tooltip，导致取消选中后仍残留
+    if (_selectedArc[canvasId] === null || _selectedArc[canvasId] === undefined) {
+      el.style.opacity = '0';
+      return;
+    }
+
     // 获取扇区元数据
     const pts = tooltipModel.dataPoints;
     if (!pts || !pts.length) { el.style.opacity = '0'; return; }
