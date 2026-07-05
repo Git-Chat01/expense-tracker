@@ -793,8 +793,10 @@ const ExpenseStats = (() => {
         + '</div>';
     }).join('');
     wrapper.appendChild(legendEl);
-    // 检测是否有滚动条，给亮块做伸缩动画
-    _checkLegendOverflow(legendEl);
+    // 等浏览器完成布局后再检测溢出（否则 scrollHeight 可能为 0）
+    requestAnimationFrame(function() {
+      _checkLegendOverflow(legendEl);
+    });
   }
 
   /** 检测图例是否溢出（有滚动条），切换 CSS 类驱动亮块伸缩动画 */
