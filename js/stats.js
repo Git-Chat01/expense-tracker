@@ -198,7 +198,7 @@ const ExpenseStats = (() => {
         </div>
       </section>
       <section class="stats-chart-section">
-        <h2 class="stats-chart-section__title">月度趋势</h2>
+        <h2 class="stats-chart-section__title"><span id="stats-trend-title">月度趋势</span></h2>
         <div class="stats-chart-wrapper">
           <canvas id="stats-trend-chart"></canvas>
           <div id="stats-trend-fallback" class="stats-fallback" style="display:none"></div>
@@ -328,38 +328,72 @@ const ExpenseStats = (() => {
      3. 月度趋势（折线图）
      ----------------------------------------------------------------- */
   function _renderTrendChart(from, to) {
-    const monthMap = new Map();
-    // 手动解析日期避免跨浏览器时区差异
     const [fy, fm, fd] = from.split('-').map(Number);
     const [ty, tm, td] = to.split('-').map(Number);
     const fromDate = new Date(fy, fm - 1, fd);
     const toDate = new Date(ty, tm - 1, td);
 
-    // 生成所有月份 key
-    const months = [];
-    const cursor = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
-    while (cursor <= toDate) {
-      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
-      months.push(key);
-      monthMap.set(key, 0);
-      cursor.setMonth(cursor.getMonth() + 1);
+    // 趋势图标题跟随时段变化
+    const titleMap = { day: '今日趋势', week: '本周趋势', month: '本月趋势', '3month': '近三月趋势', '12month': '近一年趋势' };
+    const titleEl = document.getElementById('stats-trend-title');
+    if (titleEl) titleEl.textContent = titleMap[_period] || '月度趋势';
+
+    const valueMap = new Map();
+    const labels = [];
+    const keys = [];
+
+    if (_period === 'day') {
+      // 今日按小时聚合
+      for (let h = 0; h < 24; h++) {
+        const k = String(h).padStart(2, '0');
+        keys.push(k);
+        labels.push(`${h}时`);
+        valueMap.set(k, 0);
+      }
+    } else if (_period === 'week' || _period === 'month') {
+      // 周/月按天聚合
+      const cursor = new Date(fromDate);
+      while (cursor <= toDate) {
+        const k = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
+        keys.push(k);
+        if (_period === 'week') {
+          labels.push(`${cursor.getMonth() + 1}/${cursor.getDate()}`);
+        } else {
+          labels.push(`${cursor.getDate()}日`);
+        }
+        valueMap.set(k, 0);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    } else {
+      // 近三月/近一年按月聚合
+      const cursor = new Date(fromDate.getFullYear(), fromDate.getMonth(), 1);
+      while (cursor <= toDate) {
+        const k = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`;
+        keys.push(k);
+        labels.push(`${cursor.getMonth() + 1}月`);
+        valueMap.set(k, 0);
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
     }
 
-    // 聚合所有记录（不只是筛选范围内的，因为趋势图需要展示完整月份）
+    // 聚合数据
     const allExpenses = ExpenseDB.getExpenses();
     allExpenses.forEach(e => {
-      const key = e.date.substring(0, 7); // YYYY-MM
-      if (monthMap.has(key)) {
-        monthMap.set(key, monthMap.get(key) + e.amount);
+      let matchKey;
+      if (_period === 'day') {
+        // 当天记录按小时匹配
+        if (e.date === from) matchKey = e.time ? e.time.substring(0, 2) : '00';
+      } else if (_period === 'week' || _period === 'month') {
+        matchKey = e.date;
+      } else {
+        matchKey = e.date.substring(0, 7);
+      }
+      if (matchKey && valueMap.has(matchKey)) {
+        valueMap.set(matchKey, valueMap.get(matchKey) + e.amount);
       }
     });
 
-    const labels = months.map(m => {
-      const mo = parseInt(m.split('-')[1]);
-      return `${mo}月`;
-    });
-    const data = months.map(m => Math.round(monthMap.get(m) * 100) / 100);
-
+    const data = keys.map(k => Math.round((valueMap.get(k) || 0) * 100) / 100);
     _drawOrFallback('stats-trend-chart', 'stats-trend-fallback', labels, data, 'line');
   }
 
