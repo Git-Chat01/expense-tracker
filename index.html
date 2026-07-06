@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=78">
-  <link rel="stylesheet" href="css/home.css?v=78">
-  <link rel="stylesheet" href="css/add.css?v=78">
-  <link rel="stylesheet" href="css/list.css?v=78">
-  <link rel="stylesheet" href="css/stats.css?v=78">
+  <link rel="stylesheet" href="css/common.css?v=79">
+  <link rel="stylesheet" href="css/home.css?v=79">
+  <link rel="stylesheet" href="css/add.css?v=79">
+  <link rel="stylesheet" href="css/list.css?v=79">
+  <link rel="stylesheet" href="css/stats.css?v=79">
 </head>
 <body>
 
@@ -114,7 +114,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260707-78 · SW更新提示条：检测到新版本弹横幅，点击更新
+      v20260707-79 · 修复SW更新提示条点击后重复弹出
     </div>
   </main>
 
@@ -409,10 +409,17 @@
 
   // 检查并显示更新提示条
   function checkUpdate(reg) {
+    // 如果刚刚执行过更新（页面刷新后 2 秒内），跳过显示，避免循环弹横幅
+    var justUpdated = sessionStorage.getItem('sw-just-updated');
+    if (justUpdated && Date.now() - parseInt(justUpdated, 10) < 3000) {
+      sessionStorage.removeItem('sw-just-updated');
+      return;
+    }
+
     if (reg.waiting) {
       showBar();
     }
-    // 监听新 SW 到达 waiting 状态（首次检测时可能还在下载）
+    // 监听新 SW 到达 waiting 状态（首次检测时可能还在下载中）
     reg.addEventListener('updatefound', function() {
       var worker = reg.installing;
       if (!worker) return;
@@ -434,6 +441,8 @@
     bar.addEventListener('click', function() {
       navigator.serviceWorker.ready.then(function(reg) {
         if (reg.waiting) {
+          // 标记"即将更新"，防止刷新后再次弹出
+          sessionStorage.setItem('sw-just-updated', String(Date.now()));
           reg.waiting.postMessage('skipWaiting');
           bar.classList.remove('sw-update-bar--visible');
         }
@@ -454,13 +463,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=78"></script>
-<script src="js/data.js?v=78"></script>
-<script src="js/home.js?v=78"></script>
-<script src="js/categories.js?v=78"></script>
-<script src="js/list.js?v=78"></script>
-<script src="js/stats.js?v=78"></script>
-<script src="js/app.js?v=78"></script>
+<script src="js/storage.js?v=79"></script>
+<script src="js/data.js?v=79"></script>
+<script src="js/home.js?v=79"></script>
+<script src="js/categories.js?v=79"></script>
+<script src="js/list.js?v=79"></script>
+<script src="js/stats.js?v=79"></script>
+<script src="js/app.js?v=79"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
