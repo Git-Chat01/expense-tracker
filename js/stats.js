@@ -357,7 +357,9 @@ const ExpenseStats = (() => {
         const k = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
         keys.push(k);
         if (_period === 'week') {
-          labels.push(`${cursor.getMonth() + 1}/${cursor.getDate()}`);
+          // 显示日期 + 星期几，比纯数字更直观
+          const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+          labels.push(`${cursor.getMonth() + 1}/${cursor.getDate()} ${dayNames[cursor.getDay()]}`);
         } else {
           labels.push(`${cursor.getDate()}日`);
         }
@@ -1046,7 +1048,15 @@ const ExpenseStats = (() => {
                 grid: { color: '#f0f0f0' },
               },
               x: {
-                ticks: { font: { size: 10 }, maxTicksLimit: 12 },
+                ticks: {
+                  font: { size: 10 },
+                  maxTicksLimit: 12,
+                  // 日趋势：24 小时标签只显示每 3 小时 + 末位，避免挤成一片
+                  callback: function(value, index, ticks) {
+                    if (ticks.length === 24 && index % 3 !== 0 && index !== 23) return null;
+                    return value;
+                  },
+                },
                 grid: { display: false },
               },
             },
