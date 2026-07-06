@@ -74,7 +74,7 @@ const ExpenseApp = (() => {
     // 7. 注册 Service Worker（PWA 离线缓存）
     //    更新检测和提示由 index.html 内联脚本统一处理
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js?v=78').catch(function(err) {
+      navigator.serviceWorker.register('sw.js?v=79').catch(function(err) {
         console.warn('SW registration failed:', err);
       });
     }
