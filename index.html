@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=76">
-  <link rel="stylesheet" href="css/home.css?v=76">
-  <link rel="stylesheet" href="css/add.css?v=76">
-  <link rel="stylesheet" href="css/list.css?v=76">
-  <link rel="stylesheet" href="css/stats.css?v=76">
+  <link rel="stylesheet" href="css/common.css?v=77">
+  <link rel="stylesheet" href="css/home.css?v=77">
+  <link rel="stylesheet" href="css/add.css?v=77">
+  <link rel="stylesheet" href="css/list.css?v=77">
+  <link rel="stylesheet" href="css/stats.css?v=77">
 </head>
 <body>
 
@@ -114,7 +114,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260707-76 · 移除地点排行模块
+      v20260707-77 · 移除地点类型（线上/线下）
     </div>
   </main>
 
@@ -169,10 +169,6 @@
       <div class="add-compact-fields">
         <span class="add-compact-label">📍</span>
         <input type="text" class="input input--compact" id="add-location" placeholder="地点（选填）" maxlength="50">
-        <div class="add-location-type" id="add-location-type">
-          <button class="chip" data-ltype="offline">🏪 线下</button>
-          <button class="chip" data-ltype="online">🌐 线上</button>
-        </div>
       </div>
       <div class="add-compact-fields">
         <span class="add-compact-label">📝</span>
@@ -220,7 +216,6 @@
       <div class="list-filter-group"><button class="chip" data-filter="date">📅 日期</button></div>
       <div class="list-filter-group"><button class="chip" data-filter="category">🏷 分类</button></div>
       <div class="list-filter-group"><button class="chip" data-filter="location">📍 地点</button></div>
-      <div class="list-filter-group"><button class="chip" data-filter="locationType">🌐 类型</button></div>
       <div class="list-filter-group"><button class="chip" data-filter="payment">💳 支付</button></div>
       <div class="list-filter-group"><button class="chip chip--active" data-filter="sort">🔤 金额↓</button></div>
     </div>
@@ -420,13 +415,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=76"></script>
-<script src="js/data.js?v=76"></script>
-<script src="js/home.js?v=76"></script>
-<script src="js/categories.js?v=76"></script>
-<script src="js/list.js?v=76"></script>
-<script src="js/stats.js?v=76"></script>
-<script src="js/app.js?v=76"></script>
+<script src="js/storage.js?v=77"></script>
+<script src="js/data.js?v=77"></script>
+<script src="js/home.js?v=77"></script>
+<script src="js/categories.js?v=77"></script>
+<script src="js/list.js?v=77"></script>
+<script src="js/stats.js?v=77"></script>
+<script src="js/app.js?v=77"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">

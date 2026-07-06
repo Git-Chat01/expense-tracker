@@ -116,7 +116,6 @@ const ExpenseDB = (() => {
       date:         expense.date || _today(),
       time:         expense.time || _now(),
       location:     expense.location || '',
-      locationType: expense.locationType || '',
       paymentMethod:expense.paymentMethod || '',
       note:         expense.note || '',
       createdAt:    new Date().toISOString(),

@@ -14,7 +14,6 @@ const ExpenseApp = (() => {
     amountRaw: '',        // 原始输入字符串（如 "35" 或 "35.50"）
     categoryId: '',
     location: '',
-    locationType: '',     // 'offline' | 'online' | ''
     paymentMethod: '',
     note: '',
     date: '',
@@ -83,7 +82,7 @@ const ExpenseApp = (() => {
         }
       });
 
-      navigator.serviceWorker.register('sw.js?v=76').then(function(reg) {
+      navigator.serviceWorker.register('sw.js?v=77').then(function(reg) {
         // 检测到 SW 更新 → 提示用户
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
@@ -326,19 +325,6 @@ const ExpenseApp = (() => {
       _updateDateLabels();
     });
 
-    // 地点类型切换
-    const ltypeContainer = document.getElementById('add-location-type');
-    if (ltypeContainer) {
-      ltypeContainer.querySelectorAll('.chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-          const val = chip.dataset.ltype;
-          _formState.locationType = (_formState.locationType === val) ? '' : val;
-          ltypeContainer.querySelectorAll('.chip').forEach(c => {
-            c.classList.toggle('chip--active', c.dataset.ltype === _formState.locationType);
-          });
-        });
-      });
-    }
   }
 
   /* -----------------------------------------------------------------
@@ -441,7 +427,6 @@ const ExpenseApp = (() => {
       date:          _formState.date,
       time:          _formState.time,
       location:      _formState.location,
-      locationType:  _formState.locationType,
       paymentMethod: _formState.paymentMethod,
       note:          _formState.note,
     });
@@ -932,13 +917,6 @@ const ExpenseApp = (() => {
           <input type="text" class="input" id="edit-location" value="${expense.location || ''}" maxlength="50">
         </div>
         <div>
-          <label style="font-weight:600;display:block;margin-bottom:6px">地点类型</label>
-          <div style="display:flex;gap:8px">
-            <button class="chip ${expense.locationType === 'offline' ? 'chip--active' : ''}" data-edit-ltype="offline">🏪 线下</button>
-            <button class="chip ${expense.locationType === 'online' ? 'chip--active' : ''}" data-edit-ltype="online">🌐 线上</button>
-          </div>
-        </div>
-        <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">支付方式</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             ${ExpenseData.PAYMENT_METHODS.map(pm => {
@@ -969,19 +947,6 @@ const ExpenseApp = (() => {
       </div>
     `;
 
-    // 地点类型切换
-    body.querySelectorAll('[data-edit-ltype]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const current = body.querySelector('[data-edit-ltype].chip--active');
-        if (current === btn) {
-          btn.classList.remove('chip--active');
-        } else {
-          if (current) current.classList.remove('chip--active');
-          btn.classList.add('chip--active');
-        }
-      });
-    });
-
     // 支付方式切换
     body.querySelectorAll('[data-edit-pm]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1002,14 +967,12 @@ const ExpenseApp = (() => {
         return;
       }
 
-      const ltypeBtn = body.querySelector('[data-edit-ltype].chip--active');
       const pmBtn = body.querySelector('[data-edit-pm].chip--active');
 
       ExpenseDB.updateExpense(expenseId, {
         amount:        amountVal,
         categoryId:    document.getElementById('edit-category').value,
         location:      document.getElementById('edit-location').value,
-        locationType:  ltypeBtn ? ltypeBtn.dataset.editLtype : '',
         paymentMethod: pmBtn ? pmBtn.dataset.editPm : '',
         note:          document.getElementById('edit-note').value,
         date:          document.getElementById('edit-date').value,
