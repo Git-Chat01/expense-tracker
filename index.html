@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=77">
-  <link rel="stylesheet" href="css/home.css?v=77">
-  <link rel="stylesheet" href="css/add.css?v=77">
-  <link rel="stylesheet" href="css/list.css?v=77">
-  <link rel="stylesheet" href="css/stats.css?v=77">
+  <link rel="stylesheet" href="css/common.css?v=78">
+  <link rel="stylesheet" href="css/home.css?v=78">
+  <link rel="stylesheet" href="css/add.css?v=78">
+  <link rel="stylesheet" href="css/list.css?v=78">
+  <link rel="stylesheet" href="css/stats.css?v=78">
 </head>
 <body>
 
@@ -114,7 +114,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260707-77 · 移除地点类型（线上/线下）
+      v20260707-78 · SW更新提示条：检测到新版本弹横幅，点击更新
     </div>
   </main>
 
@@ -385,6 +385,12 @@
     </div>
   </nav>
 
+  <!-- SW 更新提示条 -->
+  <div id="sw-update-bar" class="sw-update-bar">
+    <span class="sw-update-bar__dot"></span>
+    <span class="sw-update-bar__text">新版本可用</span>
+    <span class="sw-update-bar__btn">更新</span>
+  </div>
 </div><!-- #app -->
 
 <!-- ================================================================
@@ -394,15 +400,48 @@
 <script>
 (function() {
   if (!('serviceWorker' in navigator)) return;
-  // 立即触发 SW 更新检查（不等浏览器默认周期）
+
+  var bar = document.getElementById('sw-update-bar');
+
+  function showBar() {
+    if (bar) bar.classList.add('sw-update-bar--visible');
+  }
+
+  // 检查并显示更新提示条
+  function checkUpdate(reg) {
+    if (reg.waiting) {
+      showBar();
+    }
+    // 监听新 SW 到达 waiting 状态（首次检测时可能还在下载）
+    reg.addEventListener('updatefound', function() {
+      var worker = reg.installing;
+      if (!worker) return;
+      worker.addEventListener('statechange', function() {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+          showBar();
+        }
+      });
+    });
+  }
+
   navigator.serviceWorker.ready.then(function(reg) {
     reg.update();
-    // 如果已有等待中的新 SW，通知其立即激活
-    if (reg.waiting) {
-      reg.waiting.postMessage('skipWaiting');
-    }
+    checkUpdate(reg);
   });
-  // 监听 SW 激活 → 自动刷新
+
+  // 点击更新按钮 → 通知 SW 激活
+  if (bar) {
+    bar.addEventListener('click', function() {
+      navigator.serviceWorker.ready.then(function(reg) {
+        if (reg.waiting) {
+          reg.waiting.postMessage('skipWaiting');
+          bar.classList.remove('sw-update-bar--visible');
+        }
+      });
+    });
+  }
+
+  // SW 激活后自动刷新页面
   var refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', function() {
     if (refreshing) return;
@@ -415,13 +454,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=77"></script>
-<script src="js/data.js?v=77"></script>
-<script src="js/home.js?v=77"></script>
-<script src="js/categories.js?v=77"></script>
-<script src="js/list.js?v=77"></script>
-<script src="js/stats.js?v=77"></script>
-<script src="js/app.js?v=77"></script>
+<script src="js/storage.js?v=78"></script>
+<script src="js/data.js?v=78"></script>
+<script src="js/home.js?v=78"></script>
+<script src="js/categories.js?v=78"></script>
+<script src="js/list.js?v=78"></script>
+<script src="js/stats.js?v=78"></script>
+<script src="js/app.js?v=78"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
