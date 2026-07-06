@@ -1,0 +1,499 @@
+/* ================================================================
+   消费轨迹系统 — stats.css
+   统计页：概览卡片、图表容器、排行榜、时段选择器
+   ================================================================ */
+
+/* -----------------------------------------------------------------
+   统计页容器
+   ----------------------------------------------------------------- */
+.stats-container {
+  padding: var(--space-lg);
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* -----------------------------------------------------------------
+   时段选择器
+   ----------------------------------------------------------------- */
+.stats-period {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+/* -----------------------------------------------------------------
+   概览卡片行（1×3）
+   ----------------------------------------------------------------- */
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+}
+
+.stats-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.stats-card__label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-bottom: 4px;
+}
+
+.stats-card__value {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.stats-card__unit {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+/* -----------------------------------------------------------------
+   图表区块
+   ----------------------------------------------------------------- */
+.stats-chart-section {
+  margin-bottom: calc(var(--space-xl) + var(--space-sm));
+}
+
+.stats-chart-section__title {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.stats-chart-section__title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: var(--color-primary);
+  border-radius: 2px;
+}
+
+.stats-chart-wrapper {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
+  box-shadow: var(--shadow-sm);
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.stats-chart-canvas-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stats-chart-wrapper canvas {
+  max-width: 280px;
+  width: 100%;
+}
+
+/* -----------------------------------------------------------------
+   环形图中心浮层 — 始终显示本期总支出 + 对比
+   ----------------------------------------------------------------- */
+.stats-chart-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  /* 无背景无边框，纯文字悬浮，不遮挡 tooltip */
+  width: 90px;
+  height: 90px;
+}
+
+.stats-chart-center__label {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+.stats-chart-center__total {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 1px;
+}
+
+.stats-chart-center__currency {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.stats-chart-center__compare {
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* -----------------------------------------------------------------
+   自定义 HTML tooltip（替换 Chart.js 内置，支持分行颜色 + 小 ¥ + 分隔线）
+   ----------------------------------------------------------------- */
+.stats-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 14px 18px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  pointer-events: none;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  min-width: 100px;
+}
+
+.stats-tooltip__title {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.stats-tooltip__amount {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  line-height: 1.3;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+}
+
+.stats-tooltip__currency {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+.stats-tooltip__pct {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.stats-tooltip__divider {
+  width: 100%;
+  height: 1px;
+  background: #e0e0e0;
+  margin: 8px 0 4px;
+}
+
+.stats-tooltip__badge {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+/* -----------------------------------------------------------------
+   HTML 手绘图例（替代 Chart.js 内置图例，保证圆点为正圆）
+   竖排列表 — 每条一行：圆点 + 名称 | 金额 + 百分比
+   ----------------------------------------------------------------- */
+.stats-chart-legend {
+  margin-top: var(--space-md);
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  /* 微浮雕效果 — 和 tooltip 详情页风格统一，不用硬边框 */
+  border-radius: 8px;
+  padding: 4px 8px;
+  box-shadow: inset 0 1px 4px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* 自定义滚动条 — 可见的小滑块就是"可滚动"的视觉暗示 */
+.stats-chart-legend::-webkit-scrollbar {
+  width: 5px;
+}
+.stats-chart-legend::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+.stats-chart-legend::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+.stats-chart-legend::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+.stats-chart-legend__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.stats-chart-legend__item:last-child {
+  border-bottom: none;
+}
+
+/* 动画进行中时禁用交互，防止用户连点导致错乱 */
+.stats-chart-legend--animating {
+  pointer-events: none;
+}
+
+.stats-chart-legend__item--active {
+  background: #f0f4ff;
+  border-radius: 8px;
+  margin-left: -4px;
+  margin-right: -4px;
+  padding-left: 8px;
+  padding-right: 8px;
+  transition: margin-right 0.2s ease;
+  /* margin-right 由 JS 根据滚动条状态动态设置：
+     -4px（满宽，无滚动条）↔ 4px（缩短，有滚动条）
+     transition 负责平滑过渡 */
+}
+
+.stats-chart-legend__item--active:first-child {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.stats-chart-legend__item--active .stats-chart-legend__name {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.stats-chart-legend__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stats-chart-legend__name {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stats-chart-legend__amount {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.stats-chart-legend__pct {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  width: 42px;
+  text-align: right;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* -----------------------------------------------------------------
+   地点排行（横向进度条）
+   ----------------------------------------------------------------- */
+.stats-ranking-list {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.stats-ranking-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.stats-ranking-item:last-child {
+  border-bottom: none;
+}
+
+.stats-ranking-item__rank {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--color-divider);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.stats-ranking-item:nth-child(1) .stats-ranking-item__rank {
+  background: #FFD700;
+  color: #fff;
+}
+.stats-ranking-item:nth-child(2) .stats-ranking-item__rank {
+  background: #C0C0C0;
+  color: #fff;
+}
+.stats-ranking-item:nth-child(3) .stats-ranking-item__rank {
+  background: #CD7F32;
+  color: #fff;
+}
+
+.stats-ranking-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.stats-ranking-item__header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.stats-ranking-item__name {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.stats-ranking-item__amount {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.stats-ranking-item__bar-track {
+  height: 6px;
+  background: var(--color-divider);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.stats-ranking-item__bar-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: 3px;
+  transition: width var(--transition-normal);
+}
+
+/* -----------------------------------------------------------------
+   CSS 降级图表（Chart.js 加载失败时显示）
+   ----------------------------------------------------------------- */
+.stats-fallback {
+  width: 100%;
+}
+
+.stats-fallback__bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.stats-fallback__label {
+  width: 80px;
+  font-size: var(--font-size-xs);
+  text-align: right;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stats-fallback__track {
+  flex: 1;
+  height: 20px;
+  background: var(--color-divider);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  position: relative;
+}
+
+.stats-fallback__fill {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  font-size: 11px;
+  color: #fff;
+  font-weight: 500;
+  min-width: 0;
+  transition: width var(--transition-normal);
+}
+
+.stats-fallback__fill--c0 { background: #5470C6; }
+.stats-fallback__fill--c1 { background: #91CC75; }
+.stats-fallback__fill--c2 { background: #FAC858; }
+.stats-fallback__fill--c3 { background: #EE6666; }
+.stats-fallback__fill--c4 { background: #73C0DE; }
+.stats-fallback__fill--c5 { background: #FC8452; }
+.stats-fallback__fill--c6 { background: #9A60B4; }
+.stats-fallback__fill--c7 { background: #EA7CCC; }
+
+.stats-fallback__track--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* -----------------------------------------------------------------
+   无数据空状态
+   ----------------------------------------------------------------- */
+.stats-empty {
+  text-align: center;
+  padding: var(--space-xxxl) var(--space-xl);
+  color: var(--color-text-tertiary);
+}
+
+.stats-empty__icon {
+  font-size: 48px;
+  margin-bottom: var(--space-md);
+}
+
+.stats-empty__text {
+  font-size: var(--font-size-md);
+  margin-bottom: var(--space-sm);
+  color: var(--color-text-secondary);
+}
+
+.stats-empty__hint {
+  font-size: var(--font-size-sm);
+}
