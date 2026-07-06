@@ -1,6 +1,6 @@
 # ================================================================
-# 消费轨迹系统 — GitHub Pages 自定义部署 Workflow
-# 替代自带 Pages 黑盒构建，日志全透明，失败直接定位
+# 消费轨迹系统 — GitHub Pages 部署 Workflow
+# 直接推 gh-pages 分支，绕过 GitHub Pages 部署 API
 # ================================================================
 
 name: Deploy to GitHub Pages
@@ -9,7 +9,6 @@ on:
   push:
     branches: [master]
 
-# 确保同一时间只有一个部署在跑，避免竞态
 concurrency:
   group: pages
   cancel-in-progress: true
@@ -17,33 +16,18 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
-    # 部署权限（必需）
     permissions:
-      contents: read
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      contents: write  # 需要写权限才能推 gh-pages 分支
 
     steps:
-      # 1. 拉取代码
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2. 配置 Pages（自动识别 CNAME 等）
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      # 3. 打包上传
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: '.'
-
-      # 4. 部署
-      - name: Deploy to Pages
-        id: deploy
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          # CNAME 文件自动带上，自定义域名不会丢
+          keep_files: false
