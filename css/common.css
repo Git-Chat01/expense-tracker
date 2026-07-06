@@ -873,12 +873,18 @@ ul, ol {
   gap: 12px;
   min-height: 48px;
   padding: 10px 14px;
-  background: #EDF2FA;
+  /* 微渐变背景：顶部略亮 → 底部略暗，模拟受光面 */
+  background: linear-gradient(180deg, #F0F5FC 0%, #EBF0F8 100%);
   border-radius: 14px;
+  /* 浮雕投影：顶部内高光 + 底部微弱外阴影 */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 1px 3px rgba(74, 144, 217, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.03);
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s ease, box-shadow 0.25s ease;
 }
 
 /* JS 控制显示 */
