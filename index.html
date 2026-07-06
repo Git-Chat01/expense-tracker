@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=83">
-  <link rel="stylesheet" href="css/home.css?v=83">
-  <link rel="stylesheet" href="css/add.css?v=83">
-  <link rel="stylesheet" href="css/list.css?v=83">
-  <link rel="stylesheet" href="css/stats.css?v=83">
+  <link rel="stylesheet" href="css/common.css?v=84">
+  <link rel="stylesheet" href="css/home.css?v=84">
+  <link rel="stylesheet" href="css/add.css?v=84">
+  <link rel="stylesheet" href="css/list.css?v=84">
+  <link rel="stylesheet" href="css/stats.css?v=84">
 </head>
 <body>
 
@@ -126,7 +126,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260707-83 · 验证SW固定URL下更新横幅是否正常弹出
+      v20260707-84 · 更新横幅仅按钮区域响应点击
     </div>
   </main>
 
@@ -442,12 +442,13 @@
     checkUpdate(reg);
   });
 
-  // 点击更新按钮 → 通知 SW 激活
-  if (bar) {
-    bar.addEventListener('click', function() {
+  // 仅"更新"按钮触发 SW 激活，点横幅其他区域不响应
+  var updateBtn = document.querySelector('.sw-update-bar__btn');
+  if (updateBtn) {
+    updateBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
       navigator.serviceWorker.ready.then(function(reg) {
         if (reg.waiting) {
-          // 标记"即将更新"，防止刷新后再次弹出
           sessionStorage.setItem('sw-just-updated', String(Date.now()));
           reg.waiting.postMessage('skipWaiting');
           bar.classList.remove('sw-update-bar--visible');
@@ -469,13 +470,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=83"></script>
-<script src="js/data.js?v=83"></script>
-<script src="js/home.js?v=83"></script>
-<script src="js/categories.js?v=83"></script>
-<script src="js/list.js?v=83"></script>
-<script src="js/stats.js?v=83"></script>
-<script src="js/app.js?v=83"></script>
+<script src="js/storage.js?v=84"></script>
+<script src="js/data.js?v=84"></script>
+<script src="js/home.js?v=84"></script>
+<script src="js/categories.js?v=84"></script>
+<script src="js/list.js?v=84"></script>
+<script src="js/stats.js?v=84"></script>
+<script src="js/app.js?v=84"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
