@@ -955,6 +955,22 @@ const ExpenseStats = (() => {
         // 渲染中心总支出（始终显示）
         _renderCenterTotal(canvasId);
       } else if (type === 'line') {
+        // 动态渐变填充 plugin：每次重绘时基于当前 chartArea 高度重建渐变，
+        // 避免 responsive resize 后渐变尺寸不匹配
+        const gradientPlugin = {
+          id: 'gradientFill',
+          beforeDraw: function(chart) {
+            const chartCtx = chart.ctx;
+            const area = chart.chartArea;
+            if (!area) return;
+            const grad = chartCtx.createLinearGradient(0, area.top, 0, area.bottom);
+            grad.addColorStop(0, COLORS[0] + '40');   // 顶部：曲线下方浓一些
+            grad.addColorStop(0.5, COLORS[0] + '10');  // 中部：逐渐变淡
+            grad.addColorStop(1, COLORS[0] + '00');    // 底部：完全透明
+            chart.data.datasets[0].backgroundColor = grad;
+          }
+        };
+
         _charts[canvasId] = new Chart(ctx, {
           type: 'line',
           data: {
@@ -963,35 +979,79 @@ const ExpenseStats = (() => {
               label: '支出',
               data: data,
               borderColor: COLORS[0],
-              backgroundColor: COLORS[0] + '20',
               fill: true,
               tension: 0.4,
-              pointRadius: 3,
+              pointRadius: 2.5,
               pointBackgroundColor: COLORS[0],
+              pointBorderColor: '#fff',
+              pointBorderWidth: 1.5,
+              pointHoverRadius: 6,
+              pointHoverBorderWidth: 3,
+              pointHoverBorderColor: '#fff',
+              pointHoverBackgroundColor: COLORS[0],
               borderWidth: 2,
             }],
           },
           options: {
             responsive: true,
             maintainAspectRatio: true,
+            // 入场动画：曲线从左往右展开
+            animation: {
+              duration: 600,
+              easing: 'easeOutQuart',
+            },
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
             plugins: {
               legend: { display: false },
+              tooltip: {
+                // 使用 Chart.js 内置 tooltip，样式和饼图自定义 tooltip 统一
+                backgroundColor: '#fff',
+                titleColor: '#333',
+                bodyColor: COLORS[0],
+                borderColor: '#e0e0e0',
+                borderWidth: 1,
+                cornerRadius: 8,
+                padding: { top: 10, right: 14, bottom: 10, left: 14 },
+                titleFont: { size: 12, weight: '600' },
+                bodyFont: { size: 16, weight: '700', family: "'JetBrains Mono', 'SF Mono', 'Consolas', monospace" },
+                displayColors: false,
+                callbacks: {
+                  title: function(items) {
+                    // 显示日期/时段标签
+                    return items[0].label;
+                  },
+                  label: function(item) {
+                    // 显示 ¥金额（千分位）
+                    return '¥' + item.raw.toLocaleString();
+                  },
+                },
+              },
             },
             scales: {
               y: {
                 beginAtZero: true,
                 ticks: {
-                  callback: v => '¥' + v,
+                  // 大数额智能缩略
+                  callback: function(v) {
+                    if (v >= 10000) return '¥' + (v / 10000).toFixed(1) + '万';
+                    if (v >= 1000) return '¥' + (v / 1000).toFixed(1) + 'k';
+                    return '¥' + v;
+                  },
                   font: { size: 10 },
+                  maxTicksLimit: 5,
                 },
                 grid: { color: '#f0f0f0' },
               },
               x: {
-                ticks: { font: { size: 10 } },
+                ticks: { font: { size: 10 }, maxTicksLimit: 12 },
                 grid: { display: false },
               },
             },
           },
+          plugins: [gradientPlugin],
         });
       }
     } catch (e) {
