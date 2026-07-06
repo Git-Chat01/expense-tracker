@@ -1,7 +1,7 @@
 /* ================================================================
    消费轨迹系统 — stats.js
    ExpenseStats 命名空间：统计分析
-   基础版 5 维度：概览 / 分类占比 / 月度趋势 / 地点排行 / 支付分布
+   基础版 4 维度：概览 / 分类占比 / 趋势 / 支付分布
    使用 Chart.js 渲染环形图+折线图，加载失败时降级为纯 CSS 柱状图
    ================================================================ */
 
@@ -171,7 +171,6 @@ const ExpenseStats = (() => {
 
     _renderCategoryChart(expenses);
     _renderTrendChart(from, to);
-    _renderLocationRanking(expenses);
     _renderPaymentChart(expenses);
   }
 
@@ -203,10 +202,6 @@ const ExpenseStats = (() => {
           <canvas id="stats-trend-chart"></canvas>
           <div id="stats-trend-fallback" class="stats-fallback" style="display:none"></div>
         </div>
-      </section>
-      <section class="stats-chart-section">
-        <h2 class="stats-chart-section__title">地点排行</h2>
-        <div class="stats-ranking-list" id="stats-location-list"></div>
       </section>
       <section class="stats-chart-section">
         <h2 class="stats-chart-section__title">支付方式</h2>
@@ -397,53 +392,6 @@ const ExpenseStats = (() => {
 
     const data = keys.map(k => Math.round((valueMap.get(k) || 0) * 100) / 100);
     _drawOrFallback('stats-trend-chart', 'stats-trend-fallback', labels, data, 'line');
-  }
-
-  /* -----------------------------------------------------------------
-     4. 地点排行（纯 CSS 横向进度条）
-     ----------------------------------------------------------------- */
-  function _renderLocationRanking(expenses) {
-    const container = document.getElementById('stats-location-list');
-    if (!container) return;
-
-    // 按地点聚合
-    const locMap = new Map();
-    expenses.forEach(e => {
-      const loc = e.location || '未标记地点';
-      if (!locMap.has(loc)) locMap.set(loc, 0);
-      locMap.set(loc, locMap.get(loc) + e.amount);
-    });
-
-    const sorted = Array.from(locMap.entries())
-      .map(([name, total]) => ({ name, total }))
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 10);
-
-    if (sorted.length === 0) {
-      container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--color-text-tertiary);font-size:var(--font-size-sm)">暂无地点数据</div>';
-      return;
-    }
-
-    const maxAmount = sorted[0].total;
-    const medals = ['🥇', '🥈', '🥉'];
-
-    container.innerHTML = sorted.map((item, i) => {
-      const pct = Math.round((item.total / maxAmount) * 100);
-      const rankDisplay = i < 3 ? medals[i] : (i + 1);
-      return `
-        <div class="stats-ranking-item">
-          <div class="stats-ranking-item__rank">${rankDisplay}</div>
-          <div class="stats-ranking-item__body">
-            <div class="stats-ranking-item__header">
-              <span class="stats-ranking-item__name">${item.name}</span>
-              <span class="stats-ranking-item__amount">¥${item.total.toFixed(0)}</span>
-            </div>
-            <div class="stats-ranking-item__bar-track">
-              <div class="stats-ranking-item__bar-fill" style="width:${pct}%"></div>
-            </div>
-          </div>
-        </div>`;
-    }).join('');
   }
 
   /* -----------------------------------------------------------------
