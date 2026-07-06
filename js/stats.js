@@ -920,8 +920,6 @@ const ExpenseStats = (() => {
         _ensureOverlays(canvasId);
         // 渲染中心总支出（始终显示）
         _renderCenterTotal(canvasId);
-        // 自动选中第一个扇区（让亮块始终存在，滚动条变化时动画可见）
-        _autoSelectFirst(canvasId, data.length);
       } else if (type === 'line') {
         _charts[canvasId] = new Chart(ctx, {
           type: 'line',
