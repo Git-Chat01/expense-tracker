@@ -104,7 +104,7 @@
 }
 
 .stats-chart-wrapper canvas {
-  max-width: 280px;
+  max-width: 260px;
   width: 100%;
 }
 
@@ -124,8 +124,8 @@
   justify-content: center;
   gap: 2px;
   /* 无背景无边框，纯文字悬浮，不遮挡 tooltip */
-  width: 90px;
-  height: 90px;
+  width: 82px;
+  height: 82px;
 }
 
 .stats-chart-center__label {
