@@ -865,61 +865,63 @@ ul, ol {
 }
 
 /* =================================================================
-   SW 更新提示条 — 悬浮在 Tab Bar 上方，轻量不抢眼
+   SW 更新提示条 — 首页数据安全区块上方，低存在感浅色条
    ================================================================= */
 .sw-update-bar {
-  position: fixed;
-  bottom: calc(var(--tab-bar-height) + var(--safe-area-bottom) + 12px);
-  left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  z-index: 9998;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 22px;
-  padding: 8px 14px 8px 16px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
-  display: flex;
+  display: none;
   align-items: center;
-  gap: 10px;
-  font-size: var(--font-size-sm);
-  font-weight: 500;
-  color: var(--color-text-primary);
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 12px;
+  min-height: 48px;
+  padding: 10px 14px;
+  background: #EDF2FA;
+  border-radius: 14px;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
+  transition: opacity 0.25s ease;
 }
 
-/* 显示状态：从底部滑入 */
+/* JS 控制显示 */
 .sw-update-bar--visible {
-  transform: translateX(-50%) translateY(0);
+  display: flex;
 }
 
-/* 蓝色小圆点 — 轻量提示，不说"红点焦虑" */
-.sw-update-bar__dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--color-primary);
+/* 左侧图标 — 很小，不抢眼 */
+.sw-update-bar__icon {
+  font-size: 18px;
+  line-height: 1;
   flex-shrink: 0;
+  opacity: 0.55;
 }
 
-.sw-update-bar__text {
-  white-space: nowrap;
+/* 中间文案区 */
+.sw-update-bar__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
 
-/* 更新按钮 — 小而醒目，但不喧宾夺主 */
-.sw-update-bar__btn {
-  background: var(--color-primary);
-  color: #fff;
-  border: none;
-  border-radius: 14px;
-  padding: 3px 12px;
-  font-size: 12px;
+.sw-update-bar__title {
+  font-size: var(--font-size-sm);
   font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: 1.3;
+}
+
+.sw-update-bar__sub {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  line-height: 1.3;
+}
+
+/* 右侧按钮 — 纯文字，不用实心蓝按钮 */
+.sw-update-bar__btn {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-primary);
   flex-shrink: 0;
-  letter-spacing: 0.3px;
+  padding: 4px 2px;
 }

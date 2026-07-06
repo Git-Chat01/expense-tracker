@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=80">
-  <link rel="stylesheet" href="css/home.css?v=80">
-  <link rel="stylesheet" href="css/add.css?v=80">
-  <link rel="stylesheet" href="css/list.css?v=80">
-  <link rel="stylesheet" href="css/stats.css?v=80">
+  <link rel="stylesheet" href="css/common.css?v=81">
+  <link rel="stylesheet" href="css/home.css?v=81">
+  <link rel="stylesheet" href="css/add.css?v=81">
+  <link rel="stylesheet" href="css/list.css?v=81">
+  <link rel="stylesheet" href="css/stats.css?v=81">
 </head>
 <body>
 
@@ -87,6 +87,18 @@
       </button>
     </section>
 
+    <!-- SW 更新提示（低存在感，仅新版本可用时显示） -->
+    <section class="home-section" style="padding-bottom:0">
+      <div id="sw-update-bar" class="sw-update-bar">
+        <span class="sw-update-bar__icon">↻</span>
+        <div class="sw-update-bar__body">
+          <span class="sw-update-bar__title">发现新版本</span>
+          <span class="sw-update-bar__sub">体验优化，建议更新</span>
+        </div>
+        <span class="sw-update-bar__btn">更新</span>
+      </div>
+    </section>
+
     <!-- 数据管理（备份 / 恢复） -->
     <section class="home-section" style="padding-bottom:var(--space-md)">
       <div class="home-backup card" style="padding:var(--space-md)">
@@ -114,7 +126,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260707-80 · 修复SW注册URL固定（去掉?v参数避免浏览器当成新SW直接激活）
+      v20260707-81 · 更新提示条改首页内联卡片式，低存在感浅蓝条
     </div>
   </main>
 
@@ -385,12 +397,6 @@
     </div>
   </nav>
 
-  <!-- SW 更新提示条 -->
-  <div id="sw-update-bar" class="sw-update-bar">
-    <span class="sw-update-bar__dot"></span>
-    <span class="sw-update-bar__text">新版本可用</span>
-    <span class="sw-update-bar__btn">更新</span>
-  </div>
 </div><!-- #app -->
 
 <!-- ================================================================
@@ -463,13 +469,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=80"></script>
-<script src="js/data.js?v=80"></script>
-<script src="js/home.js?v=80"></script>
-<script src="js/categories.js?v=80"></script>
-<script src="js/list.js?v=80"></script>
-<script src="js/stats.js?v=80"></script>
-<script src="js/app.js?v=80"></script>
+<script src="js/storage.js?v=81"></script>
+<script src="js/data.js?v=81"></script>
+<script src="js/home.js?v=81"></script>
+<script src="js/categories.js?v=81"></script>
+<script src="js/list.js?v=81"></script>
+<script src="js/stats.js?v=81"></script>
+<script src="js/app.js?v=81"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
