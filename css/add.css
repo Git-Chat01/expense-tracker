@@ -317,16 +317,6 @@
   height: 28px;
 }
 
-/* 地点类型切换（跟在地点输入后面） */
-.add-location-type {
-  display: flex;
-  gap: var(--space-xs);
-}
-
-.add-location-type .chip {
-  font-size: 10px;
-  padding: 1px 6px;
-}
 
 /* -----------------------------------------------------------------
    6. 数字键盘

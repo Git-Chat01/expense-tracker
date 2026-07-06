@@ -15,7 +15,6 @@ const ExpenseList = (() => {
     dateTo: '',
     categoryIds: [],
     locationIds: [],
-    locationType: '',
     paymentMethods: [],
     noteKeyword: '',
     sortBy: 'amount',
@@ -66,10 +65,6 @@ const ExpenseList = (() => {
       result = result.filter(e => _filters.locationIds.includes(e.location));
     }
 
-    // 地点类型
-    if (_filters.locationType) {
-      result = result.filter(e => e.locationType === _filters.locationType);
-    }
 
     // 支付方式
     if (_filters.paymentMethods.length > 0) {
@@ -326,17 +321,7 @@ const ExpenseList = (() => {
     const dropdown = document.createElement('div');
     dropdown.className = 'list-dropdown';
 
-    if (filterType === 'locationType') {
-      const options = [
-        { value: '', label: '全部' },
-        { value: 'offline', label: '🏪 线下' },
-        { value: 'online', label: '🌐 线上' },
-      ];
-      dropdown.innerHTML = options.map(o => `
-        <div class="list-dropdown__item ${_filters.locationType === o.value ? 'list-dropdown__item--active' : ''}" data-val="${o.value}">
-          ${o.label}
-        </div>`).join('');
-    } else if (filterType === 'payment') {
+    if (filterType === 'payment') {
       dropdown.innerHTML = ExpenseData.PAYMENT_METHODS.map(pm => `
         <div class="list-dropdown__item ${_filters.paymentMethods.includes(pm.value) ? 'list-dropdown__item--active' : ''}" data-val="${pm.value}">
           ${pm.label}
@@ -402,9 +387,6 @@ const ExpenseList = (() => {
           _toggleArrayFilter('locationIds', val);
         } else if (filterType === 'category') {
           _toggleArrayFilter('categoryIds', val);
-        } else if (filterType === 'locationType') {
-          _filters.locationType = val;
-        }
 
         dropdown.remove();
         _openDropdownBtn = null;
@@ -483,9 +465,6 @@ const ExpenseList = (() => {
     _filters.locationIds.forEach(loc => {
       chips.push({ label: `📍 ${loc}`, key: 'loc-' + loc });
     });
-    if (_filters.locationType) {
-      chips.push({ label: _filters.locationType === 'online' ? '🌐 线上' : '🏪 线下', key: 'ltype' });
-    }
     _filters.paymentMethods.forEach(pm => {
       const p = ExpenseData.PAYMENT_METHODS.find(x => x.value === pm);
       chips.push({ label: p ? p.label : pm, key: 'pm-' + pm });
@@ -515,7 +494,7 @@ const ExpenseList = (() => {
           if (si) si.value = '';
         }
         else if (key === 'date') { _filters.dateFrom = ''; _filters.dateTo = ''; }
-        else if (key === 'ltype') { _filters.locationType = ''; }
+
         else if (key.startsWith('cat-')) {
           const cid = key.replace('cat-', '');
           _filters.categoryIds = _filters.categoryIds.filter(x => x !== cid);
@@ -540,7 +519,6 @@ const ExpenseList = (() => {
         _filters.dateTo = '';
         _filters.categoryIds = [];
         _filters.locationIds = [];
-        _filters.locationType = '';
         _filters.paymentMethods = [];
         // 也清空搜索关键词
         _filters.noteKeyword = '';
@@ -555,7 +533,6 @@ const ExpenseList = (() => {
         _showFilterChipHighlight('date');
         _showFilterChipHighlight('category');
         _showFilterChipHighlight('location');
-        _showFilterChipHighlight('locationType');
         _showFilterChipHighlight('payment');
         render();
       });
@@ -570,7 +547,6 @@ const ExpenseList = (() => {
         const hasActive = (ft === 'date' && _filters.dateFrom)
           || (ft === 'category' && _filters.categoryIds.length > 0)
           || (ft === 'location' && _filters.locationIds.length > 0)
-          || (ft === 'locationType' && _filters.locationType)
           || (ft === 'payment' && _filters.paymentMethods.length > 0);
         btn.classList.toggle('chip--active', hasActive);
       }

@@ -105,14 +105,6 @@ const ExpenseData = (() => {
     { value: 'other',    label: '其他',     color: '#7B61FF' },
   ];
 
-  /* =================================================================
-     地点类型选项
-     ================================================================= */
-  const LOCATION_TYPES = [
-    { value: '',        label: '全部' },
-    { value: 'offline', label: '🏪 线下' },
-    { value: 'online',  label: '🌐 线上' },
-  ];
 
   /* =================================================================
      必要性选项（增强版）
@@ -170,7 +162,6 @@ const ExpenseData = (() => {
     PRESET_TAGS,
     DEFAULT_BUDGET,
     PAYMENT_METHODS,
-    LOCATION_TYPES,
     NECESSITY_OPTIONS,
     VALUE_RATINGS,
     EMOTIONS,
