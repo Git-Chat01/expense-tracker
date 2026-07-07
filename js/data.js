@@ -42,7 +42,7 @@ const ExpenseData = (() => {
     { id: 'cat-utilities',    name: '水电网费',icon: '💡', parentId: null, isPreset: true, order: 50 },
 
     // ── 电话费 ──
-    { id: 'cat-phone',        name: '电话费', icon: '📱', parentId: null, isPreset: true, order: 60 },
+    { id: 'cat-phone',        name: '话费',   icon: '📱', parentId: null, isPreset: true, order: 60 },
 
     // ── 学习 ──
     { id: 'cat-learning',     name: '学习',   icon: '📚', parentId: null, isPreset: true, order: 70 },
