@@ -220,7 +220,7 @@ const ExpenseHome = (() => {
     var daysLeft = _daysLeftInMonth();
     if (daysLeft > 0 && remainingAmount > 0) {
       var dailyAvg = Math.round(remainingAmount / daysLeft);
-      _$budgetAlertDaily.innerHTML = '📅 日均<span style="font-family:var(--font-mono);font-weight:600">' + cur + dailyAvg.toLocaleString() + '</span> · 建议控制在' + cur + dailyAvg.toLocaleString() + '/天不超预算';
+      _$budgetAlertDaily.innerHTML = '📅 日均<span style="font-family:var(--font-mono);font-weight:600">' + cur + dailyAvg.toLocaleString() + '</span> · 每天最多花' + cur + dailyAvg.toLocaleString() + '，超出即超预算';
     } else if (remainingAmount <= 0) {
       _$budgetAlertDaily.textContent = '⚠️ 预算已超支，请注意控制';
     } else {
