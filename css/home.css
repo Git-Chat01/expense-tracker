@@ -237,7 +237,7 @@
 
 .home-budget-alert__divider {
   width: 1px;
-  height: 28px;
+  height: 36px;
   background: var(--color-divider);
   flex-shrink: 0;
   align-self: center;
