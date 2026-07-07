@@ -199,7 +199,9 @@ const ExpenseHome = (() => {
     var setBtn2 = document.getElementById('home-set-budget');
     if (setBtn2) setBtn2.style.display = 'none';
     _$budgetAlertIcon.textContent = closest.icon;
-    _$budgetAlertText.innerHTML = `${closest.catName}预算剩余 <span class="${pctClass}">${remaining}%</span>`;
+    _$budgetAlertText.innerHTML = closest.isTotal
+      ? `月度总预算剩余 <span class="${pctClass}">${remaining}%</span>`
+      : `${closest.catName}预算剩余 <span class="${pctClass}">${remaining}%</span>`;
     _$budgetAlertNums.textContent = `¥${closest.spent.toFixed(0)} / ¥${closest.budget.toLocaleString()}`;
     _$budgetAlertFill.style.width = `${Math.min(closest.pct, 100)}%`;
 
