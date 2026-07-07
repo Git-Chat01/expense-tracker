@@ -124,63 +124,32 @@
 .home-budget-alert {
   padding: var(--space-md) var(--space-lg);
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: var(--space-sm);
 }
 
-.home-budget-alert__left {
+/* 标题行：铃铛 + 预算提醒 + 设置 */
+.home-budget-alert__header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.home-budget-alert__header-left {
+  display: flex;
+  align-items: center;
   gap: var(--space-xs);
-  min-width: 0;
-  flex: 1;
 }
 
 .home-budget-alert__icon {
   font-size: 16px;
   flex-shrink: 0;
-  line-height: 1.4;
 }
 
 .home-budget-alert__title {
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-primary);
-}
-
-.home-budget-alert__sub {
-  display: block;
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  margin-top: 2px;
-  line-height: 1.4;
-}
-
-.home-budget-alert__right {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-  flex-shrink: 0;
-}
-
-.home-budget-alert__stats {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-sm);
-}
-
-.home-budget-alert__pct {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-}
-
-.home-budget-alert__nums {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .home-budget-alert__edit {
@@ -190,10 +159,86 @@
   flex-shrink: 0;
 }
 
-/* 预算提醒 — 百分比颜色 */
-.home-budget-alert__pct.pct-safe   { color: #22C55E; }
-.home-budget-alert__pct.pct-warn   { color: #EAB308; }
-.home-budget-alert__pct.pct-danger { color: #EF4444; }
+/* 已使用金额行 */
+.home-budget-alert__used {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.home-budget-alert__used-amount {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.home-budget-alert__used-total {
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+}
+
+/* 进度条 + 百分比同行 */
+.home-budget-alert__progress-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.home-budget-alert__pct {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* 日均提示行 */
+.home-budget-alert__daily {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+/* 底部三列统计 */
+.home-budget-alert__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--color-divider);
+}
+
+.home-budget-alert__summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.home-budget-alert__summary-label {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+}
+
+.home-budget-alert__summary-value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+}
+
+.home-budget-alert__divider {
+  color: var(--color-divider);
+  font-size: var(--font-size-md);
+}
+
+/* 百分比 & 金额颜色（按剩余比例） */
+.home-budget-alert__pct.pct-safe,
+.home-budget-alert__used-amount.pct-safe     { color: #22C55E; }
+
+.home-budget-alert__pct.pct-warn,
+.home-budget-alert__used-amount.pct-warn     { color: #EAB308; }
+
+.home-budget-alert__pct.pct-danger,
+.home-budget-alert__used-amount.pct-danger   { color: #EF4444; }
 
 /* -----------------------------------------------------------------
    智能提醒

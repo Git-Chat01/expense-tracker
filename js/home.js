@@ -13,7 +13,8 @@ const ExpenseHome = (() => {
   let _$date, _$todayAmount, _$todayCount, _$todayDiff;
   let _$monthAmount, _$monthCount, _$monthDiff;
   let _$alerts, _$recent, _$viewAllBtn;
-  let _$budgetAlert, _$budgetAlertIcon, _$budgetAlertTitle, _$budgetAlertSub, _$budgetAlertPct, _$budgetAlertNums, _$budgetAlertBar, _$budgetAlertFill;
+  let _$budgetAlert, _$budgetAlertUsed, _$budgetAlertTotal, _$budgetAlertPct, _$budgetAlertBar, _$budgetAlertFill;
+  let _$budgetAlertDaily, _$budgetAlertRemaining, _$budgetAlertSummaryTotal, _$budgetAlertSummaryPct;
 
   /**
    * 初始化 DOM 引用（在 render 前调用一次）
@@ -31,13 +32,15 @@ const ExpenseHome = (() => {
     _$viewAllBtn     = document.getElementById('home-view-all');
     // 预算提醒
     _$budgetAlert    = document.getElementById('home-budget-alert');
-    _$budgetAlertIcon= document.getElementById('home-budget-alert-icon');
-    _$budgetAlertTitle=document.getElementById('home-budget-alert-title');
-    _$budgetAlertSub = document.getElementById('home-budget-alert-sub');
+    _$budgetAlertUsed= document.getElementById('home-budget-alert-used');
+    _$budgetAlertTotal=document.getElementById('home-budget-alert-total');
     _$budgetAlertPct = document.getElementById('home-budget-alert-pct');
-    _$budgetAlertNums= document.getElementById('home-budget-alert-nums');
     _$budgetAlertBar = document.getElementById('home-budget-alert-bar');
     _$budgetAlertFill= document.getElementById('home-budget-alert-fill');
+    _$budgetAlertDaily=document.getElementById('home-budget-alert-daily');
+    _$budgetAlertRemaining=document.getElementById('home-budget-alert-remaining');
+    _$budgetAlertSummaryTotal=document.getElementById('home-budget-alert-summary-total');
+    _$budgetAlertSummaryPct=document.getElementById('home-budget-alert-summary-pct');
   }
 
   /* -----------------------------------------------------------------
@@ -144,7 +147,7 @@ const ExpenseHome = (() => {
     const catBudgets = budget.categories || {};
 
     // 遍历所有分类预算，找已用比例最高的（最接近超支）
-    let closest = null; // { catName, icon, budget, spent, pct, isTotal }
+    let closest = null; // { catName, budget, spent, pct, isTotal }
     for (const [catId, catBudget] of Object.entries(catBudgets)) {
       if (!catBudget || catBudget <= 0) continue;
       const spent = ExpenseDB.getCategorySpent(catId);
@@ -153,7 +156,6 @@ const ExpenseHome = (() => {
         const cat = ExpenseDB.getCategory(catId);
         closest = {
           catName: cat ? cat.name : catId,
-          icon: cat ? cat.icon : '📌',
           budget: catBudget,
           spent: spent,
           pct: pct,
@@ -167,8 +169,7 @@ const ExpenseHome = (() => {
       const monthlyBudget = budget.monthlyTotal || 0;
       if (monthlyBudget <= 0) {
         _$budgetAlert.style.display = 'none';
-        // 显示「设置预算」按钮
-        const setBtn = document.getElementById('home-set-budget');
+        var setBtn = document.getElementById('home-set-budget');
         if (setBtn) setBtn.style.display = '';
         return;
       }
@@ -180,7 +181,6 @@ const ExpenseHome = (() => {
       const pct = Math.round((monthTotal / monthlyBudget) * 100);
       closest = {
         catName: '月度总预算',
-        icon: '📊',
         budget: monthlyBudget,
         spent: monthTotal,
         pct: pct,
@@ -188,35 +188,58 @@ const ExpenseHome = (() => {
       };
     }
 
-    const remaining = Math.max(0, 100 - closest.pct);
+    const remainingAmount = closest.budget - closest.spent;
+    const remainingPct = Math.max(0, 100 - closest.pct);
 
-    // 剩余百分比颜色：>50% 绿色（健康）· 30-50% 黄色（警告）· <30% 红色（危险）
-    let pctClass;
-    if (remaining > 50)        pctClass = 'pct-safe';
-    else if (remaining > 30)   pctClass = 'pct-warn';
-    else                       pctClass = 'pct-danger';
+    // 剩余百分比颜色：>50% 绿色 · 30-50% 黄色 · <30% 红色
+    var pctClass;
+    if (remainingPct > 50)        pctClass = 'pct-safe';
+    else if (remainingPct > 30)   pctClass = 'pct-warn';
+    else                           pctClass = 'pct-danger';
 
     _$budgetAlert.style.display = '';
-    // 隐藏「设置预算」按钮（预算已设置时显示提醒卡片即可）
     var setBtn2 = document.getElementById('home-set-budget');
     if (setBtn2) setBtn2.style.display = 'none';
-    _$budgetAlertIcon.textContent = '🔔';
-    _$budgetAlertTitle.textContent = closest.isTotal ? '预算提醒' : closest.catName + '预算剩余';
-    _$budgetAlertSub.textContent = closest.isTotal
-      ? `本月总预算剩余${remaining}%，注意合理规划`
-      : `本月${closest.catName}预算剩余${remaining}%，注意合理规划`;
-    _$budgetAlertPct.textContent = remaining + '%';
-    _$budgetAlertPct.className = 'home-budget-alert__pct ' + pctClass;
-    _$budgetAlertNums.textContent = `¥${closest.spent.toFixed(0)} / ¥${closest.budget.toLocaleString()}`;
-    _$budgetAlertFill.style.width = `${Math.min(closest.pct, 100)}%`;
 
-    // 进度条颜色
+    // 已使用金额（大号 + 颜色） / 预算总额（弱显示）
+    _$budgetAlertUsed.textContent = '¥' + closest.spent.toFixed(0);
+    _$budgetAlertUsed.className = 'home-budget-alert__used-amount ' + pctClass;
+    _$budgetAlertTotal.textContent = ' / ¥' + closest.budget.toLocaleString();
+
+    // 进度条 + 百分比
+    _$budgetAlertFill.style.width = Math.min(closest.pct, 100) + '%';
     _$budgetAlertFill.className = 'progress-bar__fill';
     if (closest.pct > 95)       _$budgetAlertFill.classList.add('progress-bar__fill--over');
     else if (closest.pct > 90)  _$budgetAlertFill.classList.add('progress-bar__fill--danger');
     else if (closest.pct > 80)  _$budgetAlertFill.classList.add('progress-bar__fill--warn');
     else if (closest.pct > 60)  _$budgetAlertFill.classList.add('progress-bar__fill--watch');
     else                         _$budgetAlertFill.classList.add('progress-bar__fill--safe');
+
+    _$budgetAlertPct.textContent = closest.pct + '%';
+    _$budgetAlertPct.className = 'home-budget-alert__pct ' + pctClass;
+
+    // 日均提示
+    var daysLeft = _daysLeftInMonth();
+    if (daysLeft > 0 && remainingAmount > 0) {
+      var dailyAvg = Math.round(remainingAmount / daysLeft);
+      _$budgetAlertDaily.innerHTML = '📅 日均<span style="font-family:var(--font-mono);font-weight:600">¥' + dailyAvg.toLocaleString() + '</span> · 建议控制在￥' + dailyAvg.toLocaleString() + '/天不超预算';
+    } else if (remainingAmount <= 0) {
+      _$budgetAlertDaily.textContent = '⚠️ 预算已超支，请注意控制';
+    } else {
+      _$budgetAlertDaily.textContent = '';
+    }
+
+    // 底部三列统计
+    _$budgetAlertRemaining.textContent = '¥' + Math.max(0, remainingAmount).toLocaleString();
+    _$budgetAlertSummaryTotal.textContent = '¥' + closest.budget.toLocaleString();
+    _$budgetAlertSummaryPct.textContent = closest.pct + '%';
+  }
+
+  /** 本月剩余天数（含今天） */
+  function _daysLeftInMonth() {
+    var now = new Date();
+    var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return lastDay - now.getDate() + 1;
   }
 
   /* -----------------------------------------------------------------
