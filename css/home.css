@@ -78,12 +78,9 @@
 .home-overview__amount {
   font-family: var(--font-mono);
   font-weight: 700;
+  font-size: 26px;
   color: var(--color-text-primary);
   line-height: 1.2;
-}
-
-.home-overview__amount.amount--large {
-  font-size: 28px;
 }
 
 .home-overview__diff {
