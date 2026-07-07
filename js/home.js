@@ -219,7 +219,7 @@ const ExpenseHome = (() => {
     // 日均提示
     var daysLeft = _daysLeftInMonth();
     if (daysLeft > 0 && remainingAmount > 0) {
-      var dailyAvg = Math.round(remainingAmount / daysLeft);
+      var dailyAvg = Math.floor(remainingAmount / daysLeft);
       _$budgetAlertDaily.innerHTML = '📅 日均<span style="font-family:var(--font-mono);font-weight:600">' + cur + dailyAvg.toLocaleString() + '</span> · 每天最多花' + cur + dailyAvg.toLocaleString() + '，不会超预算';
     } else if (remainingAmount <= 0) {
       _$budgetAlertDaily.textContent = '⚠️ 预算已超支，请注意控制';
