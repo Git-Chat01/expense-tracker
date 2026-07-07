@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=92">
-  <link rel="stylesheet" href="css/home.css?v=92">
-  <link rel="stylesheet" href="css/add.css?v=92">
-  <link rel="stylesheet" href="css/list.css?v=92">
-  <link rel="stylesheet" href="css/stats.css?v=92">
+  <link rel="stylesheet" href="css/common.css?v=93">
+  <link rel="stylesheet" href="css/home.css?v=93">
+  <link rel="stylesheet" href="css/add.css?v=93">
+  <link rel="stylesheet" href="css/list.css?v=93">
+  <link rel="stylesheet" href="css/stats.css?v=93">
 </head>
 <body>
 
@@ -51,27 +51,26 @@
         <div class="home-overview__side">
           <span class="home-overview__label">本月消费</span>
           <span class="home-overview__amount" id="home-month-amount">¥0</span>
-          <div class="home-overview__progress progress-bar" id="home-budget-bar" style="display:none">
-            <div class="progress-bar__fill progress-bar__fill--safe" id="home-budget-fill" style="width:0%"></div>
-          </div>
-          <span class="home-overview__budget-label" id="home-budget-label">未设预算</span>
-          <button class="btn btn--ghost btn--small" id="home-set-budget" style="margin-top:6px">+ 设置预算</button>
+          <span class="home-overview__count" id="home-month-count">0 笔</span>
+          <span class="home-overview__diff" id="home-month-diff"></span>
         </div>
       </div>
     </section>
 
-    <!-- 预算提醒：自动选最接近超支的分类 -->
+    <!-- 预算提醒：自动选最接近超支的分类，点击可设置预算 -->
     <section class="home-section">
       <div class="home-budget-alert card" id="home-budget-alert" style="display:none">
         <div class="home-budget-alert__header">
           <span class="home-budget-alert__icon" id="home-budget-alert-icon"></span>
           <span class="home-budget-alert__text" id="home-budget-alert-text"></span>
           <span class="home-budget-alert__nums" id="home-budget-alert-nums"></span>
+          <span style="font-size:11px;color:var(--color-text-tertiary);cursor:pointer" id="home-budget-alert-edit">⚙️</span>
         </div>
         <div class="progress-bar" id="home-budget-alert-bar">
           <div class="progress-bar__fill" id="home-budget-alert-fill" style="width:0%"></div>
         </div>
       </div>
+      <button class="btn btn--ghost btn--small" id="home-set-budget" style="width:100%;justify-content:center;margin-top:0">+ 设置月度预算</button>
     </section>
 
     <!-- 智能提醒（仅在预算超标时出现，平时隐藏） -->
@@ -134,7 +133,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260707-92 · 首页布局重构：今日+本月并列+昨日对比+预算提醒
+      v20260707-93 · 首页精简：右栏去进度条+较上月对比+笔数
     </div>
   </main>
 
@@ -477,13 +476,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=92"></script>
-<script src="js/data.js?v=92"></script>
-<script src="js/home.js?v=92"></script>
-<script src="js/categories.js?v=92"></script>
-<script src="js/list.js?v=92"></script>
-<script src="js/stats.js?v=92"></script>
-<script src="js/app.js?v=92"></script>
+<script src="js/storage.js?v=93"></script>
+<script src="js/data.js?v=93"></script>
+<script src="js/home.js?v=93"></script>
+<script src="js/categories.js?v=93"></script>
+<script src="js/list.js?v=93"></script>
+<script src="js/stats.js?v=93"></script>
+<script src="js/app.js?v=93"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">

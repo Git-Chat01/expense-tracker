@@ -723,6 +723,15 @@ const ExpenseApp = (() => {
       setBudgetBtn.addEventListener('click', _openBudgetOverlay);
     }
 
+    // 预算提醒卡片 ⚙️ → 打开预算设置
+    const budgetEditBtn = document.getElementById('home-budget-alert-edit');
+    if (budgetEditBtn) {
+      budgetEditBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        _openBudgetOverlay();
+      });
+    }
+
     // 查看全部 → 跳转账单页
     const viewAllBtn = document.getElementById('home-view-all');
     if (viewAllBtn) {
