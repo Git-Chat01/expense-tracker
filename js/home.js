@@ -221,9 +221,24 @@ const ExpenseHome = (() => {
     if (daysLeft > 0 && remainingAmount > 0) {
       var dailyAvg = Math.floor(remainingAmount / daysLeft);
       var todayDay = new Date().getDate();
-      _$budgetAlertDaily.innerHTML = '<span style="display:inline-block;vertical-align:middle;width:18px;border-radius:3px 3px 0 0;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.1);margin-right:3px;position:relative;top:-1px">'
-        + '<span style="display:block;height:5px;background:var(--color-budget-warn);border-radius:3px 3px 0 0"></span>'
-        + '<span style="display:block;height:15px;line-height:15px;text-align:center;font-size:10px;font-weight:700;color:var(--color-text-secondary);background:var(--color-surface);border-radius:0 0 3px 3px">' + todayDay + '</span>'
+      _$budgetAlertDaily.innerHTML = '<span style="display:inline-block;vertical-align:middle;margin-right:4px;position:relative;top:-1px">'
+        // 活页孔（两个小圆环）
+        + '<span style="display:block;text-align:center;line-height:0;margin-bottom:1px">'
+          + '<span style="display:inline-block;width:3px;height:3px;border-radius:50%;background:#999;margin:0 3px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.4)"></span>'
+          + '<span style="display:inline-block;width:3px;height:3px;border-radius:50%;background:#999;margin:0 3px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.4)"></span>'
+        + '</span>'
+        // 日历主体（带叠页效果）
+        + '<span style="display:block;position:relative;width:22px">'
+          // 底层衬页（偏移露出，模拟多页叠加）
+          + '<span style="display:block;position:absolute;top:1px;left:1px;right:0;height:20px;background:var(--color-divider);border-radius:3px"></span>'
+          // 正面日历页
+          + '<span style="display:block;position:relative;border-radius:3px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.15)">'
+            // 彩色顶栏（月标）
+            + '<span style="display:block;height:5px;background:var(--color-budget-warn);border-radius:3px 3px 0 0"></span>'
+            // 日期主体
+            + '<span style="display:block;height:16px;line-height:16px;text-align:center;font-size:10px;font-weight:700;color:var(--color-text-secondary);background:#fafafa">' + todayDay + '</span>'
+          + '</span>'
+        + '</span>'
         + '</span> 日均可用<span style="font-family:var(--font-mono);font-weight:600">' + cur + dailyAvg.toLocaleString() + '</span>，不会超预算';
     } else if (remainingAmount <= 0) {
       _$budgetAlertDaily.textContent = '⚠️ 预算已超支，请注意控制';
