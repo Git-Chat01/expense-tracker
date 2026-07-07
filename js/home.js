@@ -74,7 +74,7 @@ const ExpenseHome = (() => {
     const todayExpenses = expenses.filter(e => e.date === today);
     const total = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-    _$todayAmount.textContent = `¥${total.toFixed(2)}`;
+    _$todayAmount.innerHTML = '<span class="home-overview__currency">¥</span>' + total.toFixed(2);
     _$todayCount.textContent = `${todayExpenses.length} 笔`;
 
     // 较昨日对比
@@ -109,7 +109,7 @@ const ExpenseHome = (() => {
     const monthExpenses = expenses.filter(e => e.date.startsWith(currentYM));
     const monthTotal = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-    _$monthAmount.textContent = `¥${monthTotal.toFixed(2)}`;
+    _$monthAmount.innerHTML = '<span class="home-overview__currency">¥</span>' + monthTotal.toFixed(2);
     _$monthCount.textContent = `${monthExpenses.length} 笔`;
 
     // 较上月对比
