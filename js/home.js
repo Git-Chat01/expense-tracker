@@ -189,34 +189,30 @@ const ExpenseHome = (() => {
     }
 
     const remainingAmount = closest.budget - closest.spent;
-    const remainingPct = Math.max(0, 100 - closest.pct);
 
-    // 剩余百分比颜色：>50% 绿色 · 30-50% 黄色 · <30% 红色
-    var pctClass;
-    if (remainingPct > 50)        pctClass = 'pct-safe';
-    else if (remainingPct > 30)   pctClass = 'pct-warn';
-    else                           pctClass = 'pct-danger';
+    // 进度条颜色等级（按已用比例）：safe ≤60% < watch ≤80% < warn ≤90% < danger ≤95% < over
+    var barClass = 'progress-bar__fill--safe';
+    if (closest.pct > 95)       barClass = 'progress-bar__fill--over';
+    else if (closest.pct > 90)  barClass = 'progress-bar__fill--danger';
+    else if (closest.pct > 80)  barClass = 'progress-bar__fill--warn';
+    else if (closest.pct > 60)  barClass = 'progress-bar__fill--watch';
 
     _$budgetAlert.style.display = '';
     var setBtn2 = document.getElementById('home-set-budget');
     if (setBtn2) setBtn2.style.display = 'none';
 
-    // 已使用金额（大号 + 颜色） / 预算总额（弱显示）
+    // 已使用金额（大号 + 与进度条同色） / 预算总额（弱显示）
     _$budgetAlertUsed.textContent = '¥' + closest.spent.toFixed(0);
-    _$budgetAlertUsed.className = 'home-budget-alert__used-amount ' + pctClass;
+    _$budgetAlertUsed.className = 'home-budget-alert__used-amount ' + barClass;
     _$budgetAlertTotal.textContent = ' / ¥' + closest.budget.toLocaleString();
 
-    // 进度条 + 百分比
+    // 进度条
     _$budgetAlertFill.style.width = Math.min(closest.pct, 100) + '%';
-    _$budgetAlertFill.className = 'progress-bar__fill';
-    if (closest.pct > 95)       _$budgetAlertFill.classList.add('progress-bar__fill--over');
-    else if (closest.pct > 90)  _$budgetAlertFill.classList.add('progress-bar__fill--danger');
-    else if (closest.pct > 80)  _$budgetAlertFill.classList.add('progress-bar__fill--warn');
-    else if (closest.pct > 60)  _$budgetAlertFill.classList.add('progress-bar__fill--watch');
-    else                         _$budgetAlertFill.classList.add('progress-bar__fill--safe');
+    _$budgetAlertFill.className = 'progress-bar__fill ' + barClass;
 
+    // 百分比（与进度条同色）
     _$budgetAlertPct.textContent = closest.pct + '%';
-    _$budgetAlertPct.className = 'home-budget-alert__pct ' + pctClass;
+    _$budgetAlertPct.className = 'home-budget-alert__pct ' + barClass;
 
     // 日均提示
     var daysLeft = _daysLeftInMonth();
