@@ -13,7 +13,7 @@ const ExpenseHome = (() => {
   let _$date, _$todayAmount, _$todayCount, _$todayDiff;
   let _$monthAmount, _$monthCount, _$monthDiff;
   let _$alerts, _$recent, _$viewAllBtn;
-  let _$budgetAlert, _$budgetAlertIcon, _$budgetAlertText, _$budgetAlertNums, _$budgetAlertBar, _$budgetAlertFill;
+  let _$budgetAlert, _$budgetAlertIcon, _$budgetAlertTitle, _$budgetAlertPct, _$budgetAlertNums, _$budgetAlertBar, _$budgetAlertFill;
 
   /**
    * 初始化 DOM 引用（在 render 前调用一次）
@@ -32,7 +32,8 @@ const ExpenseHome = (() => {
     // 预算提醒
     _$budgetAlert    = document.getElementById('home-budget-alert');
     _$budgetAlertIcon= document.getElementById('home-budget-alert-icon');
-    _$budgetAlertText= document.getElementById('home-budget-alert-text');
+    _$budgetAlertTitle=document.getElementById('home-budget-alert-title');
+    _$budgetAlertPct = document.getElementById('home-budget-alert-pct');
     _$budgetAlertNums= document.getElementById('home-budget-alert-nums');
     _$budgetAlertBar = document.getElementById('home-budget-alert-bar');
     _$budgetAlertFill= document.getElementById('home-budget-alert-fill');
@@ -199,9 +200,9 @@ const ExpenseHome = (() => {
     var setBtn2 = document.getElementById('home-set-budget');
     if (setBtn2) setBtn2.style.display = 'none';
     _$budgetAlertIcon.textContent = '🔔';
-    _$budgetAlertText.innerHTML = closest.isTotal
-      ? `预算提醒 <span class="${pctClass}">${remaining}%</span>`
-      : `${closest.catName}预算剩余 <span class="${pctClass}">${remaining}%</span>`;
+    _$budgetAlertTitle.textContent = closest.isTotal ? '预算提醒' : closest.catName + '预算剩余';
+    _$budgetAlertPct.textContent = remaining + '%';
+    _$budgetAlertPct.className = 'home-budget-alert__pct ' + pctClass;
     _$budgetAlertNums.textContent = `¥${closest.spent.toFixed(0)} / ¥${closest.budget.toLocaleString()}`;
     _$budgetAlertFill.style.width = `${Math.min(closest.pct, 100)}%`;
 

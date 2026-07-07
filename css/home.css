@@ -124,12 +124,6 @@
 .home-budget-alert {
   padding: var(--space-md) var(--space-lg);
   display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
-
-.home-budget-alert__header {
-  display: flex;
   align-items: center;
   gap: var(--space-sm);
 }
@@ -139,11 +133,31 @@
   flex-shrink: 0;
 }
 
-.home-budget-alert__text {
-  flex: 1;
+.home-budget-alert__title {
   font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--color-text-primary);
+  flex-shrink: 0;
+}
+
+.home-budget-alert__right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.home-budget-alert__stats {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}
+
+.home-budget-alert__pct {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
 }
 
 .home-budget-alert__nums {
@@ -153,10 +167,17 @@
   flex-shrink: 0;
 }
 
+.home-budget-alert__edit {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 /* 预算提醒 — 百分比颜色 */
-.home-budget-alert__text .pct-safe   { color: #22C55E; font-weight: 600; }
-.home-budget-alert__text .pct-warn   { color: #EAB308; font-weight: 600; }
-.home-budget-alert__text .pct-danger { color: #EF4444; font-weight: 600; }
+.home-budget-alert__pct.pct-safe   { color: #22C55E; }
+.home-budget-alert__pct.pct-warn   { color: #EAB308; }
+.home-budget-alert__pct.pct-danger { color: #EF4444; }
 
 /* -----------------------------------------------------------------
    智能提醒
