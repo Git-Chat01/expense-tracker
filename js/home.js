@@ -203,9 +203,10 @@ const ExpenseHome = (() => {
     if (setBtn2) setBtn2.style.display = 'none';
 
     // 已使用金额（大号 + 与进度条同色，用 style.color 避免套进度条 background）
-    _$budgetAlertUsed.textContent = '¥' + closest.spent.toFixed(0);
+    var cur = '<span class="home-budget-alert__currency">¥</span>';
+    _$budgetAlertUsed.innerHTML = cur + closest.spent.toFixed(0);
     _$budgetAlertUsed.style.color = barColor;
-    _$budgetAlertTotal.textContent = ' / ¥' + closest.budget.toLocaleString();
+    _$budgetAlertTotal.innerHTML = ' / ' + cur + closest.budget.toLocaleString();
 
     // 进度条
     _$budgetAlertFill.style.width = Math.min(closest.pct, 100) + '%';
@@ -219,7 +220,7 @@ const ExpenseHome = (() => {
     var daysLeft = _daysLeftInMonth();
     if (daysLeft > 0 && remainingAmount > 0) {
       var dailyAvg = Math.round(remainingAmount / daysLeft);
-      _$budgetAlertDaily.innerHTML = '📅 日均<span style="font-family:var(--font-mono);font-weight:600">¥' + dailyAvg.toLocaleString() + '</span> · 建议控制在￥' + dailyAvg.toLocaleString() + '/天不超预算';
+      _$budgetAlertDaily.innerHTML = '📅 日均<span style="font-family:var(--font-mono);font-weight:600">' + cur + dailyAvg.toLocaleString() + '</span> · 建议控制在' + cur + dailyAvg.toLocaleString() + '/天不超预算';
     } else if (remainingAmount <= 0) {
       _$budgetAlertDaily.textContent = '⚠️ 预算已超支，请注意控制';
     } else {
@@ -227,8 +228,8 @@ const ExpenseHome = (() => {
     }
 
     // 底部三列统计
-    _$budgetAlertRemaining.textContent = '¥' + Math.max(0, remainingAmount).toLocaleString();
-    _$budgetAlertSummaryTotal.textContent = '¥' + closest.budget.toLocaleString();
+    _$budgetAlertRemaining.innerHTML = cur + Math.max(0, remainingAmount).toLocaleString();
+    _$budgetAlertSummaryTotal.innerHTML = cur + closest.budget.toLocaleString();
     _$budgetAlertSummaryPct.textContent = closest.pct + '%';
   }
 

@@ -171,6 +171,12 @@
   font-family: var(--font-mono);
 }
 
+/* ¥ 符号统一比数字略小 */
+.home-budget-alert__currency {
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
 .home-budget-alert__used-total {
   font-size: var(--font-size-sm);
   font-weight: 400;
