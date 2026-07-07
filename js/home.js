@@ -225,18 +225,18 @@ const ExpenseHome = (() => {
         // 日历主体（带叠页效果）
         + '<span style="display:block;position:relative;width:22px">'
           // 底层衬页（偏移露出，模拟多页叠加）
-          + '<span style="display:block;position:absolute;top:1px;left:1px;right:0;height:25px;background:var(--color-divider);border-radius:3px"></span>'
+          + '<span style="display:block;position:absolute;top:1px;left:1px;right:0;height:21px;background:var(--color-divider);border-radius:3px"></span>'
           // 正面日历页
           + '<span style="display:block;position:relative;border-radius:3px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.15)">'
             // 顶部留白区（活页孔打在这里，嵌入纸张内部）
-            + '<span style="display:block;height:5px;background:#fafafa;text-align:center;line-height:5px">'
-              + '<span style="display:inline-block;width:3px;height:3px;border-radius:50%;background:#999;margin:0 3px;vertical-align:middle;box-shadow:inset 0 1px 0 rgba(255,255,255,0.4)"></span>'
-              + '<span style="display:inline-block;width:3px;height:3px;border-radius:50%;background:#999;margin:0 3px;vertical-align:middle;box-shadow:inset 0 1px 0 rgba(255,255,255,0.4)"></span>'
+            + '<span style="display:block;height:4px;background:#fafafa;text-align:center;line-height:4px">'
+              + '<span style="display:inline-block;width:2px;height:2px;border-radius:50%;background:#999;margin:0 3px;vertical-align:middle;box-shadow:inset 0 1px 0 rgba(255,255,255,0.4)"></span>'
+              + '<span style="display:inline-block;width:2px;height:2px;border-radius:50%;background:#999;margin:0 3px;vertical-align:middle;box-shadow:inset 0 1px 0 rgba(255,255,255,0.4)"></span>'
             + '</span>'
             // 彩色顶栏（月标）
-            + '<span style="display:block;height:5px;background:var(--color-budget-warn)"></span>'
+            + '<span style="display:block;height:4px;background:var(--color-budget-warn)"></span>'
             // 日期主体
-            + '<span style="display:block;height:16px;line-height:16px;text-align:center;font-size:10px;font-weight:700;color:var(--color-text-secondary);background:#fafafa">' + todayDay + '</span>'
+            + '<span style="display:block;height:14px;line-height:14px;text-align:center;font-size:10px;font-weight:700;color:var(--color-text-secondary);background:#fafafa">' + todayDay + '</span>'
           + '</span>'
         + '</span>'
         + '</span> 日均可用<span style="font-family:var(--font-mono);font-weight:600">' + cur + dailyAvg.toLocaleString() + '</span>，不会超预算';
