@@ -143,7 +143,19 @@ const ExpenseApp = (() => {
       _renderPaymentMethods();
       _updateAmountDisplay();
     } else if (viewId === 'list') {
-      if (typeof ExpenseList !== 'undefined') ExpenseList.render();
+      if (typeof ExpenseList !== 'undefined') {
+        try {
+          ExpenseList.render();
+        } catch (e) {
+          console.error('[App] ExpenseList.render 异常:', e);
+          var lc = document.getElementById('list-content');
+          if (lc) lc.innerHTML = '<div class="empty-state"><div class="empty-state__icon">⚠️</div><p class="empty-state__text">渲染出错</p><p class="empty-state__hint">' + e.message + '</p></div>';
+        }
+      } else {
+        console.error('[App] ExpenseList 未定义，list.js 可能加载失败');
+        var lc2 = document.getElementById('list-content');
+        if (lc2) lc2.innerHTML = '<div class="empty-state"><div class="empty-state__icon">⚠️</div><p class="empty-state__text">模块加载失败</p><p class="empty-state__hint">请刷新页面重试</p></div>';
+      }
     } else if (viewId === 'stats') {
       if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
     }
