@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=135">
-  <link rel="stylesheet" href="css/home.css?v=135">
-  <link rel="stylesheet" href="css/add.css?v=135">
-  <link rel="stylesheet" href="css/list.css?v=135">
-  <link rel="stylesheet" href="css/stats.css?v=135">
+  <link rel="stylesheet" href="css/common.css?v=136">
+  <link rel="stylesheet" href="css/home.css?v=136">
+  <link rel="stylesheet" href="css/add.css?v=136">
+  <link rel="stylesheet" href="css/list.css?v=136">
+  <link rel="stylesheet" href="css/stats.css?v=136">
 </head>
 <body>
 
@@ -159,8 +159,8 @@
     </section>
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
-    <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260708-135 · 修复SW更新提醒竞态：updatefound监听器移到update前
+    <div id="app-version" style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
+      v20260708-136 · 更新提醒条显示版本号
     </div>
   </main>
 
@@ -443,7 +443,15 @@
   var bar = document.getElementById('sw-update-bar');
 
   function showBar() {
-    if (bar) bar.classList.add('sw-update-bar--visible');
+    if (!bar) return;
+    // 从页面底部版本信息提取版本号，显示在更新条副标题里
+    var versionEl = document.getElementById('app-version');
+    if (versionEl) {
+      var versionText = versionEl.textContent.trim().split(' · ')[0]; // "v20260708-135"
+      var subEl = bar.querySelector('.sw-update-bar__sub');
+      if (subEl) subEl.textContent = versionText + ' 可用，建议更新';
+    }
+    bar.classList.add('sw-update-bar--visible');
   }
 
   navigator.serviceWorker.ready.then(function(reg) {
@@ -504,13 +512,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=135"></script>
-<script src="js/data.js?v=135"></script>
-<script src="js/home.js?v=135"></script>
-<script src="js/categories.js?v=135"></script>
-<script src="js/list.js?v=135"></script>
-<script src="js/stats.js?v=135"></script>
-<script src="js/app.js?v=135"></script>
+<script src="js/storage.js?v=136"></script>
+<script src="js/data.js?v=136"></script>
+<script src="js/home.js?v=136"></script>
+<script src="js/categories.js?v=136"></script>
+<script src="js/list.js?v=136"></script>
+<script src="js/stats.js?v=136"></script>
+<script src="js/app.js?v=136"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
