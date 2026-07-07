@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=104">
-  <link rel="stylesheet" href="css/home.css?v=104">
-  <link rel="stylesheet" href="css/add.css?v=104">
-  <link rel="stylesheet" href="css/list.css?v=104">
-  <link rel="stylesheet" href="css/stats.css?v=104">
+  <link rel="stylesheet" href="css/common.css?v=105">
+  <link rel="stylesheet" href="css/home.css?v=105">
+  <link rel="stylesheet" href="css/add.css?v=105">
+  <link rel="stylesheet" href="css/list.css?v=105">
+  <link rel="stylesheet" href="css/stats.css?v=105">
 </head>
 <body>
 
@@ -62,8 +62,13 @@
     <!-- 预算提醒：自动选最接近超支的分类，点击可设置预算 -->
     <section class="home-section">
       <div class="home-budget-alert card" id="home-budget-alert" style="display:none">
-        <span class="home-budget-alert__icon" id="home-budget-alert-icon"></span>
-        <span class="home-budget-alert__title" id="home-budget-alert-title"></span>
+        <div class="home-budget-alert__left">
+          <span class="home-budget-alert__icon" id="home-budget-alert-icon"></span>
+          <div>
+            <span class="home-budget-alert__title" id="home-budget-alert-title"></span>
+            <span class="home-budget-alert__sub" id="home-budget-alert-sub"></span>
+          </div>
+        </div>
         <div class="home-budget-alert__right">
           <div class="home-budget-alert__stats">
             <span class="home-budget-alert__pct" id="home-budget-alert-pct"></span>
@@ -138,7 +143,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260708-104 · 预算提醒卡片左右布局 + 进度条右置
+      v20260708-105 · 预算提醒加副标题 + 进度条左对齐
     </div>
   </main>
 
@@ -481,13 +486,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=104"></script>
-<script src="js/data.js?v=104"></script>
-<script src="js/home.js?v=104"></script>
-<script src="js/categories.js?v=104"></script>
-<script src="js/list.js?v=104"></script>
-<script src="js/stats.js?v=104"></script>
-<script src="js/app.js?v=104"></script>
+<script src="js/storage.js?v=105"></script>
+<script src="js/data.js?v=105"></script>
+<script src="js/home.js?v=105"></script>
+<script src="js/categories.js?v=105"></script>
+<script src="js/list.js?v=105"></script>
+<script src="js/stats.js?v=105"></script>
+<script src="js/app.js?v=105"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
