@@ -210,7 +210,8 @@
 .home-budget-alert__summary {
   display: flex;
   align-items: center;
-  justify-content: space-around;
+  justify-content: center;
+  gap: var(--space-lg);
   padding-top: var(--space-xs);
   border-top: 1px solid var(--color-divider);
 }
