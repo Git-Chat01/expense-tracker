@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=137">
-  <link rel="stylesheet" href="css/home.css?v=137">
-  <link rel="stylesheet" href="css/add.css?v=137">
-  <link rel="stylesheet" href="css/list.css?v=137">
-  <link rel="stylesheet" href="css/stats.css?v=137">
+  <link rel="stylesheet" href="css/common.css?v=138">
+  <link rel="stylesheet" href="css/home.css?v=138">
+  <link rel="stylesheet" href="css/add.css?v=138">
+  <link rel="stylesheet" href="css/list.css?v=138">
+  <link rel="stylesheet" href="css/stats.css?v=138">
 </head>
 <body>
 
@@ -31,7 +31,7 @@
   <main id="view-home" class="main-view main-view--active">
     <!-- 标题栏 -->
     <header class="home-header">
-      <h1 class="home-header__title">消费轨迹 <span class="home-header__version" id="home-version-badge"></span></h1>
+      <h1 class="home-header__title">消费轨迹</h1>
       <span class="home-header__date" id="home-date"></span>
     </header>
 
@@ -160,7 +160,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260708-137 · 标题栏旁显示当前版本号标签
+      v20260708-138 · 回退标题栏版本标签（理解错误）
     </div>
   </main>
 
@@ -509,27 +509,16 @@
 })();
 </script>
 
-<!-- 版本号标签：从底部版本文字提取，显示在标题栏旁边 -->
-<script>
-(function() {
-  var versionEl = document.getElementById('app-version');
-  var badge = document.getElementById('home-version-badge');
-  if (versionEl && badge) {
-    badge.textContent = versionEl.textContent.trim().split(' · ')[0];
-  }
-})();
-</script>
-
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=137"></script>
-<script src="js/data.js?v=137"></script>
-<script src="js/home.js?v=137"></script>
-<script src="js/categories.js?v=137"></script>
-<script src="js/list.js?v=137"></script>
-<script src="js/stats.js?v=137"></script>
-<script src="js/app.js?v=137"></script>
+<script src="js/storage.js?v=138"></script>
+<script src="js/data.js?v=138"></script>
+<script src="js/home.js?v=138"></script>
+<script src="js/categories.js?v=138"></script>
+<script src="js/list.js?v=138"></script>
+<script src="js/stats.js?v=138"></script>
+<script src="js/app.js?v=138"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
