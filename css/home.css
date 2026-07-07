@@ -237,7 +237,8 @@
 
 .home-budget-alert__divider {
   color: var(--color-divider);
-  font-size: var(--font-size-md);
+  font-size: 18px;
+  line-height: 1;
 }
 
 
