@@ -230,21 +230,6 @@
   font-size: var(--font-size-md);
 }
 
-/* 金额 & 百分比颜色 — 与进度条颜色保持一致 */
-.home-budget-alert__used-amount.progress-bar__fill--safe,
-.home-budget-alert__pct.progress-bar__fill--safe       { color: var(--color-budget-safe); }
-
-.home-budget-alert__used-amount.progress-bar__fill--watch,
-.home-budget-alert__pct.progress-bar__fill--watch      { color: var(--color-budget-watch); }
-
-.home-budget-alert__used-amount.progress-bar__fill--warn,
-.home-budget-alert__pct.progress-bar__fill--warn       { color: var(--color-budget-warn); }
-
-.home-budget-alert__used-amount.progress-bar__fill--danger,
-.home-budget-alert__pct.progress-bar__fill--danger     { color: var(--color-budget-danger); }
-
-.home-budget-alert__used-amount.progress-bar__fill--over,
-.home-budget-alert__pct.progress-bar__fill--over       { color: var(--color-budget-over); }
 
 /* -----------------------------------------------------------------
    智能提醒

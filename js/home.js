@@ -192,27 +192,28 @@ const ExpenseHome = (() => {
 
     // 进度条颜色等级（按已用比例）：safe ≤60% < watch ≤80% < warn ≤90% < danger ≤95% < over
     var barClass = 'progress-bar__fill--safe';
-    if (closest.pct > 95)       barClass = 'progress-bar__fill--over';
-    else if (closest.pct > 90)  barClass = 'progress-bar__fill--danger';
-    else if (closest.pct > 80)  barClass = 'progress-bar__fill--warn';
-    else if (closest.pct > 60)  barClass = 'progress-bar__fill--watch';
+    var barColor = 'var(--color-budget-safe)';
+    if (closest.pct > 95)       { barClass = 'progress-bar__fill--over';   barColor = 'var(--color-budget-over)'; }
+    else if (closest.pct > 90)  { barClass = 'progress-bar__fill--danger'; barColor = 'var(--color-budget-danger)'; }
+    else if (closest.pct > 80)  { barClass = 'progress-bar__fill--warn';   barColor = 'var(--color-budget-warn)'; }
+    else if (closest.pct > 60)  { barClass = 'progress-bar__fill--watch';  barColor = 'var(--color-budget-watch)'; }
 
     _$budgetAlert.style.display = '';
     var setBtn2 = document.getElementById('home-set-budget');
     if (setBtn2) setBtn2.style.display = 'none';
 
-    // 已使用金额（大号 + 与进度条同色） / 预算总额（弱显示）
+    // 已使用金额（大号 + 与进度条同色，用 style.color 避免套进度条 background）
     _$budgetAlertUsed.textContent = '¥' + closest.spent.toFixed(0);
-    _$budgetAlertUsed.className = 'home-budget-alert__used-amount ' + barClass;
+    _$budgetAlertUsed.style.color = barColor;
     _$budgetAlertTotal.textContent = ' / ¥' + closest.budget.toLocaleString();
 
     // 进度条
     _$budgetAlertFill.style.width = Math.min(closest.pct, 100) + '%';
     _$budgetAlertFill.className = 'progress-bar__fill ' + barClass;
 
-    // 百分比（与进度条同色）
+    // 百分比（与进度条同色，用 style.color 避免套进度条 background）
     _$budgetAlertPct.textContent = closest.pct + '%';
-    _$budgetAlertPct.className = 'home-budget-alert__pct ' + barClass;
+    _$budgetAlertPct.style.color = barColor;
 
     // 日均提示
     var daysLeft = _daysLeftInMonth();
