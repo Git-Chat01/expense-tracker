@@ -90,12 +90,12 @@ const ExpenseHome = (() => {
         } else if (diff < -0.5) {
           _$todayDiff.innerHTML = '较昨日 <span class="home-overview__diff--down">-' + abs + '% ↓</span>';
         } else {
-          _$todayDiff.innerHTML = '较昨日 <span style="color:var(--color-text-tertiary);font-weight:400">-</span>';
+          _$todayDiff.innerHTML = '较昨日 <span style="font-weight:400">-</span>';
         }
       } else if (total > 0) {
-        _$todayDiff.innerHTML = '较昨日 <span style="color:var(--color-text-tertiary);font-weight:400">-</span>';
+        _$todayDiff.innerHTML = '较昨日 <span style="font-weight:400">-</span>';
       } else {
-        _$todayDiff.innerHTML = '较昨日 <span style="color:var(--color-text-tertiary);font-weight:400">-</span>';
+        _$todayDiff.innerHTML = '较昨日 <span style="font-weight:400">-</span>';
       }
     }
   }
@@ -126,7 +126,7 @@ const ExpenseHome = (() => {
           _$monthDiff.textContent = '较上月 持平';
         }
       } else {
-        _$monthDiff.innerHTML = '较上月 <span style="color:var(--color-text-tertiary);font-weight:400">-</span>';
+        _$monthDiff.innerHTML = '较上月 <span style="font-weight:400">-</span>';
       }
     }
   }

@@ -67,7 +67,7 @@
 
 .home-overview__label {
   font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
 }
 
 .home-overview__count {
@@ -89,6 +89,7 @@
   margin-top: 6px;
   min-height: 18px;
   line-height: 1;
+  color: var(--color-text-tertiary);
 }
 
 .home-overview__diff--up {
