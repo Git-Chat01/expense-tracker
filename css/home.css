@@ -78,9 +78,16 @@
 .home-overview__amount {
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 26px;
+  font-size: 20px;
   color: var(--color-text-primary);
   line-height: 1.2;
+}
+
+.home-overview__currency {
+  font-size: 14px;
+  font-weight: 500;
+  margin-right: 1px;
+  vertical-align: baseline;
 }
 
 .home-overview__diff {
