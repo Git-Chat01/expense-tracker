@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=132">
-  <link rel="stylesheet" href="css/home.css?v=132">
-  <link rel="stylesheet" href="css/add.css?v=132">
-  <link rel="stylesheet" href="css/list.css?v=132">
-  <link rel="stylesheet" href="css/stats.css?v=132">
+  <link rel="stylesheet" href="css/common.css?v=133">
+  <link rel="stylesheet" href="css/home.css?v=133">
+  <link rel="stylesheet" href="css/add.css?v=133">
+  <link rel="stylesheet" href="css/list.css?v=133">
+  <link rel="stylesheet" href="css/stats.css?v=133">
 </head>
 <body>
 
@@ -160,7 +160,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260708-132 · 底部三列改为space-evenly均匀分布
+      v20260708-133 · 点更新后平滑滚回顶部再刷新
     </div>
   </main>
 
@@ -485,16 +485,19 @@
           sessionStorage.setItem('sw-just-updated', String(Date.now()));
           reg.waiting.postMessage('skipWaiting');
           bar.classList.remove('sw-update-bar--visible');
+          // 立即平滑滚回首页顶部，给用户"正在更新"的感觉
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       });
     });
   }
 
-  // SW 激活后自动刷新页面
+  // SW 激活后刷新页面（确保回到顶部）
   var refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', function() {
     if (refreshing) return;
     refreshing = true;
+    window.scrollTo(0, 0);
     window.location.reload();
   });
 })();
@@ -503,13 +506,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=132"></script>
-<script src="js/data.js?v=132"></script>
-<script src="js/home.js?v=132"></script>
-<script src="js/categories.js?v=132"></script>
-<script src="js/list.js?v=132"></script>
-<script src="js/stats.js?v=132"></script>
-<script src="js/app.js?v=132"></script>
+<script src="js/storage.js?v=133"></script>
+<script src="js/data.js?v=133"></script>
+<script src="js/home.js?v=133"></script>
+<script src="js/categories.js?v=133"></script>
+<script src="js/list.js?v=133"></script>
+<script src="js/stats.js?v=133"></script>
+<script src="js/app.js?v=133"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
