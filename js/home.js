@@ -216,12 +216,12 @@ const ExpenseHome = (() => {
     _$budgetAlertPct.textContent = closest.pct + '%';
     _$budgetAlertPct.style.color = barColor;
 
-    // 日均提示（日历图标按剩余天数变化）
+    // 日均提示
     var daysLeft = _daysLeftInMonth();
     if (daysLeft > 0 && remainingAmount > 0) {
       var dailyAvg = Math.floor(remainingAmount / daysLeft);
-      var calIcon = daysLeft > 20 ? '📅' : daysLeft > 10 ? '🗓️' : '⏳';
-      _$budgetAlertDaily.innerHTML = calIcon + ' 日均可用<span style="font-family:var(--font-mono);font-weight:600">' + cur + dailyAvg.toLocaleString() + '</span>，不会超预算';
+      var todayDay = new Date().getDate();
+      _$budgetAlertDaily.innerHTML = '<span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:3px;background:var(--color-divider);font-size:10px;font-weight:700;color:var(--color-text-secondary);margin-right:2px">' + todayDay + '</span> 日均可用<span style="font-family:var(--font-mono);font-weight:600">' + cur + dailyAvg.toLocaleString() + '</span>，不会超预算';
     } else if (remainingAmount <= 0) {
       _$budgetAlertDaily.textContent = '⚠️ 预算已超支，请注意控制';
     } else {
