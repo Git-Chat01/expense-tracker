@@ -387,6 +387,7 @@ const ExpenseList = (() => {
           _toggleArrayFilter('locationIds', val);
         } else if (filterType === 'category') {
           _toggleArrayFilter('categoryIds', val);
+        }
 
         dropdown.remove();
         _openDropdownBtn = null;
