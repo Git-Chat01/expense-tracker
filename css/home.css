@@ -58,10 +58,21 @@
   min-width: 0;
 }
 
+.home-overview__title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
 .home-overview__label {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
-  margin-bottom: 4px;
+}
+
+.home-overview__count {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
 }
 
 .home-overview__amount {
@@ -73,12 +84,6 @@
 
 .home-overview__amount.amount--large {
   font-size: 28px;
-}
-
-.home-overview__count {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-tertiary);
-  margin-top: 2px;
 }
 
 .home-overview__diff {
