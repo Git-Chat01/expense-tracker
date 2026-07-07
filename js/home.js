@@ -221,7 +221,10 @@ const ExpenseHome = (() => {
     if (daysLeft > 0 && remainingAmount > 0) {
       var dailyAvg = Math.floor(remainingAmount / daysLeft);
       var todayDay = new Date().getDate();
-      _$budgetAlertDaily.innerHTML = '<span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;border-radius:3px;background:var(--color-divider);font-size:10px;font-weight:700;color:var(--color-text-secondary);margin-right:2px">' + todayDay + '</span> 日均可用<span style="font-family:var(--font-mono);font-weight:600">' + cur + dailyAvg.toLocaleString() + '</span>，不会超预算';
+      _$budgetAlertDaily.innerHTML = '<span style="display:inline-block;vertical-align:middle;width:18px;border-radius:3px 3px 0 0;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.1);margin-right:3px;position:relative;top:-1px">'
+        + '<span style="display:block;height:5px;background:var(--color-budget-warn);border-radius:3px 3px 0 0"></span>'
+        + '<span style="display:block;height:15px;line-height:15px;text-align:center;font-size:10px;font-weight:700;color:var(--color-text-secondary);background:var(--color-surface);border-radius:0 0 3px 3px">' + todayDay + '</span>'
+        + '</span> 日均可用<span style="font-family:var(--font-mono);font-weight:600">' + cur + dailyAvg.toLocaleString() + '</span>，不会超预算';
     } else if (remainingAmount <= 0) {
       _$budgetAlertDaily.textContent = '⚠️ 预算已超支，请注意控制';
     } else {
