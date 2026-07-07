@@ -1,7 +1,7 @@
 /* ================================================================
    消费轨迹系统 — home.js
    ExpenseHome 命名空间：首页渲染逻辑
-   今日消费 / 本月消费 / 预算进度 / 智能提醒 / 最近记录
+   今日消费 / 昨日对比 / 本月消费 / 预算进度 / 预算提醒 / 智能提醒 / 最近记录
    ================================================================ */
 
 const ExpenseHome = (() => {
@@ -10,9 +10,9 @@ const ExpenseHome = (() => {
   /* -----------------------------------------------------------------
      DOM 引用缓存
      ----------------------------------------------------------------- */
-  let _$date, _$todayAmount, _$todayCount, _$monthAmount, _$budgetLabel;
-  let _$budgetBar, _$budgetFill, _$budgetDetail, _$budgetRemaining, _$budgetDaily;
-  let _$setBudgetBtn, _$alerts, _$recent, _$viewAllBtn;
+  let _$date, _$todayAmount, _$todayCount, _$todayDiff, _$monthAmount, _$budgetLabel;
+  let _$budgetBar, _$budgetFill, _$setBudgetBtn, _$alerts, _$recent, _$viewAllBtn;
+  let _$budgetAlert, _$budgetAlertIcon, _$budgetAlertText, _$budgetAlertNums, _$budgetAlertBar, _$budgetAlertFill;
 
   /**
    * 初始化 DOM 引用（在 render 前调用一次）
@@ -21,17 +21,22 @@ const ExpenseHome = (() => {
     _$date           = document.getElementById('home-date');
     _$todayAmount    = document.getElementById('home-today-amount');
     _$todayCount     = document.getElementById('home-today-count');
+    _$todayDiff      = document.getElementById('home-today-diff');
     _$monthAmount    = document.getElementById('home-month-amount');
     _$budgetLabel    = document.getElementById('home-budget-label');
     _$budgetBar      = document.getElementById('home-budget-bar');
     _$budgetFill     = document.getElementById('home-budget-fill');
-    _$budgetDetail   = document.getElementById('home-budget-detail');
-    _$budgetRemaining= document.getElementById('home-budget-remaining');
-    _$budgetDaily    = document.getElementById('home-budget-daily');
     _$setBudgetBtn   = document.getElementById('home-set-budget');
     _$alerts         = document.getElementById('home-alerts');
     _$recent         = document.getElementById('home-recent');
     _$viewAllBtn     = document.getElementById('home-view-all');
+    // 预算提醒
+    _$budgetAlert    = document.getElementById('home-budget-alert');
+    _$budgetAlertIcon= document.getElementById('home-budget-alert-icon');
+    _$budgetAlertText= document.getElementById('home-budget-alert-text');
+    _$budgetAlertNums= document.getElementById('home-budget-alert-nums');
+    _$budgetAlertBar = document.getElementById('home-budget-alert-bar');
+    _$budgetAlertFill= document.getElementById('home-budget-alert-fill');
   }
 
   /* -----------------------------------------------------------------
@@ -43,6 +48,7 @@ const ExpenseHome = (() => {
     _renderHeader();
     _renderToday();
     _renderMonth();
+    _renderBudgetAlert();
     _renderAlerts();
     _renderRecent();
   }
@@ -60,20 +66,44 @@ const ExpenseHome = (() => {
   }
 
   /* -----------------------------------------------------------------
-     今日消费
+     今日消费 + 较昨日对比
      ----------------------------------------------------------------- */
   function _renderToday() {
     const today = _todayStr();
+    const yesterday = _yesterdayStr();
     const expenses = ExpenseDB.getExpenses();
     const todayExpenses = expenses.filter(e => e.date === today);
     const total = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
 
     _$todayAmount.textContent = `¥${total.toFixed(2)}`;
     _$todayCount.textContent = `${todayExpenses.length} 笔`;
+
+    // 较昨日对比（涨红跌蓝）
+    if (_$todayDiff) {
+      const yesterdayExpenses = expenses.filter(e => e.date === yesterday);
+      const yesterdayTotal = yesterdayExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+      if (yesterdayTotal > 0) {
+        const diff = ((total - yesterdayTotal) / yesterdayTotal) * 100;
+        const abs = Math.abs(diff).toFixed(1);
+        if (diff > 0.5) {
+          _$todayDiff.innerHTML = '较昨日 <span class="home-overview__diff--up">+' + abs + '% ↑</span>';
+        } else if (diff < -0.5) {
+          _$todayDiff.innerHTML = '较昨日 <span class="home-overview__diff--down">-' + abs + '% ↓</span>';
+        } else {
+          _$todayDiff.textContent = '较昨日 持平';
+        }
+      } else if (total > 0) {
+        // 昨天无消费、今天有 → 新增
+        _$todayDiff.innerHTML = '较昨日 <span class="home-overview__diff--up">新增 ↑</span>';
+      } else {
+        _$todayDiff.textContent = '';
+      }
+    }
   }
 
   /* -----------------------------------------------------------------
-     本月消费 + 预算进度
+     本月消费 + 预算进度（简化版：金额 + 进度条）
      ----------------------------------------------------------------- */
   function _renderMonth() {
     const budget = ExpenseDB.getBudget();
@@ -84,18 +114,10 @@ const ExpenseHome = (() => {
 
     if (monthlyBudget > 0) {
       const percent = Math.min((monthTotal / monthlyBudget) * 100, 100);
-      const remaining = monthlyBudget - monthTotal;
-      const now = new Date();
-      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-      const remainingDays = daysInMonth - now.getDate() + 1;
-      const dailyBudget = remainingDays > 0 ? (remaining / remainingDays) : 0;
 
       _$budgetLabel.textContent = `预算 ¥${monthlyBudget.toLocaleString()}`;
       _$budgetBar.style.display = '';
       _$budgetFill.style.width = `${percent}%`;
-      _$budgetDetail.style.display = 'flex';
-      _$budgetRemaining.textContent = `剩余 ¥${remaining.toFixed(0)}`;
-      _$budgetDaily.textContent = `日均 ¥${dailyBudget.toFixed(0)}`;
       _$setBudgetBtn.style.display = 'none';
 
       // 颜色分级
@@ -106,12 +128,81 @@ const ExpenseHome = (() => {
       else if (percent > 60)  _$budgetFill.classList.add('progress-bar__fill--watch');
       else                    _$budgetFill.classList.add('progress-bar__fill--safe');
     } else {
-      // 未设置预算
       _$budgetLabel.textContent = '未设预算';
       _$budgetBar.style.display = 'none';
-      _$budgetDetail.style.display = 'none';
       _$setBudgetBtn.style.display = '';
     }
+  }
+
+  /* -----------------------------------------------------------------
+     预算提醒：自动选最接近超支的分类，否则用月度总预算
+     剩余 >50% 绿 · 30-50% 黄 · <30% 红
+     ----------------------------------------------------------------- */
+  function _renderBudgetAlert() {
+    if (!_$budgetAlert) return;
+
+    const budget = ExpenseDB.getBudget();
+    const catBudgets = budget.categories || {};
+
+    // 遍历所有分类预算，找已用比例最高的（最接近超支）
+    let closest = null; // { catName, icon, budget, spent, pct, isTotal }
+    for (const [catId, catBudget] of Object.entries(catBudgets)) {
+      if (!catBudget || catBudget <= 0) continue;
+      const spent = ExpenseDB.getCategorySpent(catId);
+      const pct = Math.round((spent / catBudget) * 100);
+      if (!closest || pct > closest.pct) {
+        const cat = ExpenseDB.getCategory(catId);
+        closest = {
+          catName: cat ? cat.name : catId,
+          icon: cat ? cat.icon : '📌',
+          budget: catBudget,
+          spent: spent,
+          pct: pct,
+          isTotal: false,
+        };
+      }
+    }
+
+    // 没有分类预算 → 回退到月度总预算
+    if (!closest) {
+      const monthlyBudget = budget.monthlyTotal || 0;
+      if (monthlyBudget <= 0) {
+        _$budgetAlert.style.display = 'none';
+        return;
+      }
+      const monthTotal = ExpenseDB.getMonthTotal();
+      const pct = Math.round((monthTotal / monthlyBudget) * 100);
+      closest = {
+        catName: '月度总预算',
+        icon: '📊',
+        budget: monthlyBudget,
+        spent: monthTotal,
+        pct: pct,
+        isTotal: true,
+      };
+    }
+
+    const remaining = Math.max(0, 100 - closest.pct);
+
+    // 剩余百分比颜色：>50% 绿色（健康）· 30-50% 黄色（警告）· <30% 红色（危险）
+    let pctClass;
+    if (remaining > 50)        pctClass = 'pct-safe';
+    else if (remaining > 30)   pctClass = 'pct-warn';
+    else                       pctClass = 'pct-danger';
+
+    _$budgetAlert.style.display = '';
+    _$budgetAlertIcon.textContent = closest.icon;
+    _$budgetAlertText.innerHTML = `${closest.catName}预算剩余 <span class="${pctClass}">${remaining}%</span>`;
+    _$budgetAlertNums.textContent = `¥${closest.spent.toFixed(0)} / ¥${closest.budget.toLocaleString()}`;
+    _$budgetAlertFill.style.width = `${Math.min(closest.pct, 100)}%`;
+
+    // 进度条颜色
+    _$budgetAlertFill.className = 'progress-bar__fill';
+    if (closest.pct > 95)       _$budgetAlertFill.classList.add('progress-bar__fill--over');
+    else if (closest.pct > 90)  _$budgetAlertFill.classList.add('progress-bar__fill--danger');
+    else if (closest.pct > 80)  _$budgetAlertFill.classList.add('progress-bar__fill--warn');
+    else if (closest.pct > 60)  _$budgetAlertFill.classList.add('progress-bar__fill--watch');
+    else                         _$budgetAlertFill.classList.add('progress-bar__fill--safe');
   }
 
   /* -----------------------------------------------------------------
@@ -258,7 +349,7 @@ const ExpenseHome = (() => {
   }
 
   /* -----------------------------------------------------------------
-     最近 5 条记录
+     最近 5 条记录（逻辑不变）
      ----------------------------------------------------------------- */
   function _renderRecent() {
     const expenses = ExpenseDB.getExpenses();
@@ -314,6 +405,12 @@ const ExpenseHome = (() => {
      ----------------------------------------------------------------- */
   function _todayStr() {
     const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  function _yesterdayStr() {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 

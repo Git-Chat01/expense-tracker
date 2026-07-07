@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=91">
-  <link rel="stylesheet" href="css/home.css?v=91">
-  <link rel="stylesheet" href="css/add.css?v=91">
-  <link rel="stylesheet" href="css/list.css?v=91">
-  <link rel="stylesheet" href="css/stats.css?v=91">
+  <link rel="stylesheet" href="css/common.css?v=92">
+  <link rel="stylesheet" href="css/home.css?v=92">
+  <link rel="stylesheet" href="css/add.css?v=92">
+  <link rel="stylesheet" href="css/list.css?v=92">
+  <link rel="stylesheet" href="css/stats.css?v=92">
 </head>
 <body>
 
@@ -35,34 +35,42 @@
       <span class="home-header__date" id="home-date"></span>
     </header>
 
-    <!-- 今日消费 -->
+    <!-- 今日 + 本月 并列卡片 -->
     <section class="home-section">
-      <div class="home-today card">
-        <p class="home-today__label">今日消费</p>
-        <p class="home-today__amount amount amount--large" id="home-today-amount">¥0</p>
-        <p class="home-today__count" id="home-today-count">0 笔</p>
+      <div class="home-overview card">
+        <!-- 左：今日消费 -->
+        <div class="home-overview__side">
+          <span class="home-overview__label">今日消费</span>
+          <span class="home-overview__amount amount--large" id="home-today-amount">¥0</span>
+          <span class="home-overview__count" id="home-today-count">0 笔</span>
+          <span class="home-overview__diff" id="home-today-diff"></span>
+        </div>
+        <!-- 分隔线 -->
+        <div class="home-overview__divider"></div>
+        <!-- 右：本月消费 -->
+        <div class="home-overview__side">
+          <span class="home-overview__label">本月消费</span>
+          <span class="home-overview__amount" id="home-month-amount">¥0</span>
+          <div class="home-overview__progress progress-bar" id="home-budget-bar" style="display:none">
+            <div class="progress-bar__fill progress-bar__fill--safe" id="home-budget-fill" style="width:0%"></div>
+          </div>
+          <span class="home-overview__budget-label" id="home-budget-label">未设预算</span>
+          <button class="btn btn--ghost btn--small" id="home-set-budget" style="margin-top:6px">+ 设置预算</button>
+        </div>
       </div>
     </section>
 
-    <!-- 本月消费 + 预算进度 -->
+    <!-- 预算提醒：自动选最接近超支的分类 -->
     <section class="home-section">
-      <div class="home-month card" id="home-month-card">
-        <div class="home-month__header">
-          <span class="home-month__label">本月消费</span>
-          <span class="home-month__budget-label" id="home-budget-label">未设预算</span>
+      <div class="home-budget-alert card" id="home-budget-alert" style="display:none">
+        <div class="home-budget-alert__header">
+          <span class="home-budget-alert__icon" id="home-budget-alert-icon"></span>
+          <span class="home-budget-alert__text" id="home-budget-alert-text"></span>
+          <span class="home-budget-alert__nums" id="home-budget-alert-nums"></span>
         </div>
-        <p class="home-month__amount amount" id="home-month-amount">¥0</p>
-        <div class="home-month__progress progress-bar" id="home-budget-bar" style="display:none">
-          <div class="progress-bar__fill progress-bar__fill--safe" id="home-budget-fill" style="width:0%"></div>
+        <div class="progress-bar" id="home-budget-alert-bar">
+          <div class="progress-bar__fill" id="home-budget-alert-fill" style="width:0%"></div>
         </div>
-        <div class="home-month__detail" id="home-budget-detail" style="display:none">
-          <span id="home-budget-remaining"></span>
-          <span>·</span>
-          <span id="home-budget-daily"></span>
-        </div>
-        <button class="btn btn--ghost btn--small home-month__set-budget" id="home-set-budget">
-          + 设置月度预算
-        </button>
       </div>
     </section>
 
@@ -126,7 +134,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260707-91 · 电话费→话费
+      v20260707-92 · 首页布局重构：今日+本月并列+昨日对比+预算提醒
     </div>
   </main>
 
@@ -469,13 +477,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=91"></script>
-<script src="js/data.js?v=91"></script>
-<script src="js/home.js?v=91"></script>
-<script src="js/categories.js?v=91"></script>
-<script src="js/list.js?v=91"></script>
-<script src="js/stats.js?v=91"></script>
-<script src="js/app.js?v=91"></script>
+<script src="js/storage.js?v=92"></script>
+<script src="js/data.js?v=92"></script>
+<script src="js/home.js?v=92"></script>
+<script src="js/categories.js?v=92"></script>
+<script src="js/list.js?v=92"></script>
+<script src="js/stats.js?v=92"></script>
+<script src="js/app.js?v=92"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
