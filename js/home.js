@@ -126,7 +126,7 @@ const ExpenseHome = (() => {
           _$monthDiff.textContent = '较上月 持平';
         }
       } else {
-        _$monthDiff.textContent = '';
+        _$monthDiff.innerHTML = '较上月 <span class="home-overview__diff--up">新增 ↑</span>';
       }
     }
   }
