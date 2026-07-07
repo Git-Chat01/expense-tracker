@@ -236,9 +236,11 @@
 }
 
 .home-budget-alert__divider {
-  color: var(--color-divider);
-  font-size: 18px;
-  line-height: 1;
+  width: 1px;
+  height: 28px;
+  background: var(--color-divider);
+  flex-shrink: 0;
+  align-self: center;
 }
 
 
