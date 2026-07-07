@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=93">
-  <link rel="stylesheet" href="css/home.css?v=93">
-  <link rel="stylesheet" href="css/add.css?v=93">
-  <link rel="stylesheet" href="css/list.css?v=93">
-  <link rel="stylesheet" href="css/stats.css?v=93">
+  <link rel="stylesheet" href="css/common.css?v=94">
+  <link rel="stylesheet" href="css/home.css?v=94">
+  <link rel="stylesheet" href="css/add.css?v=94">
+  <link rel="stylesheet" href="css/list.css?v=94">
+  <link rel="stylesheet" href="css/stats.css?v=94">
 </head>
 <body>
 
@@ -35,20 +35,18 @@
       <span class="home-header__date" id="home-date"></span>
     </header>
 
-    <!-- 今日 + 本月 并列卡片 -->
+    <!-- 今日 + 本月 两张独立卡片并排 -->
     <section class="home-section">
-      <div class="home-overview card">
+      <div class="home-overview">
         <!-- 左：今日消费 -->
-        <div class="home-overview__side">
+        <div class="home-overview__card card">
           <span class="home-overview__label">今日消费</span>
           <span class="home-overview__amount amount--large" id="home-today-amount">¥0</span>
           <span class="home-overview__count" id="home-today-count">0 笔</span>
           <span class="home-overview__diff" id="home-today-diff"></span>
         </div>
-        <!-- 分隔线 -->
-        <div class="home-overview__divider"></div>
         <!-- 右：本月消费 -->
-        <div class="home-overview__side">
+        <div class="home-overview__card card">
           <span class="home-overview__label">本月消费</span>
           <span class="home-overview__amount" id="home-month-amount">¥0</span>
           <span class="home-overview__count" id="home-month-count">0 笔</span>
@@ -133,7 +131,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260707-93 · 首页精简：右栏去进度条+较上月对比+笔数
+      v20260707-94 · 今日/本月拆为两张独立卡片
     </div>
   </main>
 
@@ -476,13 +474,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=93"></script>
-<script src="js/data.js?v=93"></script>
-<script src="js/home.js?v=93"></script>
-<script src="js/categories.js?v=93"></script>
-<script src="js/list.js?v=93"></script>
-<script src="js/stats.js?v=93"></script>
-<script src="js/app.js?v=93"></script>
+<script src="js/storage.js?v=94"></script>
+<script src="js/data.js?v=94"></script>
+<script src="js/home.js?v=94"></script>
+<script src="js/categories.js?v=94"></script>
+<script src="js/list.js?v=94"></script>
+<script src="js/stats.js?v=94"></script>
+<script src="js/app.js?v=94"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
