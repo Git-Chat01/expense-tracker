@@ -200,9 +200,9 @@
 
 /* 日均提示行 */
 .home-budget-alert__daily {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
-  padding-top: var(--space-sm);
+  padding: var(--space-sm) 0;
   border-top: 1px solid var(--color-divider);
 }
 
