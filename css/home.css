@@ -354,6 +354,33 @@
   border-bottom: none;
 }
 
+/* "+ 记一笔"入口行（在最近记录列表末尾） */
+.home-recent__add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-md) var(--space-lg);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.home-recent__add:hover {
+  background: var(--color-divider);
+}
+
+.home-recent__add-icon {
+  font-size: var(--font-size-lg);
+  font-weight: 300;
+  color: var(--color-text-tertiary);
+  line-height: 1;
+}
+
+.home-recent__add-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+}
+
 .home-recent__item:hover {
   background: var(--color-divider);
 }

@@ -435,7 +435,12 @@ const ExpenseHome = (() => {
           </div>
           <span class="home-recent__amount">-¥${e.amount.toFixed(2)}</span>
         </div>`;
-    }).join('');
+    }).join('')
+      // 末尾追加"记一笔"入口
+      + `<div class="home-recent__add" id="home-recent-add">
+           <span class="home-recent__add-icon">+</span>
+           <span class="home-recent__add-text">记一笔</span>
+         </div>`;
 
     _$viewAllBtn.style.display = '';
   }
