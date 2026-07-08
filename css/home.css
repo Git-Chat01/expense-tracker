@@ -210,15 +210,21 @@
   min-width: 0;
 }
 
-/* 状态标签：右上角小徽章 */
+.home-budget-alert__header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* 状态标签：标题行右侧小 pill */
 .home-budget-alert__status {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #fff;
-  padding: 1px 10px;
-  border-radius: 10px;
+  padding: 1px 8px;
+  border-radius: 8px;
   letter-spacing: 1px;
-  align-self: flex-end;
+  flex-shrink: 0;
 }
 
 .home-budget-alert__status--normal {
