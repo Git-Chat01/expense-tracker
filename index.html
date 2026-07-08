@@ -59,47 +59,37 @@
       </div>
     </section>
 
-    <!-- 预算提醒：自动选最接近超支的分类，用时间感知状态 -->
+    <!-- 预算进度：圆环 + 信息区 + 预测 -->
     <section class="home-section">
       <div class="home-budget-alert card" id="home-budget-alert" style="display:none">
         <div class="home-budget-alert__header">
           <div class="home-budget-alert__header-left">
             <span class="home-budget-alert__icon">🔔</span>
-            <span class="home-budget-alert__title">预算提醒</span>
+            <span class="home-budget-alert__title">预算进度</span>
           </div>
           <span class="home-budget-alert__edit" id="home-budget-alert-edit">⚙️</span>
         </div>
-        <!-- 状态标签：正常 / 偏快 / 超支 -->
-        <div class="home-budget-alert__status" id="home-budget-alert-status"></div>
-        <!-- 已使用百分比 -->
-        <div class="home-budget-alert__pct-row">
-          <span class="home-budget-alert__pct-label">已使用</span>
-          <span class="home-budget-alert__pct-value" id="home-budget-alert-pct"></span>
-        </div>
-        <!-- 进度条 + 已花金额 -->
-        <div class="home-budget-alert__progress-row">
-          <div class="progress-bar" style="flex:1" id="home-budget-alert-bar">
-            <div class="progress-bar__fill" id="home-budget-alert-fill" style="width:0%"></div>
+        <!-- 左圆环 + 右信息区 -->
+        <div class="home-budget-alert__body">
+          <div class="home-budget-alert__ring" id="home-budget-alert-ring">
+            <!-- SVG 动态渲染 -->
           </div>
-          <span class="home-budget-alert__spent" id="home-budget-alert-spent"></span>
-        </div>
-        <!-- 底部三列：还可用 / 日均可花 / 总预算 -->
-        <div class="home-budget-alert__summary">
-          <div class="home-budget-alert__summary-item">
-            <span class="home-budget-alert__summary-label">还可用</span>
-            <span class="home-budget-alert__summary-value" id="home-budget-alert-remaining"></span>
-          </div>
-          <span class="home-budget-alert__divider"></span>
-          <div class="home-budget-alert__summary-item">
-            <span class="home-budget-alert__summary-label">日均可花</span>
-            <span class="home-budget-alert__summary-value" id="home-budget-alert-daily"></span>
-          </div>
-          <span class="home-budget-alert__divider"></span>
-          <div class="home-budget-alert__summary-item">
-            <span class="home-budget-alert__summary-label">总预算</span>
-            <span class="home-budget-alert__summary-value" id="home-budget-alert-summary-total"></span>
+          <div class="home-budget-alert__info">
+            <span class="home-budget-alert__status" id="home-budget-alert-status"></span>
+            <div class="home-budget-alert__pct" id="home-budget-alert-pct"></div>
+            <div class="home-budget-alert__amounts">
+              <div class="home-budget-alert__amount-item">
+                <span class="home-budget-alert__amount-label">还可用</span>
+                <span class="home-budget-alert__amount-value" id="home-budget-alert-remaining"></span>
+              </div>
+              <div class="home-budget-alert__amount-item">
+                <span class="home-budget-alert__amount-label">日均可花</span>
+                <span class="home-budget-alert__amount-value" id="home-budget-alert-daily"></span>
+              </div>
+            </div>
           </div>
         </div>
+        <div class="home-budget-alert__prediction" id="home-budget-alert-prediction"></div>
       </div>
       <button class="btn btn--ghost btn--small" id="home-set-budget" style="width:100%;justify-content:center;margin-top:0">+ 设置月度预算</button>
     </section>
@@ -164,7 +154,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260709-143 · 预算提醒卡片改为时间感知状态（正常/偏快/超支）+ 新布局
+      v20260709-144 · 预算卡片重构：SVG圆环进度 + 右侧信息区 + 月底预测
     </div>
   </main>
 
