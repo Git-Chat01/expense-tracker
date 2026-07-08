@@ -394,7 +394,7 @@ const ExpenseHome = (() => {
      ----------------------------------------------------------------- */
   function _renderRecent() {
     const expenses = ExpenseDB.getExpenses();
-    const recent = expenses.slice(0, 5);
+    const recent = expenses.slice(0, 3);
 
     if (recent.length === 0) {
       _$recent.innerHTML = `
