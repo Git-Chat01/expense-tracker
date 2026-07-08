@@ -13,8 +13,8 @@ const ExpenseHome = (() => {
   let _$date, _$todayAmount, _$todayCount, _$todayDiff;
   let _$monthAmount, _$monthCount, _$monthDiff;
   let _$alerts, _$recent, _$viewAllBtn;
-  let _$budgetAlert, _$budgetAlertUsed, _$budgetAlertTotal, _$budgetAlertPct, _$budgetAlertBar, _$budgetAlertFill;
-  let _$budgetAlertDaily, _$budgetAlertRemaining, _$budgetAlertSummaryTotal, _$budgetAlertSummaryPct;
+  let _$budgetAlert, _$budgetAlertStatus, _$budgetAlertPct, _$budgetAlertBar, _$budgetAlertFill;
+  let _$budgetAlertSpent, _$budgetAlertDaily, _$budgetAlertRemaining, _$budgetAlertSummaryTotal;
 
   /**
    * 初始化 DOM 引用（在 render 前调用一次）
@@ -32,15 +32,14 @@ const ExpenseHome = (() => {
     _$viewAllBtn     = document.getElementById('home-view-all');
     // 预算提醒
     _$budgetAlert    = document.getElementById('home-budget-alert');
-    _$budgetAlertUsed= document.getElementById('home-budget-alert-used');
-    _$budgetAlertTotal=document.getElementById('home-budget-alert-total');
+    _$budgetAlertStatus=document.getElementById('home-budget-alert-status');
     _$budgetAlertPct = document.getElementById('home-budget-alert-pct');
     _$budgetAlertBar = document.getElementById('home-budget-alert-bar');
     _$budgetAlertFill= document.getElementById('home-budget-alert-fill');
+    _$budgetAlertSpent=document.getElementById('home-budget-alert-spent');
     _$budgetAlertDaily=document.getElementById('home-budget-alert-daily');
     _$budgetAlertRemaining=document.getElementById('home-budget-alert-remaining');
     _$budgetAlertSummaryTotal=document.getElementById('home-budget-alert-summary-total');
-    _$budgetAlertSummaryPct=document.getElementById('home-budget-alert-summary-pct');
   }
 
   /* -----------------------------------------------------------------
@@ -139,119 +138,118 @@ const ExpenseHome = (() => {
   }
 
   /* -----------------------------------------------------------------
-     预算提醒：自动选最接近超支的分类，否则用月度总预算
-     剩余 >50% 绿 · 30-50% 黄 · <30% 红
+     预算提醒：自动选最接近超支的分类 → 时间感知状态判定
+     核心逻辑：花钱速度 vs 时间进度 = 节奏比
+       节奏比 = 已用% / 时间进度%
+       节奏比 ≤ 1.2  → 正常（花钱跟时间差不多或更慢）
+       节奏比 > 1.2  → 偏快（花钱比时间跑得快）
+       已用 > 100%  → 超支（不管时间，已经爆了）
+     特殊情况：月初前几天（时间进度 < 5%）不判偏快，避免分母太小导致误报
      ----------------------------------------------------------------- */
   function _renderBudgetAlert() {
     if (!_$budgetAlert) return;
 
-    const budget = ExpenseDB.getBudget();
-    const catBudgets = budget.categories || {};
+    var budget = ExpenseDB.getBudget();
+    var catBudgets = budget.categories || {};
 
-    // 遍历所有分类预算，找已用比例最高的（最接近超支）
-    let closest = null; // { catName, budget, spent, pct, isTotal }
-    for (const [catId, catBudget] of Object.entries(catBudgets)) {
+    // 遍历所有分类预算，找已用比例最高的（最接近超支的那个分类）
+    var closest = null; // { budget, spent, pct }
+    for (var catId in catBudgets) {
+      if (!Object.prototype.hasOwnProperty.call(catBudgets, catId)) continue;
+      var catBudget = catBudgets[catId];
       if (!catBudget || catBudget <= 0) continue;
-      const spent = ExpenseDB.getCategorySpent(catId);
-      const pct = Math.round((spent / catBudget) * 100);
+      var spent = ExpenseDB.getCategorySpent(catId);
+      var pct = Math.round((spent / catBudget) * 100);
       if (!closest || pct > closest.pct) {
-        const cat = ExpenseDB.getCategory(catId);
-        closest = {
-          catName: cat ? cat.name : catId,
-          budget: catBudget,
-          spent: spent,
-          pct: pct,
-          isTotal: false,
-        };
+        closest = { budget: catBudget, spent: spent, pct: pct };
       }
     }
 
     // 没有分类预算 → 回退到月度总预算
     if (!closest) {
-      const monthlyBudget = budget.monthlyTotal || 0;
+      var monthlyBudget = budget.monthlyTotal || 0;
       if (monthlyBudget <= 0) {
         _$budgetAlert.style.display = 'none';
         var setBtn = document.getElementById('home-set-budget');
         if (setBtn) setBtn.style.display = '';
         return;
       }
-      const currentYM = _yearMonthStr();
-      const expenses = ExpenseDB.getExpenses();
-      const monthTotal = expenses
-        .filter(e => e.date.startsWith(currentYM))
-        .reduce((sum, e) => sum + e.amount, 0);
-      const pct = Math.round((monthTotal / monthlyBudget) * 100);
+      var currentYM = _yearMonthStr();
+      var expenses = ExpenseDB.getExpenses();
+      var monthTotal = expenses
+        .filter(function(e) { return e.date.startsWith(currentYM); })
+        .reduce(function(sum, e) { return sum + e.amount; }, 0);
       closest = {
-        catName: '月度总预算',
         budget: monthlyBudget,
         spent: monthTotal,
-        pct: pct,
-        isTotal: true,
+        pct: Math.round((monthTotal / monthlyBudget) * 100),
       };
     }
 
-    const remainingAmount = closest.budget - closest.spent;
+    var remainingAmount = closest.budget - closest.spent;
 
-    // 进度条颜色等级（按已用比例）：safe ≤60% < watch ≤80% < warn ≤90% < danger ≤95% < over
-    var barClass = 'progress-bar__fill--safe';
-    var barColor = 'var(--color-budget-safe)';
-    if (closest.pct > 95)       { barClass = 'progress-bar__fill--over';   barColor = 'var(--color-budget-over)'; }
-    else if (closest.pct > 90)  { barClass = 'progress-bar__fill--danger'; barColor = 'var(--color-budget-danger)'; }
-    else if (closest.pct > 80)  { barClass = 'progress-bar__fill--warn';   barColor = 'var(--color-budget-warn)'; }
-    else if (closest.pct > 60)  { barClass = 'progress-bar__fill--watch';  barColor = 'var(--color-budget-watch)'; }
+    // ---- 时间感知状态判定 ----
+    var now = new Date();
+    var dayOfMonth = now.getDate();
+    var daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    var timeProgress = dayOfMonth / daysInMonth; // 本月时间进度 0~1
+
+    var statusText, statusClass, barClass, barColor;
+    // spentPct 可能超过 100，用 Math.max(1, ...) 避免进度条为 0 时除法异常
+    var spentPct = closest.pct;
+
+    if (spentPct > 100) {
+      // 已超支 — 不管时间进度
+      statusText = '超 支';
+      statusClass = 'home-budget-alert__status-badge--over';
+      barClass = 'progress-bar__fill--over';
+      barColor = 'var(--color-budget-over)';
+    } else {
+      // 节奏比 = 花钱速度 / 时间进度
+      // 月初前几天（时间进度 < 5%）节奏比容易虚高，加保护：时间进度至少按 5% 算
+      var effectiveTime = Math.max(timeProgress, 0.05);
+      var paceRatio = (spentPct / 100) / effectiveTime;
+
+      if (paceRatio > 1.2) {
+        statusText = '偏 快';
+        statusClass = 'home-budget-alert__status-badge--fast';
+        barClass = 'progress-bar__fill--warn';
+        barColor = 'var(--color-budget-warn)';
+      } else {
+        statusText = '正 常';
+        statusClass = 'home-budget-alert__status-badge--normal';
+        barClass = 'progress-bar__fill--safe';
+        barColor = 'var(--color-budget-safe)';
+      }
+    }
 
     _$budgetAlert.style.display = '';
     var setBtn2 = document.getElementById('home-set-budget');
     if (setBtn2) setBtn2.style.display = 'none';
 
-    // 已使用金额（大号 + 与进度条同色，用 style.color 避免套进度条 background）
-    var cur = '<span class="home-budget-alert__currency">¥</span>';
-    _$budgetAlertUsed.innerHTML = cur + closest.spent.toFixed(0);
-    _$budgetAlertUsed.style.color = barColor;
-    _$budgetAlertTotal.innerHTML = ' / ' + cur + closest.budget.toLocaleString();
+    // 状态标签
+    _$budgetAlertStatus.innerHTML = '<span class="home-budget-alert__status-badge ' + statusClass + '">' + statusText + '</span>';
 
-    // 进度条
-    _$budgetAlertFill.style.width = Math.min(closest.pct, 100) + '%';
-    _$budgetAlertFill.className = 'progress-bar__fill ' + barClass;
-
-    // 百分比（与进度条同色，用 style.color 避免套进度条 background）
-    _$budgetAlertPct.textContent = closest.pct + '%';
+    // 已使用百分比（大字，与状态同色）
+    _$budgetAlertPct.textContent = spentPct + '%';
     _$budgetAlertPct.style.color = barColor;
 
-    // 日均提示
-    var daysLeft = _daysLeftInMonth();
-    if (daysLeft > 0 && remainingAmount > 0) {
-      var dailyAvg = Math.floor(remainingAmount / daysLeft);
-      var todayDay = new Date().getDate();
-      _$budgetAlertDaily.innerHTML = '<span style="display:inline-block;vertical-align:middle;margin-right:4px;position:relative;top:-1px">'
-        // 日历主体（带叠页效果）
-        + '<span style="display:block;position:relative;width:22px">'
-          // 底层衬页（偏移露出，模拟多页叠加）
-          + '<span style="display:block;position:absolute;top:1px;left:1px;right:0;height:21px;background:var(--color-divider);border-radius:3px"></span>'
-          // 正面日历页
-          + '<span style="display:block;position:relative;border-radius:3px;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.15)">'
-            // 顶部留白区（活页孔打在这里，嵌入纸张内部）
-            + '<span style="display:block;height:4px;background:#fafafa;text-align:center;line-height:4px">'
-              + '<span style="display:inline-block;width:2px;height:2px;border-radius:50%;background:#999;margin:0 3px;vertical-align:middle;box-shadow:inset 0 1px 0 rgba(255,255,255,0.4)"></span>'
-              + '<span style="display:inline-block;width:2px;height:2px;border-radius:50%;background:#999;margin:0 3px;vertical-align:middle;box-shadow:inset 0 1px 0 rgba(255,255,255,0.4)"></span>'
-            + '</span>'
-            // 彩色顶栏（月标）
-            + '<span style="display:block;height:4px;background:var(--color-budget-warn)"></span>'
-            // 日期主体
-            + '<span style="display:block;height:14px;line-height:14px;text-align:center;font-size:10px;font-weight:700;color:var(--color-text-secondary);background:#fafafa">' + todayDay + '</span>'
-          + '</span>'
-        + '</span>'
-        + '</span> 日均可用<span style="font-family:var(--font-mono);font-weight:600">' + cur + dailyAvg.toLocaleString() + '</span>，不会超预算';
-    } else if (remainingAmount <= 0) {
-      _$budgetAlertDaily.textContent = '⚠️ 预算已超支，请注意控制';
-    } else {
-      _$budgetAlertDaily.textContent = '';
-    }
+    // 进度条
+    _$budgetAlertFill.style.width = Math.min(spentPct, 100) + '%';
+    _$budgetAlertFill.className = 'progress-bar__fill ' + barClass;
 
-    // 底部三列统计
-    _$budgetAlertRemaining.innerHTML = cur + Math.max(0, remainingAmount).toLocaleString();
-    _$budgetAlertSummaryTotal.innerHTML = cur + closest.budget.toLocaleString();
-    _$budgetAlertSummaryPct.textContent = closest.pct + '%';
+    // 已花金额（进度条右侧）
+    _$budgetAlertSpent.textContent = '¥' + closest.spent.toFixed(0);
+
+    // 底部三列：还可用 / 日均可花 / 总预算
+    var daysLeft = _daysLeftInMonth();
+    var dailyAvg = (daysLeft > 0 && remainingAmount > 0)
+      ? Math.floor(remainingAmount / daysLeft)
+      : Math.max(0, remainingAmount);
+
+    _$budgetAlertRemaining.textContent = '¥' + Math.max(0, remainingAmount).toLocaleString();
+    _$budgetAlertDaily.textContent = '¥' + dailyAvg.toLocaleString();
+    _$budgetAlertSummaryTotal.textContent = '¥' + closest.budget.toLocaleString();
   }
 
   /** 本月剩余天数（含今天） */

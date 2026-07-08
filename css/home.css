@@ -179,51 +179,73 @@
   flex-shrink: 0;
 }
 
-/* 已使用金额行 */
-.home-budget-alert__used {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-}
-
-.home-budget-alert__used-amount {
-  font-size: 22px;
-  font-weight: 700;
-  font-family: var(--font-mono);
-}
-
 /* ¥ 符号统一比数字略小 */
 .home-budget-alert__currency {
   font-size: 0.8em;
   font-weight: 500;
 }
 
-.home-budget-alert__used-total {
+/* 状态标签：居中大字 */
+.home-budget-alert__status {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-xs) 0;
+}
+
+.home-budget-alert__status-badge {
+  display: inline-block;
+  padding: 4px 20px;
+  border-radius: 20px;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+}
+
+.home-budget-alert__status-badge--normal {
+  background: var(--color-budget-safe);
+}
+
+.home-budget-alert__status-badge--fast {
+  background: var(--color-budget-watch);
+}
+
+.home-budget-alert__status-badge--over {
+  background: var(--color-budget-over);
+}
+
+/* 已使用百分比行 */
+.home-budget-alert__pct-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.home-budget-alert__pct-label {
   font-size: var(--font-size-sm);
-  font-weight: 400;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
+}
+
+.home-budget-alert__pct-value {
+  font-size: 28px;
+  font-weight: 700;
   font-family: var(--font-mono);
 }
 
-/* 进度条 + 百分比同行 */
+/* 进度条 + 已花金额同行 */
 .home-budget-alert__progress-row {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  margin-top: -2px;
 }
 
-.home-budget-alert__pct {
+.home-budget-alert__spent {
   font-size: var(--font-size-sm);
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-/* 日均提示行（上下分割线之间视觉居中：上多下少，补偿 card gap） */
-.home-budget-alert__daily {
-  font-size: var(--font-size-sm);
+  font-weight: 600;
+  font-family: var(--font-mono);
   color: var(--color-text-secondary);
-  padding: 14px 0 4px 0;
-  border-top: 1px solid var(--color-divider);
+  flex-shrink: 0;
 }
 
 /* 底部三列统计 */
@@ -231,7 +253,7 @@
   display: flex;
   align-items: center;
   justify-content: space-evenly;
-  padding-top: var(--space-xs);
+  padding-top: var(--space-sm);
   border-top: 1px solid var(--color-divider);
 }
 
