@@ -185,46 +185,59 @@
   font-weight: 500;
 }
 
-/* 状态标签：居中大字 */
-.home-budget-alert__status {
+/* 左圆环 + 右信息区 */
+.home-budget-alert__body {
   display: flex;
-  justify-content: center;
-  margin: var(--space-xs) 0;
+  align-items: center;
+  gap: var(--space-lg);
 }
 
-.home-budget-alert__status-badge {
-  display: inline-block;
-  padding: 4px 20px;
-  border-radius: 20px;
-  font-size: var(--font-size-md);
+.home-budget-alert__ring {
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 右侧信息区 */
+.home-budget-alert__info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+/* 状态标签：右上角小徽章 */
+.home-budget-alert__status {
+  font-size: 11px;
   font-weight: 700;
   color: #fff;
+  padding: 1px 10px;
+  border-radius: 10px;
   letter-spacing: 1px;
+  align-self: flex-end;
 }
 
-.home-budget-alert__status-badge--normal {
+.home-budget-alert__status--normal {
   background: var(--color-budget-safe);
 }
 
-.home-budget-alert__status-badge--fast {
+.home-budget-alert__status--fast {
   background: var(--color-budget-watch);
 }
 
-.home-budget-alert__status-badge--over {
+.home-budget-alert__status--over {
   background: var(--color-budget-over);
 }
 
-/* 已使用百分比行 */
-.home-budget-alert__pct-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: var(--space-sm);
-}
-
-.home-budget-alert__pct-label {
-  font-size: var(--font-size-sm);
+/* 已使用百分比大字 */
+.home-budget-alert__pct {
+  font-size: 13px;
   color: var(--color-text-secondary);
+  text-align: right;
 }
 
 .home-budget-alert__pct-value {
@@ -233,55 +246,39 @@
   font-family: var(--font-mono);
 }
 
-/* 进度条 + 已花金额同行 */
-.home-budget-alert__progress-row {
+/* 还可用 + 日均可花 并列 */
+.home-budget-alert__amounts {
   display: flex;
-  align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-lg);
+  margin-top: var(--space-xs);
 }
 
-.home-budget-alert__spent {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  font-family: var(--font-mono);
-  color: var(--color-text-secondary);
-  flex-shrink: 0;
-}
-
-/* 底部三列统计 */
-.home-budget-alert__summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-  padding-top: var(--space-sm);
-  border-top: 1px solid var(--color-divider);
-}
-
-.home-budget-alert__summary-item {
+.home-budget-alert__amount-item {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  gap: 1px;
 }
 
-.home-budget-alert__summary-label {
+.home-budget-alert__amount-label {
   font-size: 10px;
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
 }
 
-.home-budget-alert__summary-value {
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  color: var(--color-text-primary);
+.home-budget-alert__amount-value {
+  font-size: var(--font-size-md);
+  font-weight: 700;
   font-family: var(--font-mono);
+  white-space: nowrap;
 }
 
-.home-budget-alert__divider {
-  width: 1px;
-  height: 36px;
-  background: var(--color-divider);
-  flex-shrink: 0;
-  align-self: center;
+/* 预测信息 */
+.home-budget-alert__prediction {
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-divider);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
 }
 
 
