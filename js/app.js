@@ -738,10 +738,15 @@ const ExpenseApp = (() => {
       viewAllBtn.addEventListener('click', () => navigate('list'));
     }
 
-    // 最近记录点击 → 打开编辑覆盖层（事件委托）
+    // 最近记录点击 → 打开编辑覆盖层 / 跳转记账页（事件委托）
     const recentContainer = document.getElementById('home-recent');
     if (recentContainer) {
       recentContainer.addEventListener('click', (e) => {
+        // "+ 记一笔"入口 → 跳转到记账页
+        if (e.target.closest('.home-recent__add')) {
+          navigate('add');
+          return;
+        }
         const item = e.target.closest('.home-recent__item');
         if (item && item.dataset.id) {
           _openEditOverlay(item.dataset.id);
