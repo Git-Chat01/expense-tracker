@@ -31,13 +31,33 @@
   padding: 0 var(--space-lg) var(--space-md);
 }
 
+.home-section__title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+
 .home-section__title {
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: var(--space-sm);
+  margin-bottom: 0;
+}
+
+.home-section__all {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.home-section__all:hover {
+  color: var(--color-text-secondary);
 }
 
 /* -----------------------------------------------------------------
@@ -377,11 +397,7 @@
   flex-shrink: 0;
 }
 
-.home-recent__all {
-  width: 100%;
-  justify-content: center;
-  margin-top: var(--space-sm);
-}
+
 
 /* -----------------------------------------------------------------
    空状态（覆盖 empty-state 补充样式）

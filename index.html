@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=138">
-  <link rel="stylesheet" href="css/home.css?v=138">
-  <link rel="stylesheet" href="css/add.css?v=138">
-  <link rel="stylesheet" href="css/list.css?v=138">
-  <link rel="stylesheet" href="css/stats.css?v=138">
+  <link rel="stylesheet" href="css/common.css?v=139">
+  <link rel="stylesheet" href="css/home.css?v=139">
+  <link rel="stylesheet" href="css/add.css?v=139">
+  <link rel="stylesheet" href="css/list.css?v=139">
+  <link rel="stylesheet" href="css/stats.css?v=139">
 </head>
 <body>
 
@@ -108,7 +108,10 @@
 
     <!-- 最近记录 -->
     <section class="home-section">
-      <h2 class="home-section__title">最近记录</h2>
+      <div class="home-section__title-row">
+        <h2 class="home-section__title">最近记录</h2>
+        <a class="home-section__all" id="home-view-all" style="display:none">全部 &gt;</a>
+      </div>
       <div class="home-recent card" id="home-recent">
         <div class="empty-state">
           <div class="empty-state__icon">📝</div>
@@ -116,9 +119,6 @@
           <p class="empty-state__hint">去「记账」Tab 添加第一笔吧</p>
         </div>
       </div>
-      <button class="btn btn--ghost btn--small home-recent__all" id="home-view-all" style="display:none">
-        查看全部 →
-      </button>
     </section>
 
     <!-- SW 更新提示（低存在感，仅新版本可用时显示） -->
@@ -160,7 +160,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260708-138 · 回退标题栏版本标签（理解错误）
+      v20260708-139 · "查看全部"移到最近记录标题右侧，改为弱化"全部>"样式
     </div>
   </main>
 
@@ -512,13 +512,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=138"></script>
-<script src="js/data.js?v=138"></script>
-<script src="js/home.js?v=138"></script>
-<script src="js/categories.js?v=138"></script>
-<script src="js/list.js?v=138"></script>
-<script src="js/stats.js?v=138"></script>
-<script src="js/app.js?v=138"></script>
+<script src="js/storage.js?v=139"></script>
+<script src="js/data.js?v=139"></script>
+<script src="js/home.js?v=139"></script>
+<script src="js/categories.js?v=139"></script>
+<script src="js/list.js?v=139"></script>
+<script src="js/stats.js?v=139"></script>
+<script src="js/app.js?v=139"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
