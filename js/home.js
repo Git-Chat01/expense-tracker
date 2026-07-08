@@ -87,7 +87,8 @@ const ExpenseHome = (() => {
       const yesterdayExpenses = expenses.filter(e => e.date === yesterday);
       const yesterdayTotal = yesterdayExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-      if (yesterdayTotal > 0) {
+      const MIN_DAILY_BASE = 1; // 昨日 < ¥1 视为无效基准，不计算百分比
+      if (yesterdayTotal >= MIN_DAILY_BASE) {
         const diff = ((total - yesterdayTotal) / yesterdayTotal) * 100;
         const abs = Math.abs(diff).toFixed(1);
         if (diff > 0.5) {
@@ -120,7 +121,8 @@ const ExpenseHome = (() => {
     // 较上月对比
     if (_$monthDiff) {
       const lastMonthTotal = _lastMonthTotal();
-      if (lastMonthTotal > 0) {
+      const MIN_BASE = 10; // 上月 < ¥10 视为无效基准，不计算百分比
+      if (lastMonthTotal >= MIN_BASE) {
         const diff = ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100;
         const abs = Math.abs(diff).toFixed(1);
         if (diff > 0.5) {
