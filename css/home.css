@@ -148,7 +148,7 @@
   gap: var(--space-sm);
 }
 
-/* 标题行：铃铛 + 预算提醒 + 设置 */
+/* 标题行：预算提醒 + 设置 */
 .home-budget-alert__header {
   display: flex;
   align-items: center;
@@ -159,11 +159,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-}
-
-.home-budget-alert__icon {
-  font-size: 16px;
-  flex-shrink: 0;
 }
 
 .home-budget-alert__title {
@@ -194,8 +189,8 @@
 
 .home-budget-alert__ring {
   flex-shrink: 0;
-  width: 88px;
-  height: 88px;
+  width: 108px;
+  height: 108px;
   display: flex;
   align-items: center;
   justify-content: center;
