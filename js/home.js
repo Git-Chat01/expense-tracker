@@ -414,10 +414,14 @@ const ExpenseHome = (() => {
 
     if (recent.length === 0) {
       _$recent.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state__icon">📝</div>
-          <p class="empty-state__text">还没有消费记录</p>
-          <p class="empty-state__hint">去「记账」Tab 添加第一笔吧</p>
+        <div class="empty-state home-empty-state">
+          <div class="empty-state__icon" aria-hidden="true">✦</div>
+          <p class="empty-state__text">从第一笔开始，读懂自己的消费</p>
+          <p class="empty-state__hint">记录金额、分类和当下的需要。</p>
+          <button class="home-recent__add home-empty__cta" type="button">
+            <span class="home-recent__add-icon" aria-hidden="true">+</span>
+            <span class="home-recent__add-text">记下第一笔消费</span>
+          </button>
         </div>`;
       _$viewAllBtn.style.display = 'none';
       return;

@@ -126,9 +126,15 @@ const ExpenseApp = (() => {
     if (target) target.classList.add('main-view--active');
 
     // 切换 tab 高亮
-    document.querySelectorAll('.tab-bar__item').forEach(t => t.classList.remove('tab-bar__item--active'));
+    document.querySelectorAll('.tab-bar__item').forEach(t => {
+      t.classList.remove('tab-bar__item--active');
+      t.removeAttribute('aria-current');
+    });
     const tab = document.querySelector(`.tab-bar__item[data-view="${viewId}"]`);
-    if (tab) tab.classList.add('tab-bar__item--active');
+    if (tab) {
+      tab.classList.add('tab-bar__item--active');
+      tab.setAttribute('aria-current', 'page');
+    }
 
     _currentView = viewId;
 
