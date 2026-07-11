@@ -8,16 +8,16 @@
    ----------------------------------------------------------------- */
 :root {
   /* --- 主色调 --- */
-  --color-primary: #4A90D9;
-  --color-primary-light: #6BA5E7;
-  --color-primary-dark: #357ABD;
+  --color-primary: #0F5966;
+  --color-primary-light: #DCEDEA;
+  --color-primary-dark: #08444E;
 
   /* --- 功能色 --- */
-  --color-success: #34C759;
-  --color-warning: #FF9500;
-  --color-danger: #FF3B30;
-  --color-danger-dark: #CC0000;
-  --color-info: #5AC8FA;
+  --color-success: #2F7A5F;
+  --color-warning: #B66A16;
+  --color-danger: #C34B3D;
+  --color-danger-dark: #A1352A;
+  --color-info: #267C93;
 
   /* --- 必要性颜色 --- */
   --color-need: #34C759;       /* 必需 — 绿色 */
@@ -38,13 +38,13 @@
   --color-budget-over: #CC0000;
 
   /* --- 中性色 --- */
-  --color-bg: #F5F5F7;
-  --color-surface: #FFFFFF;
-  --color-border: #E5E5EA;
-  --color-divider: #F2F2F7;
-  --color-text-primary: #1C1C1E;
-  --color-text-secondary: #6E6E73;
-  --color-text-tertiary: #AEAEB2;
+  --color-bg: #F4F5F2;
+  --color-surface: #FFFFFD;
+  --color-border: #E0E5DF;
+  --color-divider: #EAEEE9;
+  --color-text-primary: #1C292B;
+  --color-text-secondary: #5D6B6B;
+  --color-text-tertiary: #84908E;
   --color-text-inverse: #FFFFFF;
 
   /* --- 间距 --- */
@@ -57,16 +57,16 @@
   --space-xxxl: 32px;
 
   /* --- 圆角 --- */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
   --radius-round: 50%;
 
   /* --- 阴影 --- */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-sm: 0 1px 2px rgba(23, 42, 39, 0.05), 0 8px 18px rgba(23, 42, 39, 0.035);
+  --shadow-md: 0 8px 22px rgba(23, 42, 39, 0.10);
+  --shadow-lg: 0 16px 36px rgba(23, 42, 39, 0.14);
 
   /* --- 字体 --- */
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
@@ -112,7 +112,7 @@ body {
   font-family: var(--font-family);
   font-size: var(--font-size-md);
   color: var(--color-text-primary);
-  background: #E8E8ED;
+  background: #E9ECE8;
   line-height: 1.5;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -930,4 +930,29 @@ ul, ol {
   flex-shrink: 0;
   padding: 6px 10px;
   cursor: pointer;
+}
+
+
+/* v149 · keyboard and motion polish */
+.tab-bar {
+  background: rgba(255, 255, 253, 0.95);
+  backdrop-filter: blur(14px);
+}
+.tab-bar__item {
+  min-height: 52px;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+}
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 3px solid rgba(15, 89, 102, 0.28);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }

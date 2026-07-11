@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#F5F5F7">
+  <meta name="theme-color" content="#0F5966">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="消费轨迹">
@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=142">
-  <link rel="stylesheet" href="css/home.css?v=142">
-  <link rel="stylesheet" href="css/add.css?v=142">
-  <link rel="stylesheet" href="css/list.css?v=142">
-  <link rel="stylesheet" href="css/stats.css?v=142">
+  <link rel="stylesheet" href="css/common.css?v=149">
+  <link rel="stylesheet" href="css/home.css?v=149">
+  <link rel="stylesheet" href="css/add.css?v=149">
+  <link rel="stylesheet" href="css/list.css?v=149">
+  <link rel="stylesheet" href="css/stats.css?v=149">
 </head>
 <body>
 
@@ -31,7 +31,10 @@
   <main id="view-home" class="main-view main-view--active">
     <!-- 标题栏 -->
     <header class="home-header">
-      <h1 class="home-header__title">消费轨迹</h1>
+      <div>
+        <p class="home-header__eyebrow">个人账本</p>
+        <h1 class="home-header__title">消费轨迹</h1>
+      </div>
       <span class="home-header__date" id="home-date"></span>
     </header>
 
@@ -68,7 +71,7 @@
           </div>
           <div class="home-budget-alert__header-right">
             <span class="home-budget-alert__status" id="home-budget-alert-status"></span>
-            <span class="home-budget-alert__edit" id="home-budget-alert-edit">⚙️</span>
+            <button class="home-budget-alert__edit" id="home-budget-alert-edit" type="button" aria-label="编辑预算">⚙️</button>
           </div>
         </div>
         <!-- 左圆环 + 右信息区 -->
@@ -92,7 +95,9 @@
         </div>
         <div class="home-budget-alert__prediction" id="home-budget-alert-prediction"></div>
       </div>
-      <button class="btn btn--ghost btn--small" id="home-set-budget" style="width:100%;justify-content:center;margin-top:0">+ 设置月度预算</button>
+      <button class="btn home-budget-cta" id="home-set-budget" type="button">
+        <span>设置本月预算</span><span aria-hidden="true">→</span>
+      </button>
     </section>
 
     <!-- 智能提醒（仅在预算超标时出现，平时隐藏） -->
@@ -105,7 +110,7 @@
     <section class="home-section">
       <div class="home-section__title-row">
         <h2 class="home-section__title">最近记录</h2>
-        <a class="home-section__all" id="home-view-all" style="display:none">全部 &gt;</a>
+        <button class="home-section__all" id="home-view-all" type="button" style="display:none">全部记录 <span aria-hidden="true">→</span></button>
       </div>
       <div class="home-recent card" id="home-recent">
         <div class="empty-state">
@@ -130,17 +135,17 @@
 
     <!-- 数据管理（备份 / 恢复） -->
     <section class="home-section" style="padding-bottom:var(--space-md)">
-      <div class="home-backup card" style="padding:var(--space-md)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-sm)">
-          <span style="font-size:var(--font-size-sm);font-weight:600;color:var(--color-text-secondary)">💾 数据安全</span>
-          <span id="home-backup-badge" style="font-size:var(--font-size-xs);color:var(--color-text-tertiary)"></span>
+      <div class="home-backup">
+        <div class="home-backup__heading">
+          <span class="home-backup__title">数据安全</span>
+          <span id="home-backup-badge" class="home-backup__badge"></span>
         </div>
-        <p style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);margin-bottom:var(--space-sm);line-height:1.5">
+        <p class="home-backup__copy">
           数据仅保存在当前浏览器中。换手机或清缓存前请先导出备份。
         </p>
-        <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-sm)">
-          <button class="btn btn--ghost btn--small" id="home-export-btn" style="flex:1">📤 分享备份</button>
-          <button class="btn btn--ghost btn--small" id="home-import-btn" style="flex:1;color:var(--color-warning)">📋 粘贴恢复</button>
+        <div class="home-backup__actions">
+          <button class="btn btn--ghost btn--small" id="home-export-btn" type="button">分享备份</button>
+          <button class="btn btn--ghost btn--small home-backup__restore" id="home-import-btn" type="button">恢复数据</button>
         </div>
         <!-- 导入粘贴区（默认隐藏） -->
         <div id="home-import-area" style="display:none">
@@ -154,8 +159,8 @@
     </section>
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
-    <div id="app-version" style="text-align:center;padding:0 0 var(--space-lg);font-size:10px;color:var(--color-text-tertiary);opacity:0.5">
-      v20260709-148 · 预测文案简化：去掉总预算前缀，超支统一说剩余
+    <div id="app-version" class="app-version" aria-label="应用版本">
+      v20260711-149 · 首页体验与无障碍优化
     </div>
   </main>
 
@@ -406,23 +411,23 @@
   <!-- ==============================================================
        底部 Tab Bar
        ============================================================== -->
-  <nav class="tab-bar">
-    <div class="tab-bar__item tab-bar__item--active" data-view="home">
+  <nav class="tab-bar" aria-label="主导航">
+    <button class="tab-bar__item tab-bar__item--active" data-view="home" type="button" aria-current="page">
       <span class="tab-bar__icon">💰</span>
       <span class="tab-bar__label">首页</span>
-    </div>
-    <div class="tab-bar__item" data-view="add">
+    </button>
+    <button class="tab-bar__item" data-view="add" type="button">
       <span class="tab-bar__icon">✏️</span>
       <span class="tab-bar__label">记账</span>
-    </div>
-    <div class="tab-bar__item" data-view="list">
+    </button>
+    <button class="tab-bar__item" data-view="list" type="button">
       <span class="tab-bar__icon">📋</span>
       <span class="tab-bar__label">账单</span>
-    </div>
-    <div class="tab-bar__item" data-view="stats">
+    </button>
+    <button class="tab-bar__item" data-view="stats" type="button">
       <span class="tab-bar__icon">📊</span>
       <span class="tab-bar__label">统计</span>
-    </div>
+    </button>
   </nav>
 
 </div><!-- #app -->
@@ -507,13 +512,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=142"></script>
-<script src="js/data.js?v=142"></script>
-<script src="js/home.js?v=142"></script>
-<script src="js/categories.js?v=142"></script>
-<script src="js/list.js?v=142"></script>
-<script src="js/stats.js?v=142"></script>
-<script src="js/app.js?v=142"></script>
+<script src="js/storage.js?v=149"></script>
+<script src="js/data.js?v=149"></script>
+<script src="js/home.js?v=149"></script>
+<script src="js/categories.js?v=149"></script>
+<script src="js/list.js?v=149"></script>
+<script src="js/stats.js?v=149"></script>
+<script src="js/app.js?v=149"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">

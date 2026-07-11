@@ -452,3 +452,55 @@
 .home-recent .empty-state {
   padding: var(--space-xxl) var(--space-lg);
 }
+
+
+/* v149 · calm personal ledger home */
+.home-header { padding: 28px var(--space-xl) 18px; align-items: flex-end; }
+.home-header__eyebrow { margin-bottom: 2px; color: var(--color-primary); font-size: 10px; font-weight: 700; letter-spacing: 0.14em; }
+.home-header__title { font-size: 30px; letter-spacing: -0.04em; line-height: 1.08; }
+.home-header__date { padding: 6px 8px; border: 1px solid var(--color-border); border-radius: 999px; background: rgba(255, 255, 253, 0.68); font-size: 12px; }
+.home-section { padding: 0 var(--space-xl) var(--space-lg); }
+.home-section__title { color: var(--color-text-secondary); letter-spacing: 0.08em; }
+.home-section__all { padding: 2px 0; border: 0; background: transparent; color: var(--color-primary); font: inherit; font-size: var(--font-size-xs); cursor: pointer; }
+.home-overview { gap: 10px; }
+.home-overview__card { align-items: flex-start; border: 1px solid rgba(15, 89, 102, 0.05); border-radius: var(--radius-lg); padding: 16px 14px 14px; text-align: left; }
+.home-overview__card:first-child { background: var(--color-primary); border-color: var(--color-primary); box-shadow: 0 10px 22px rgba(15, 89, 102, 0.20); }
+.home-overview__card:first-child .home-overview__label, .home-overview__card:first-child .home-overview__amount { color: #FFFFFF; }
+.home-overview__card:first-child .home-overview__count, .home-overview__card:first-child .home-overview__diff { color: rgba(255, 255, 255, 0.68); }
+.home-overview__card:first-child .home-overview__diff--up, .home-overview__card:first-child .home-overview__diff--down { color: #FFFFFF; }
+.home-overview__title-row { justify-content: space-between; width: 100%; }
+.home-overview__amount { font-size: 24px; letter-spacing: -0.04em; }
+.home-budget-cta { width: 100%; justify-content: space-between; margin-top: 2px; padding: 13px 16px; border: 1px dashed rgba(15, 89, 102, 0.34); background: rgba(220, 237, 234, 0.58); color: var(--color-primary-dark); font-size: var(--font-size-sm); }
+.home-budget-cta:hover { background: var(--color-primary-light); }
+.home-recent { border: 1px solid rgba(15, 89, 102, 0.06); box-shadow: var(--shadow-sm); }
+.home-empty-state { min-height: 222px; padding: 28px var(--space-xl); }
+.home-empty-state .empty-state__icon { display: grid; width: 52px; height: 52px; margin-bottom: 14px; place-items: center; border-radius: 50%; background: var(--color-primary-light); color: var(--color-primary); font-size: 28px; }
+.home-empty-state .empty-state__text { color: var(--color-text-primary); font-weight: 650; }
+.home-empty__cta { margin-top: 18px; padding: 10px 14px; border: 1px solid var(--color-primary); border-radius: 999px; background: var(--color-primary); color: #FFFFFF; font: inherit; }
+.home-empty__cta .home-recent__add-icon, .home-empty__cta .home-recent__add-text { color: #FFFFFF; }
+.home-backup { padding: 14px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: rgba(255, 255, 253, 0.56); }
+.home-backup__heading, .home-backup__actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); }
+.home-backup__title { color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: 700; }
+.home-backup__badge, .home-backup__copy { color: var(--color-text-tertiary); font-size: var(--font-size-xs); }
+.home-backup__copy { margin: 6px 0 10px; line-height: 1.5; }
+.home-backup__actions { justify-content: flex-start; }
+.home-backup__actions .btn { padding-inline: 0; }
+.home-backup__restore { color: var(--color-warning); }
+.app-version { display: none; }
+@media (min-width: 480px) { .home-header { padding-top: 36px; } }
+
+
+.home-budget-alert__edit {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.home-budget-alert__edit:hover { background: var(--color-divider); }
