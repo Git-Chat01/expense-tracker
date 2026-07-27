@@ -956,3 +956,51 @@ ul, ol {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* v150 — 统一图标语言，并让桌面端有可利用的工作区 */
+.tab-bar__icon {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border-radius: 9px;
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.tab-bar__icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.tab-bar__item--active .tab-bar__icon {
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+.tab-bar__item--active .tab-bar__label {
+  color: var(--color-primary-dark);
+  font-weight: 700;
+}
+
+@media (min-width: 860px) {
+  :root { --app-max-width: 980px; }
+
+  body { background: #E8ECE6; }
+
+  .app-container {
+    box-shadow: 0 22px 52px rgba(28, 41, 43, 0.10);
+  }
+
+  .tab-bar {
+    height: 64px;
+    padding-inline: 20px;
+  }
+
+  .tab-bar__item { flex-direction: row; gap: 7px; }
+}

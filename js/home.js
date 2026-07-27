@@ -15,6 +15,8 @@ const ExpenseHome = (() => {
   let _$alerts, _$recent, _$viewAllBtn;
   let _$budgetAlert, _$budgetAlertRing, _$budgetAlertStatus, _$budgetAlertPct;
   let _$budgetAlertDaily, _$budgetAlertRemaining, _$budgetAlertPrediction;
+  let _$budgetSummary, _$budgetSummaryLabel, _$budgetSummaryValue;
+  let _$budgetSummaryProgress, _$budgetActionLabel;
 
   /**
    * 初始化 DOM 引用（在 render 前调用一次）
@@ -38,6 +40,11 @@ const ExpenseHome = (() => {
     _$budgetAlertDaily=document.getElementById('home-budget-alert-daily');
     _$budgetAlertRemaining=document.getElementById('home-budget-alert-remaining');
     _$budgetAlertPrediction=document.getElementById('home-budget-alert-prediction');
+    _$budgetSummary = document.getElementById('home-budget-summary');
+    _$budgetSummaryLabel = document.getElementById('home-budget-summary-label');
+    _$budgetSummaryValue = document.getElementById('home-budget-summary-value');
+    _$budgetSummaryProgress = document.getElementById('home-budget-summary-progress');
+    _$budgetActionLabel = document.getElementById('home-budget-action-label');
   }
 
   /* -----------------------------------------------------------------
@@ -139,6 +146,17 @@ const ExpenseHome = (() => {
      预算进度卡片：圆环 + 信息区 + 预测
      时间感知状态：节奏比 = 已用% / 时间进度%
      ----------------------------------------------------------------- */
+  function _renderBudgetSummary(options) {
+    if (!_$budgetSummary || !_$budgetSummaryLabel || !_$budgetSummaryValue || !_$budgetSummaryProgress) return;
+
+    var state = options.state || 'safe';
+    _$budgetSummary.className = 'home-summary__budget home-summary__budget--' + state;
+    _$budgetSummaryLabel.textContent = options.label;
+    _$budgetSummaryValue.textContent = options.value || '';
+    _$budgetSummaryProgress.style.width = Math.max(0, Math.min(100, options.progress || 0)) + '%';
+    if (_$budgetActionLabel) _$budgetActionLabel.textContent = options.action || '调整预算';
+  }
+
   function _renderBudgetAlert() {
     if (!_$budgetAlert) return;
 
@@ -154,7 +172,7 @@ const ExpenseHome = (() => {
       var spent = ExpenseDB.getCategorySpent(catId);
       var pct = Math.round((spent / catBudget) * 100);
       if (!closest || pct > closest.pct) {
-        closest = { budget: catBudget, spent: spent, pct: pct };
+        closest = { budget: catBudget, spent: spent, pct: pct, categoryId: catId };
       }
     }
 
@@ -162,9 +180,14 @@ const ExpenseHome = (() => {
     if (!closest) {
       var monthlyBudget = budget.monthlyTotal || 0;
       if (monthlyBudget <= 0) {
+        _renderBudgetSummary({
+          label: '设置预算，让本月消费更有底气',
+          value: '',
+          progress: 0,
+          state: 'setup',
+          action: '设置预算',
+        });
         _$budgetAlert.style.display = 'none';
-        var setBtn = document.getElementById('home-set-budget');
-        if (setBtn) setBtn.style.display = '';
         return;
       }
       var currentYM = _yearMonthStr();
@@ -189,13 +212,14 @@ const ExpenseHome = (() => {
 
     // 颜色值（SVG 需要 hex，CSS 用 var）
     var statusText, statusClass, ringHex;
+    var paceRatio = 0;
     if (spentPct > 100) {
       statusText = '超支';
       statusClass = 'home-budget-alert__status--over';
       ringHex = '#CC0000';
     } else {
       var effectiveTime = Math.max(timeProgress, 0.05);
-      var paceRatio = (spentPct / 100) / effectiveTime;
+      paceRatio = (spentPct / 100) / effectiveTime;
       if (paceRatio > 1.2) {
         statusText = '偏快';
         statusClass = 'home-budget-alert__status--fast';
@@ -207,9 +231,26 @@ const ExpenseHome = (() => {
       }
     }
 
+    var summaryScope = '本月预算';
+    if (closest.categoryId) {
+      var category = ExpenseDB.getCategory(closest.categoryId);
+      summaryScope = (category ? category.name : '分类') + '预算';
+    }
+    _renderBudgetSummary({
+      label: summaryScope + ' ¥' + closest.budget.toLocaleString(),
+      value: '已用 ' + spentPct + '%',
+      progress: spentPct,
+      state: spentPct > 100 ? 'over' : (paceRatio > 1.2 ? 'watch' : 'safe'),
+      action: '调整',
+    });
+
+    var needsAttention = spentPct >= 80 || paceRatio > 1.2;
+    if (!needsAttention) {
+      _$budgetAlert.style.display = 'none';
+      return;
+    }
+
     _$budgetAlert.style.display = '';
-    var setBtn2 = document.getElementById('home-set-budget');
-    if (setBtn2) setBtn2.style.display = 'none';
 
     // ---- SVG 圆环 ----
     var ringR = 44;

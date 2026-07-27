@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=149">
-  <link rel="stylesheet" href="css/home.css?v=149">
-  <link rel="stylesheet" href="css/add.css?v=149">
-  <link rel="stylesheet" href="css/list.css?v=149">
-  <link rel="stylesheet" href="css/stats.css?v=149">
+  <link rel="stylesheet" href="css/common.css?v=150">
+  <link rel="stylesheet" href="css/home.css?v=150">
+  <link rel="stylesheet" href="css/add.css?v=150">
+  <link rel="stylesheet" href="css/list.css?v=150">
+  <link rel="stylesheet" href="css/stats.css?v=150">
 </head>
 <body>
 
@@ -38,129 +38,145 @@
       <span class="home-header__date" id="home-date"></span>
     </header>
 
-    <!-- 今日 + 本月 两张独立卡片并排 -->
-    <section class="home-section">
-      <div class="home-overview">
-        <!-- 左：今日消费 -->
-        <div class="home-overview__card card">
-          <div class="home-overview__title-row">
-            <span class="home-overview__label">今日消费</span>
-            <span class="home-overview__count" id="home-today-count">0 笔</span>
-          </div>
-          <span class="home-overview__amount" id="home-today-amount">¥0</span>
-          <span class="home-overview__diff" id="home-today-diff"></span>
-        </div>
-        <!-- 右：本月消费 -->
-        <div class="home-overview__card card">
-          <div class="home-overview__title-row">
-            <span class="home-overview__label">本月消费</span>
-            <span class="home-overview__count" id="home-month-count">0 笔</span>
-          </div>
-          <span class="home-overview__amount" id="home-month-amount">¥0</span>
-          <span class="home-overview__diff" id="home-month-diff"></span>
-        </div>
-      </div>
-    </section>
-
-    <!-- 预算进度：圆环 + 信息区 + 预测 -->
-    <section class="home-section">
-      <div class="home-budget-alert card" id="home-budget-alert" style="display:none">
-        <div class="home-budget-alert__header">
-          <div class="home-budget-alert__header-left">
-            <span class="home-budget-alert__title">预算进度</span>
-          </div>
-          <div class="home-budget-alert__header-right">
-            <span class="home-budget-alert__status" id="home-budget-alert-status"></span>
-            <button class="home-budget-alert__edit" id="home-budget-alert-edit" type="button" aria-label="编辑预算">⚙️</button>
-          </div>
-        </div>
-        <!-- 左圆环 + 右信息区 -->
-        <div class="home-budget-alert__body">
-          <div class="home-budget-alert__ring" id="home-budget-alert-ring">
-            <!-- SVG 动态渲染 -->
-          </div>
-          <div class="home-budget-alert__info">
-            <div class="home-budget-alert__pct" id="home-budget-alert-pct"></div>
-            <div class="home-budget-alert__amounts">
-              <div class="home-budget-alert__amount-item">
-                <span class="home-budget-alert__amount-label">还可用</span>
-                <span class="home-budget-alert__amount-value" id="home-budget-alert-remaining"></span>
+    <div class="home-dashboard">
+      <div class="home-dashboard__primary">
+        <!-- 首页唯一主任务：看清本月，再记一笔 -->
+        <section class="home-section">
+          <div class="home-summary card">
+            <div class="home-summary__top">
+              <div>
+                <p class="home-summary__label">本月支出</p>
+                <p class="home-summary__amount" id="home-month-amount">¥0</p>
               </div>
-              <div class="home-budget-alert__amount-item">
-                <span class="home-budget-alert__amount-label">日均可花</span>
-                <span class="home-budget-alert__amount-value" id="home-budget-alert-daily"></span>
+              <div class="home-summary__meta">
+                <span class="home-summary__count" id="home-month-count">0 笔记录</span>
+                <span class="home-summary__diff" id="home-month-diff"></span>
+              </div>
+            </div>
+
+            <div class="home-summary__budget home-summary__budget--setup" id="home-budget-summary">
+              <div class="home-summary__budget-row">
+                <span class="home-summary__budget-label" id="home-budget-summary-label">设置预算，让本月消费更有底气</span>
+                <span class="home-summary__budget-value" id="home-budget-summary-value"></span>
+              </div>
+              <div class="home-summary__budget-track" aria-hidden="true">
+                <span class="home-summary__budget-progress" id="home-budget-summary-progress"></span>
+              </div>
+              <button class="home-summary__budget-action" id="home-set-budget" type="button">
+                <span id="home-budget-action-label">设置预算</span><span aria-hidden="true">→</span>
+              </button>
+            </div>
+
+            <button class="home-primary-action" id="home-primary-add" type="button">
+              <span class="home-primary-action__copy"><strong>记一笔</strong><small>记录此刻的消费</small></span>
+              <span class="home-primary-action__icon" aria-hidden="true">＋</span>
+            </button>
+          </div>
+
+          <div class="home-today card">
+            <div class="home-today__label-row">
+              <span class="home-today__label">今日消费</span>
+              <span class="home-today__count" id="home-today-count">0 笔</span>
+            </div>
+            <span class="home-today__amount" id="home-today-amount">¥0</span>
+            <span class="home-today__diff" id="home-today-diff"></span>
+          </div>
+        </section>
+
+        <!-- 最近记录 -->
+        <section class="home-section">
+          <div class="home-section__title-row">
+            <h2 class="home-section__title">最近记录</h2>
+            <button class="home-section__all" id="home-view-all" type="button" style="display:none">查看账单 <span aria-hidden="true">→</span></button>
+          </div>
+          <div class="home-recent card" id="home-recent">
+            <div class="empty-state">
+              <div class="empty-state__icon">📝</div>
+              <p class="empty-state__text">还没有消费记录</p>
+              <p class="empty-state__hint">从一笔真实消费开始</p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="home-dashboard__secondary">
+        <!-- 预算详情仅在接近或超过预算时出现 -->
+        <section class="home-section">
+          <div class="home-budget-alert card" id="home-budget-alert" style="display:none">
+            <div class="home-budget-alert__header">
+              <div class="home-budget-alert__header-left">
+                <span class="home-budget-alert__title">预算需要关注</span>
+              </div>
+              <div class="home-budget-alert__header-right">
+                <span class="home-budget-alert__status" id="home-budget-alert-status"></span>
+                <button class="home-budget-alert__edit" id="home-budget-alert-edit" type="button" aria-label="编辑预算">⚙️</button>
+              </div>
+            </div>
+            <div class="home-budget-alert__body">
+              <div class="home-budget-alert__ring" id="home-budget-alert-ring"></div>
+              <div class="home-budget-alert__info">
+                <div class="home-budget-alert__pct" id="home-budget-alert-pct"></div>
+                <div class="home-budget-alert__amounts">
+                  <div class="home-budget-alert__amount-item">
+                    <span class="home-budget-alert__amount-label">还可用</span>
+                    <span class="home-budget-alert__amount-value" id="home-budget-alert-remaining"></span>
+                  </div>
+                  <div class="home-budget-alert__amount-item">
+                    <span class="home-budget-alert__amount-label">日均可花</span>
+                    <span class="home-budget-alert__amount-value" id="home-budget-alert-daily"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="home-budget-alert__prediction" id="home-budget-alert-prediction"></div>
+          </div>
+        </section>
+
+        <!-- 智能提醒（仅在预算超标时出现） -->
+        <section class="home-section home-section--alerts" id="home-alerts-section" style="display:none">
+          <h2 class="home-section__title">预算提醒</h2>
+          <div class="home-alerts" id="home-alerts"></div>
+        </section>
+
+        <!-- 数据管理（备份 / 恢复） -->
+        <section class="home-section home-section--support">
+          <div class="home-backup">
+            <div class="home-backup__heading">
+              <span class="home-backup__title">数据安全</span>
+              <span id="home-backup-badge" class="home-backup__badge"></span>
+            </div>
+            <p class="home-backup__copy">数据仅保存在当前浏览器中。换手机或清缓存前请先导出备份。</p>
+            <div class="home-backup__actions">
+              <button class="btn btn--ghost btn--small" id="home-export-btn" type="button">分享备份</button>
+              <button class="btn btn--ghost btn--small home-backup__restore" id="home-import-btn" type="button">恢复数据</button>
+            </div>
+            <div id="home-import-area" style="display:none">
+              <textarea class="input" id="home-import-textarea" placeholder="在此粘贴之前导出的备份内容…" rows="3" style="font-size:var(--font-size-xs);font-family:var(--font-mono);resize:vertical;width:100%;margin-bottom:var(--space-sm)"></textarea>
+              <div style="display:flex;gap:var(--space-sm)">
+                <button class="btn btn--primary btn--small" id="home-import-confirm" style="flex:1">确认导入</button>
+                <button class="btn btn--ghost btn--small" id="home-import-cancel">取消</button>
               </div>
             </div>
           </div>
-        </div>
-        <div class="home-budget-alert__prediction" id="home-budget-alert-prediction"></div>
-      </div>
-      <button class="btn home-budget-cta" id="home-set-budget" type="button">
-        <span>设置本月预算</span><span aria-hidden="true">→</span>
-      </button>
-    </section>
+        </section>
 
-    <!-- 智能提醒（仅在预算超标时出现，平时隐藏） -->
-    <section class="home-section" id="home-alerts-section" style="display:none">
-      <h2 class="home-section__title" style="font-size:var(--font-size-xs);color:var(--color-text-tertiary);font-weight:400">预算提醒</h2>
-      <div class="home-alerts" id="home-alerts"></div>
-    </section>
-
-    <!-- 最近记录 -->
-    <section class="home-section">
-      <div class="home-section__title-row">
-        <h2 class="home-section__title">最近记录</h2>
-        <button class="home-section__all" id="home-view-all" type="button" style="display:none">全部记录 <span aria-hidden="true">→</span></button>
-      </div>
-      <div class="home-recent card" id="home-recent">
-        <div class="empty-state">
-          <div class="empty-state__icon">📝</div>
-          <p class="empty-state__text">还没有消费记录</p>
-          <p class="empty-state__hint">去「记账」Tab 添加第一笔吧</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- SW 更新提示（低存在感，仅新版本可用时显示） -->
-    <section class="home-section" style="padding-bottom:var(--space-md)">
-      <div id="sw-update-bar" class="sw-update-bar">
-        <span class="sw-update-bar__icon">↻</span>
-        <div class="sw-update-bar__body">
-          <span class="sw-update-bar__title">发现新版本</span>
-          <span class="sw-update-bar__sub">体验优化，建议更新</span>
-        </div>
-        <span class="sw-update-bar__btn">更新</span>
-      </div>
-    </section>
-
-    <!-- 数据管理（备份 / 恢复） -->
-    <section class="home-section" style="padding-bottom:var(--space-md)">
-      <div class="home-backup">
-        <div class="home-backup__heading">
-          <span class="home-backup__title">数据安全</span>
-          <span id="home-backup-badge" class="home-backup__badge"></span>
-        </div>
-        <p class="home-backup__copy">
-          数据仅保存在当前浏览器中。换手机或清缓存前请先导出备份。
-        </p>
-        <div class="home-backup__actions">
-          <button class="btn btn--ghost btn--small" id="home-export-btn" type="button">分享备份</button>
-          <button class="btn btn--ghost btn--small home-backup__restore" id="home-import-btn" type="button">恢复数据</button>
-        </div>
-        <!-- 导入粘贴区（默认隐藏） -->
-        <div id="home-import-area" style="display:none">
-          <textarea class="input" id="home-import-textarea" placeholder="在此粘贴之前导出的备份内容…" rows="3" style="font-size:var(--font-size-xs);font-family:var(--font-mono);resize:vertical;width:100%;margin-bottom:var(--space-sm)"></textarea>
-          <div style="display:flex;gap:var(--space-sm)">
-            <button class="btn btn--primary btn--small" id="home-import-confirm" style="flex:1">确认导入</button>
-            <button class="btn btn--ghost btn--small" id="home-import-cancel">取消</button>
+        <!-- SW 更新提示（低存在感，仅新版本可用时显示） -->
+        <section class="home-section home-section--support">
+          <div id="sw-update-bar" class="sw-update-bar">
+            <span class="sw-update-bar__icon">↻</span>
+            <div class="sw-update-bar__body">
+              <span class="sw-update-bar__title">发现新版本</span>
+              <span class="sw-update-bar__sub">体验优化，建议更新</span>
+            </div>
+            <span class="sw-update-bar__btn">更新</span>
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
+      </aside>
+    </div>
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260711-149 · 首页体验与无障碍优化
+      v20260728-150 · 首页信息层级重构
     </div>
   </main>
 
@@ -413,19 +429,19 @@
        ============================================================== -->
   <nav class="tab-bar" aria-label="主导航">
     <button class="tab-bar__item tab-bar__item--active" data-view="home" type="button" aria-current="page">
-      <span class="tab-bar__icon">💰</span>
+      <span class="tab-bar__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-8Z"/><path d="M9 20v-6h6v6"/></svg></span>
       <span class="tab-bar__label">首页</span>
     </button>
     <button class="tab-bar__item" data-view="add" type="button">
-      <span class="tab-bar__icon">✏️</span>
+      <span class="tab-bar__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 20 4.2-1 10-10a2.1 2.1 0 0 0-3-3l-10 10L4 20Z"/><path d="m13.8 7.2 3 3"/></svg></span>
       <span class="tab-bar__label">记账</span>
     </button>
     <button class="tab-bar__item" data-view="list" type="button">
-      <span class="tab-bar__icon">📋</span>
+      <span class="tab-bar__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 4V2h6v2M9 10h6M9 14h6"/></svg></span>
       <span class="tab-bar__label">账单</span>
     </button>
     <button class="tab-bar__item" data-view="stats" type="button">
-      <span class="tab-bar__icon">📊</span>
+      <span class="tab-bar__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V5M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-7"/></svg></span>
       <span class="tab-bar__label">统计</span>
     </button>
   </nav>
@@ -512,13 +528,13 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=149"></script>
-<script src="js/data.js?v=149"></script>
-<script src="js/home.js?v=149"></script>
-<script src="js/categories.js?v=149"></script>
-<script src="js/list.js?v=149"></script>
-<script src="js/stats.js?v=149"></script>
-<script src="js/app.js?v=149"></script>
+<script src="js/storage.js?v=150"></script>
+<script src="js/data.js?v=150"></script>
+<script src="js/home.js?v=150"></script>
+<script src="js/categories.js?v=150"></script>
+<script src="js/list.js?v=150"></script>
+<script src="js/stats.js?v=150"></script>
+<script src="js/app.js?v=150"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
