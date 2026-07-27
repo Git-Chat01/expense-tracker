@@ -723,6 +723,11 @@ const ExpenseApp = (() => {
   }
 
   function _bindHomeEvents() {
+    const primaryAddBtn = document.getElementById('home-primary-add');
+    if (primaryAddBtn) {
+      primaryAddBtn.addEventListener('click', () => navigate('add'));
+    }
+
     // 设置预算按钮
     const setBudgetBtn = document.getElementById('home-set-budget');
     if (setBudgetBtn) {
