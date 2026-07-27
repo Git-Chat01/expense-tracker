@@ -252,12 +252,14 @@ const ExpenseApp = (() => {
   function _updateAmountDisplay() {
     const display = document.getElementById('add-amount-display');
     const decimal = document.getElementById('add-amount-decimal');
+    const submitAmount = document.getElementById('add-submit-amount');
     if (!display || !decimal) return;
 
     if (_formState.amountRaw === '') {
       display.textContent = '0';
       display.className = 'add-amount__value add-amount__value--empty';
       decimal.textContent = '.00';
+      if (submitAmount) submitAmount.textContent = '¥0.00';
     } else {
       const parts = _formState.amountRaw.split('.');
       display.textContent = parts[0] || '0';
@@ -266,6 +268,10 @@ const ExpenseApp = (() => {
         decimal.textContent = '.' + parts[1].padEnd(2, '0');
       } else {
         decimal.textContent = '.00';
+      }
+      if (submitAmount) {
+        const amount = parseFloat(_formState.amountRaw);
+        submitAmount.textContent = `¥${Number.isFinite(amount) ? amount.toFixed(2) : '0.00'}`;
       }
     }
   }
@@ -292,7 +298,7 @@ const ExpenseApp = (() => {
       const bg   = isActive ? pm.color : `rgba(${rgb},0.1)`;
       const bd   = isActive ? pm.color : `rgba(${rgb},0.3)`;
       const text = isActive ? '#fff' : pm.color;
-      return `<button class="chip chip--payment ${isActive ? 'chip--active' : ''}" data-pm="${pm.value}" style="background:${bg};border-color:${bd};color:${text}">${pm.label}</button>`;
+      return `<button class="chip chip--payment ${isActive ? 'chip--active' : ''}" data-pm="${pm.value}" type="button" style="background:${bg};border-color:${bd};color:${text}">${pm.label}</button>`;
     }).join('');
 
     container.querySelectorAll('.chip').forEach(chip => {
@@ -368,12 +374,14 @@ const ExpenseApp = (() => {
       const isOpen = inputs.style.display !== 'none';
       if (isOpen) {
         inputs.style.display = 'none';
-        toggleBtn.innerHTML = `📅 <span id="add-date-label">今天</span> <span id="add-time-label">${_formState.time}</span> ▾`;
+        toggleBtn.setAttribute('aria-expanded', 'false');
+        toggleBtn.innerHTML = `<span aria-hidden="true">日历</span><span id="add-date-label">今天</span><span id="add-time-label">${_formState.time}</span><span class="add-date-quick__chevron" aria-hidden="true">⌄</span>`;
         // 重新获取 label 引用（innerHTML 替换后需要）
         _updateDateLabels();
       } else {
         inputs.style.display = 'flex';
-        toggleBtn.innerHTML = `📅 <span id="add-date-label">今天</span> <span id="add-time-label">${_formState.time}</span> ▴`;
+        toggleBtn.setAttribute('aria-expanded', 'true');
+        toggleBtn.innerHTML = `<span aria-hidden="true">日历</span><span id="add-date-label">今天</span><span id="add-time-label">${_formState.time}</span><span class="add-date-quick__chevron" aria-hidden="true">⌃</span>`;
         _updateDateLabels();
       }
     });
@@ -394,15 +402,23 @@ const ExpenseApp = (() => {
     const timeInput = document.getElementById('add-time');
     const locInput = document.getElementById('add-location');
     const noteInput = document.getElementById('add-note');
+    const moreFields = document.getElementById('add-more-fields');
     if (dateInput) dateInput.value = _formState.date;
     if (timeInput) timeInput.value = _formState.time;
     if (locInput) locInput.value = _formState.location;
     if (noteInput) noteInput.value = '';
+    if (moreFields) moreFields.open = Boolean(_formState.location || _formState.note);
 
     // 更新日期标签显示 + 收起日期选择器
     _updateDateLabels();
     const dateInputs = document.getElementById('add-date-inputs');
     if (dateInputs) dateInputs.style.display = 'none';
+    const dateQuick = document.getElementById('add-date-quick');
+    if (dateQuick) {
+      dateQuick.setAttribute('aria-expanded', 'false');
+      dateQuick.innerHTML = `<span aria-hidden="true">日历</span><span id="add-date-label">今天</span><span id="add-time-label">${_formState.time}</span><span class="add-date-quick__chevron" aria-hidden="true">⌄</span>`;
+      _updateDateLabels();
+    }
   }
 
   /* -----------------------------------------------------------------
