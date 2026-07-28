@@ -10,7 +10,7 @@ const ExpenseHome = (() => {
   /* -----------------------------------------------------------------
      DOM 引用缓存
      ----------------------------------------------------------------- */
-  let _$date, _$todayAmount, _$todayCount, _$todayDiff;
+  let _$date, _$today, _$todayAmount, _$todayCount, _$todayDiff;
   let _$monthAmount, _$monthCount, _$monthDiff;
   let _$alerts, _$recent, _$viewAllBtn;
   let _$budgetAlert, _$budgetAlertRing, _$budgetAlertStatus, _$budgetAlertPct;
@@ -23,6 +23,7 @@ const ExpenseHome = (() => {
    */
   function _cacheDom() {
     _$date           = document.getElementById('home-date');
+    _$today          = document.getElementById('home-today');
     _$todayAmount    = document.getElementById('home-today-amount');
     _$todayCount     = document.getElementById('home-today-count');
     _$todayDiff      = document.getElementById('home-today-diff');
@@ -82,6 +83,9 @@ const ExpenseHome = (() => {
     const expenses = ExpenseDB.getExpenses();
     const todayExpenses = expenses.filter(e => e.date === today);
     const total = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+    if (_$today) _$today.hidden = todayExpenses.length === 0;
+    if (todayExpenses.length === 0) return;
 
     _$todayAmount.innerHTML = '<span class="home-overview__currency">¥</span>' + total.toFixed(2);
     _$todayCount.textContent = `${todayExpenses.length} 笔`;
@@ -150,7 +154,7 @@ const ExpenseHome = (() => {
     if (!_$budgetSummary || !_$budgetSummaryLabel || !_$budgetSummaryValue || !_$budgetSummaryProgress) return;
 
     var state = options.state || 'safe';
-    _$budgetSummary.className = 'home-summary__budget home-summary__budget--' + state;
+    _$budgetSummary.className = 'home-budget-brief card home-budget-brief--' + state;
     _$budgetSummaryLabel.textContent = options.label;
     _$budgetSummaryValue.textContent = options.value || '';
     _$budgetSummaryProgress.style.width = Math.max(0, Math.min(100, options.progress || 0)) + '%';
@@ -181,11 +185,11 @@ const ExpenseHome = (() => {
       var monthlyBudget = budget.monthlyTotal || 0;
       if (monthlyBudget <= 0) {
         _renderBudgetSummary({
-          label: '设置预算，让本月消费更有底气',
+          label: '还没有设置本月预算',
           value: '',
           progress: 0,
           state: 'setup',
-          action: '设置预算',
+          action: '去设置',
         });
         _$budgetAlert.style.display = 'none';
         return;
@@ -455,18 +459,19 @@ const ExpenseHome = (() => {
 
     if (recent.length === 0) {
       _$recent.innerHTML = `
-        <div class="empty-state home-empty-state">
-          <div class="empty-state__icon" aria-hidden="true">✦</div>
-          <p class="empty-state__text">从第一笔开始，读懂自己的消费</p>
-          <p class="empty-state__hint">记录金额、分类和当下的需要。</p>
-          <button class="home-recent__add home-empty__cta" type="button">
-            <span class="home-recent__add-icon" aria-hidden="true">+</span>
-            <span class="home-recent__add-text">记下第一笔消费</span>
-          </button>
+        <div class="home-recent__empty-line">
+          <span class="home-recent__empty-icon" aria-hidden="true">✦</span>
+          <div>
+            <p class="home-recent__empty-title">还没有消费记录</p>
+            <p class="home-recent__empty-copy">第一笔会出现在这里</p>
+          </div>
         </div>`;
+      _$recent.classList.add('home-recent--empty');
       _$viewAllBtn.style.display = 'none';
       return;
     }
+
+    _$recent.classList.remove('home-recent--empty');
 
     _$recent.innerHTML = recent.map(e => {
       const cat = ExpenseDB.getCategory(e.categoryId);
@@ -496,12 +501,7 @@ const ExpenseHome = (() => {
           </div>
           <span class="home-recent__amount">-¥${e.amount.toFixed(2)}</span>
         </div>`;
-    }).join('')
-      // 末尾追加"记一笔"入口
-      + `<div class="home-recent__add" id="home-recent-add">
-           <span class="home-recent__add-icon">+</span>
-           <span class="home-recent__add-text">记一笔</span>
-         </div>`;
+    }).join('');
 
     _$viewAllBtn.style.display = '';
   }

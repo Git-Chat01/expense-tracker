@@ -13,7 +13,7 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/common.css?v=150">
-  <link rel="stylesheet" href="css/home.css?v=153">
+  <link rel="stylesheet" href="css/home.css?v=154">
   <link rel="stylesheet" href="css/add.css?v=151">
   <link rel="stylesheet" href="css/list.css?v=150">
   <link rel="stylesheet" href="css/stats.css?v=150">
@@ -60,32 +60,33 @@
               </div>
             </div>
 
-            <div class="home-summary__budget home-summary__budget--setup" id="home-budget-summary">
-              <div class="home-summary__budget-row">
-                <span class="home-summary__budget-label" id="home-budget-summary-label">设置预算，让本月消费更有底气</span>
-                <span class="home-summary__budget-value" id="home-budget-summary-value"></span>
-              </div>
-              <div class="home-summary__budget-track" aria-hidden="true">
-                <span class="home-summary__budget-progress" id="home-budget-summary-progress"></span>
-              </div>
-              <button class="home-summary__budget-action" id="home-set-budget" type="button">
-                <span id="home-budget-action-label">设置预算</span><span aria-hidden="true">→</span>
-              </button>
-            </div>
-
             <button class="home-primary-action" id="home-primary-add" type="button">
               <span class="home-primary-action__copy"><strong>记一笔</strong><small>记录此刻的消费</small></span>
               <span class="home-primary-action__icon" aria-hidden="true">＋</span>
             </button>
           </div>
 
-          <div class="home-today card">
+          <div class="home-today card" id="home-today" hidden>
             <div class="home-today__label-row">
               <span class="home-today__label">今日消费</span>
               <span class="home-today__count" id="home-today-count">0 笔</span>
             </div>
             <span class="home-today__amount" id="home-today-amount">¥0</span>
             <span class="home-today__diff" id="home-today-diff"></span>
+          </div>
+
+          <div class="home-budget-brief card home-budget-brief--setup" id="home-budget-summary">
+            <div class="home-budget-brief__copy">
+              <span class="home-budget-brief__eyebrow">预算</span>
+              <span class="home-budget-brief__label" id="home-budget-summary-label">还没有设置本月预算</span>
+              <span class="home-budget-brief__value" id="home-budget-summary-value"></span>
+            </div>
+            <button class="home-budget-brief__action" id="home-set-budget" type="button">
+              <span id="home-budget-action-label">去设置</span><span aria-hidden="true">→</span>
+            </button>
+            <div class="home-budget-brief__track" aria-hidden="true">
+              <span class="home-budget-brief__progress" id="home-budget-summary-progress"></span>
+            </div>
           </div>
         </section>
 
@@ -144,26 +145,29 @@
           <div class="home-alerts" id="home-alerts"></div>
         </section>
 
-        <!-- 数据管理（备份 / 恢复） -->
+        <!-- 数据管理（折叠收纳，避免打扰每日记账） -->
         <section class="home-section home-section--support">
-          <div class="home-backup">
-            <div class="home-backup__heading">
-              <span class="home-backup__title">数据安全</span>
+          <details class="home-data-management">
+            <summary class="home-data-management__summary">
+              <span class="home-data-management__title">数据与备份</span>
               <span id="home-backup-badge" class="home-backup__badge"></span>
-            </div>
-            <p class="home-backup__copy">数据仅保存在当前浏览器中。换手机或清缓存前请先导出备份。</p>
-            <div class="home-backup__actions">
-              <button class="btn btn--ghost btn--small" id="home-export-btn" type="button">分享备份</button>
-              <button class="btn btn--ghost btn--small home-backup__restore" id="home-import-btn" type="button">恢复数据</button>
-            </div>
-            <div id="home-import-area" style="display:none">
-              <textarea class="input" id="home-import-textarea" placeholder="在此粘贴之前导出的备份内容…" rows="3" style="font-size:var(--font-size-xs);font-family:var(--font-mono);resize:vertical;width:100%;margin-bottom:var(--space-sm)"></textarea>
-              <div style="display:flex;gap:var(--space-sm)">
-                <button class="btn btn--primary btn--small" id="home-import-confirm" style="flex:1">确认导入</button>
-                <button class="btn btn--ghost btn--small" id="home-import-cancel">取消</button>
+              <span class="home-data-management__chevron" aria-hidden="true">⌄</span>
+            </summary>
+            <div class="home-data-management__body">
+              <p class="home-backup__copy">数据仅保存在当前浏览器中。换手机或清缓存前，请先导出备份。</p>
+              <div class="home-backup__actions">
+                <button class="btn btn--ghost btn--small" id="home-export-btn" type="button">分享备份</button>
+                <button class="btn btn--ghost btn--small home-backup__restore" id="home-import-btn" type="button">恢复数据</button>
+              </div>
+              <div id="home-import-area" style="display:none">
+                <textarea class="input" id="home-import-textarea" placeholder="在此粘贴之前导出的备份内容…" rows="3" style="font-size:var(--font-size-xs);font-family:var(--font-mono);resize:vertical;width:100%;margin-bottom:var(--space-sm)"></textarea>
+                <div style="display:flex;gap:var(--space-sm)">
+                  <button class="btn btn--primary btn--small" id="home-import-confirm" style="flex:1">确认导入</button>
+                  <button class="btn btn--ghost btn--small" id="home-import-cancel">取消</button>
+                </div>
               </div>
             </div>
-          </div>
+          </details>
         </section>
 
         <!-- SW 更新提示（低存在感，仅新版本可用时显示） -->
@@ -182,7 +186,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260728-150 · 首页信息层级重构
+      v20260729-154 · 首页减负与数据管理收纳
     </div>
   </main>
 
@@ -553,7 +557,7 @@
      ================================================================ -->
 <script src="js/storage.js?v=150"></script>
 <script src="js/data.js?v=150"></script>
-<script src="js/home.js?v=152"></script>
+<script src="js/home.js?v=154"></script>
 <script src="js/categories.js?v=150"></script>
 <script src="js/list.js?v=150"></script>
 <script src="js/stats.js?v=150"></script>
