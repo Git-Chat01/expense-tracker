@@ -13,7 +13,7 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/common.css?v=150">
-  <link rel="stylesheet" href="css/home.css?v=154">
+  <link rel="stylesheet" href="css/home.css?v=155">
   <link rel="stylesheet" href="css/add.css?v=151">
   <link rel="stylesheet" href="css/list.css?v=150">
   <link rel="stylesheet" href="css/stats.css?v=150">
@@ -49,15 +49,10 @@
                 <p class="home-summary__amount" id="home-month-amount">¥0</p>
               </div>
             </div>
-            <div class="home-summary__meta" aria-label="本月消费摘要">
-              <div class="home-summary__metric">
-                <span class="home-summary__metric-label">本月记录</span>
-                <strong class="home-summary__metric-value" id="home-month-count">0 笔</strong>
-              </div>
-              <div class="home-summary__metric">
-                <span class="home-summary__metric-label">对比上月</span>
-                <strong class="home-summary__metric-value home-summary__diff" id="home-month-diff">暂无数据</strong>
-              </div>
+            <div class="home-summary__context" aria-label="本月消费摘要">
+              <span class="home-summary__context-item">本月已记 <strong class="home-summary__context-value" id="home-month-count">0 笔</strong></span>
+              <span class="home-summary__context-dot" id="home-month-context-dot" aria-hidden="true" hidden>·</span>
+              <span class="home-summary__context-item" id="home-month-comparison" hidden>较上月 <strong class="home-summary__context-value" id="home-month-diff">—</strong></span>
             </div>
 
             <button class="home-primary-action" id="home-primary-add" type="button">
@@ -186,7 +181,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260729-154 · 首页减负与数据管理收纳
+      v20260729-155 · 首页主卡信息节奏优化
     </div>
   </main>
 
@@ -557,7 +552,7 @@
      ================================================================ -->
 <script src="js/storage.js?v=150"></script>
 <script src="js/data.js?v=150"></script>
-<script src="js/home.js?v=154"></script>
+<script src="js/home.js?v=155"></script>
 <script src="js/categories.js?v=150"></script>
 <script src="js/list.js?v=150"></script>
 <script src="js/stats.js?v=150"></script>

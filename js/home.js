@@ -11,7 +11,7 @@ const ExpenseHome = (() => {
      DOM 引用缓存
      ----------------------------------------------------------------- */
   let _$date, _$today, _$todayAmount, _$todayCount, _$todayDiff;
-  let _$monthAmount, _$monthCount, _$monthDiff;
+  let _$monthAmount, _$monthCount, _$monthDiff, _$monthComparison, _$monthContextDot;
   let _$alerts, _$recent, _$viewAllBtn;
   let _$budgetAlert, _$budgetAlertRing, _$budgetAlertStatus, _$budgetAlertPct;
   let _$budgetAlertDaily, _$budgetAlertRemaining, _$budgetAlertPrediction;
@@ -30,6 +30,8 @@ const ExpenseHome = (() => {
     _$monthAmount    = document.getElementById('home-month-amount');
     _$monthCount     = document.getElementById('home-month-count');
     _$monthDiff      = document.getElementById('home-month-diff');
+    _$monthComparison= document.getElementById('home-month-comparison');
+    _$monthContextDot= document.getElementById('home-month-context-dot');
     _$alerts         = document.getElementById('home-alerts');
     _$recent         = document.getElementById('home-recent');
     _$viewAllBtn     = document.getElementById('home-view-all');
@@ -131,6 +133,8 @@ const ExpenseHome = (() => {
       const lastMonthTotal = _lastMonthTotal();
       const MIN_BASE = 10; // 上月 < ¥10 视为无效基准，不计算百分比
       if (lastMonthTotal >= MIN_BASE) {
+        if (_$monthComparison) _$monthComparison.hidden = false;
+        if (_$monthContextDot) _$monthContextDot.hidden = false;
         const diff = ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100;
         const abs = Math.abs(diff).toFixed(1);
         if (diff > 0.5) {
@@ -141,7 +145,8 @@ const ExpenseHome = (() => {
           _$monthDiff.textContent = '基本持平';
         }
       } else {
-        _$monthDiff.textContent = '暂无数据';
+        if (_$monthComparison) _$monthComparison.hidden = true;
+        if (_$monthContextDot) _$monthContextDot.hidden = true;
       }
     }
   }
