@@ -13,7 +13,7 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/common.css?v=150">
-  <link rel="stylesheet" href="css/home.css?v=150">
+  <link rel="stylesheet" href="css/home.css?v=152">
   <link rel="stylesheet" href="css/add.css?v=151">
   <link rel="stylesheet" href="css/list.css?v=150">
   <link rel="stylesheet" href="css/stats.css?v=150">
@@ -48,9 +48,15 @@
                 <p class="home-summary__label">本月支出</p>
                 <p class="home-summary__amount" id="home-month-amount">¥0</p>
               </div>
-              <div class="home-summary__meta">
-                <span class="home-summary__count" id="home-month-count">0 笔记录</span>
-                <span class="home-summary__diff" id="home-month-diff"></span>
+            </div>
+            <div class="home-summary__meta" aria-label="本月消费摘要">
+              <div class="home-summary__metric">
+                <span class="home-summary__metric-label">本月记录</span>
+                <strong class="home-summary__metric-value" id="home-month-count">0 笔</strong>
+              </div>
+              <div class="home-summary__metric">
+                <span class="home-summary__metric-label">对比上月</span>
+                <strong class="home-summary__metric-value home-summary__diff" id="home-month-diff">暂无数据</strong>
               </div>
             </div>
 
@@ -547,7 +553,7 @@
      ================================================================ -->
 <script src="js/storage.js?v=150"></script>
 <script src="js/data.js?v=150"></script>
-<script src="js/home.js?v=150"></script>
+<script src="js/home.js?v=152"></script>
 <script src="js/categories.js?v=150"></script>
 <script src="js/list.js?v=150"></script>
 <script src="js/stats.js?v=150"></script>
