@@ -528,7 +528,7 @@
   gap: var(--space-md);
 }
 
-/* v152 — 记录数和环比归入同一条辅助信息带，不与主金额争抢视线。 */
+/* v153 — 记录数和环比归入同一条辅助信息带，不与主金额争抢视线。 */
 .home-summary__top {
   display: block;
 }
@@ -573,19 +573,32 @@
 .home-summary__meta {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  position: relative;
   margin-top: 18px;
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.18);
 }
 
+.home-summary__meta::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.18);
+  transform: translateX(-0.5px);
+}
+
 .home-summary__metric {
   min-width: 0;
+  padding-right: 14px;
 }
 
 .home-summary__metric + .home-summary__metric {
-  margin-left: 14px;
+  margin-left: 0;
   padding-left: 14px;
-  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  padding-right: 0;
 }
 
 .home-summary__metric-label {
