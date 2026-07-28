@@ -111,7 +111,7 @@ const ExpenseHome = (() => {
   }
 
   /* -----------------------------------------------------------------
-     本月消费 + 较上月对比（涨红跌蓝）
+     本月消费 + 上月对比（归入辅助信息带）
      ----------------------------------------------------------------- */
   function _renderMonth() {
     const currentYM = _yearMonthStr();
@@ -130,14 +130,14 @@ const ExpenseHome = (() => {
         const diff = ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100;
         const abs = Math.abs(diff).toFixed(1);
         if (diff > 0.5) {
-          _$monthDiff.innerHTML = '较上月 <span class="home-overview__diff--up">+' + abs + '% ↑</span>';
+          _$monthDiff.innerHTML = '<span class="home-overview__diff--up">+' + abs + '% ↑</span>';
         } else if (diff < -0.5) {
-          _$monthDiff.innerHTML = '较上月 <span class="home-overview__diff--down">-' + abs + '% ↓</span>';
+          _$monthDiff.innerHTML = '<span class="home-overview__diff--down">-' + abs + '% ↓</span>';
         } else {
-          _$monthDiff.textContent = '较上月 持平';
+          _$monthDiff.textContent = '基本持平';
         }
       } else {
-        _$monthDiff.innerHTML = '较上月 <span style="font-weight:400">-</span>';
+        _$monthDiff.textContent = '暂无数据';
       }
     }
   }
