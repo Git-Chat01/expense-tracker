@@ -391,3 +391,85 @@
 .add-numpad .numpad__key--submit:hover { background: var(--color-primary-dark); }
 .numpad__submit-amount { color: rgba(255, 255, 255, .72); font-family: var(--font-mono); font-size: 11px; font-weight: 600; }
 @media (min-width: 700px) { .add-container { padding-top: 24px; } .add-category-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); } .add-header { padding-bottom: 18px; } }
+
+/* =================================================================
+   v159 · 快速记账：常用入口、收纳选项与移动端纠错
+   ================================================================= */
+.add-date-quick { min-height: 44px; padding-inline: 11px; }
+.add-category-manage { min-height: 44px; }
+
+.add-category-quick {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.add-quick-category {
+  display: grid;
+  min-height: 66px;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  padding: 7px 3px;
+  border: 1px solid rgba(15, 89, 102, .12);
+  border-radius: 12px;
+  background: rgba(255, 255, 253, .78);
+  color: var(--color-text-primary);
+  font: inherit;
+  cursor: pointer;
+  transition: transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
+}
+.add-quick-category:active { transform: scale(.97); background: var(--color-primary-light); }
+.add-quick-category__icon { font-size: 24px; line-height: 1; }
+.add-quick-category__name { max-width: 100%; overflow: hidden; font-size: 11px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.add-category-all {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 44px;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+  cursor: pointer;
+}
+.add-category-all__chevron { font-size: 16px; line-height: 1; }
+.add-category-area--invalid .add-section__title { color: var(--color-danger); }
+.add-category-area--invalid .add-category-quick,
+.add-category-area--invalid .add-category-all { animation: addCategoryNudge .24s ease-in-out 2; }
+@keyframes addCategoryNudge { 50% { transform: translateX(4px); } }
+
+.add-payment-section {
+  gap: 0;
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+.add-payment-section + .add-more-fields { border-top: 0; }
+.add-payment-toggle {
+  display: grid;
+  width: 100%;
+  min-height: 46px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.add-payment-toggle__label { font-size: var(--font-size-sm); font-weight: 600; }
+.add-payment-toggle__value { color: var(--color-text-tertiary); font-size: var(--font-size-sm); }
+.add-payment-toggle--selected .add-payment-toggle__value { color: var(--color-primary-dark); font-weight: 650; }
+.add-payment-toggle__chevron { color: var(--color-primary); font-size: 16px; line-height: 1; }
+.add-payment-methods { padding: 0 0 10px; }
+.chip--payment { min-height: 44px; padding-inline: 13px; }
+
+/* 右侧保存键贯穿三个数字行，补齐底行空白并保持拇指可达。 */
+.add-numpad .numpad__key--submit { grid-row: span 3; }
+.add-numpad .numpad__key--submit:active { transform: none; }

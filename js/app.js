@@ -18,6 +18,7 @@ const ExpenseApp = (() => {
     note: '',
     date: '',
     time: '',
+    dateTimeManuallyEdited: false,
   };
 
   let _currentView = 'home';
@@ -52,9 +53,7 @@ const ExpenseApp = (() => {
     _resetFormDefaults();
 
     // 3. 渲染分类网格
-    ExpenseCategories.renderGrid('add-category-grid', 'add-subcategories', (catId) => {
-      _formState.categoryId = catId;
-    });
+    _renderAddCategories();
 
     // 4. 渲染支付方式
     _renderPaymentMethods();
@@ -64,6 +63,7 @@ const ExpenseApp = (() => {
     _bindNumpad();
     _bindAddForm();
     _bindDateToggle();
+    _bindPaymentToggle();
     _bindOverlays();
     _bindHomeEvents();
 
@@ -115,6 +115,7 @@ const ExpenseApp = (() => {
   }
 
   function navigate(viewId) {
+    const previousView = _currentView;
     // 离开统计页时关闭 tooltip（否则 tooltip 是挂在 body 上的，不会随页面切换消失）
     if (_currentView === 'stats' && viewId !== 'stats' && typeof ExpenseStats !== 'undefined') {
       ExpenseStats.dismissTooltip();
@@ -142,10 +143,13 @@ const ExpenseApp = (() => {
     if (viewId === 'home') {
       ExpenseHome.render();
     } else if (viewId === 'add') {
-      _resetFormDefaults();
-      ExpenseCategories.renderGrid('add-category-grid', 'add-subcategories', (catId) => {
-        _formState.categoryId = catId;
-      });
+      // 从其他页面发起一笔新记录时清空易误带字段；覆盖层返回时保留正在填写的内容。
+      if (previousView !== 'add') {
+        _resetFormDefaults({ clearTransient: true });
+        _formState.categoryId = '';
+        ExpenseCategories.clearSelection();
+      }
+      _renderAddCategories();
       _renderPaymentMethods();
       _updateAmountDisplay();
     } else if (viewId === 'list') {
@@ -192,6 +196,18 @@ const ExpenseApp = (() => {
         if (viewId) navigate(viewId);
       });
     });
+  }
+
+  function _renderAddCategories() {
+    ExpenseCategories.renderGrid('add-category-grid', 'add-subcategories', (catId) => {
+      _formState.categoryId = catId;
+      _setCategoryValidation(false);
+    });
+  }
+
+  function _setCategoryValidation(isInvalid) {
+    const area = document.querySelector('.add-category-area');
+    if (area) area.classList.toggle('add-category-area--invalid', Boolean(isInvalid));
   }
 
   /* -----------------------------------------------------------------
@@ -287,9 +303,30 @@ const ExpenseApp = (() => {
     return `${r},${g},${b}`;
   }
 
+  function _setPaymentPickerOpen(isOpen) {
+    const toggle = document.getElementById('add-payment-toggle');
+    const methods = document.getElementById('add-payment-methods');
+    if (toggle) toggle.setAttribute('aria-expanded', String(Boolean(isOpen)));
+    if (methods) methods.style.display = isOpen ? 'flex' : 'none';
+  }
+
+  function _bindPaymentToggle() {
+    const toggle = document.getElementById('add-payment-toggle');
+    if (!toggle) return;
+    toggle.addEventListener('click', () => {
+      _setPaymentPickerOpen(toggle.getAttribute('aria-expanded') !== 'true');
+    });
+  }
+
   function _renderPaymentMethods() {
     const container = document.getElementById('add-payment-methods');
+    const current = document.getElementById('add-payment-current');
+    const toggle = document.getElementById('add-payment-toggle');
     if (!container) return;
+
+    const selectedMethod = ExpenseData.PAYMENT_METHODS.find(pm => pm.value === _formState.paymentMethod);
+    if (current) current.textContent = selectedMethod ? selectedMethod.label : '可选';
+    if (toggle) toggle.classList.toggle('add-payment-toggle--selected', Boolean(selectedMethod));
 
     container.innerHTML = ExpenseData.PAYMENT_METHODS.map(pm => {
       const isActive = _formState.paymentMethod === pm.value;
@@ -306,6 +343,7 @@ const ExpenseApp = (() => {
         const val = chip.dataset.pm;
         _formState.paymentMethod = (_formState.paymentMethod === val) ? '' : val;
         _renderPaymentMethods();
+        _setPaymentPickerOpen(false);
       });
     });
   }
@@ -323,10 +361,12 @@ const ExpenseApp = (() => {
     if (noteInput) noteInput.addEventListener('input', () => { _formState.note = noteInput.value; });
     if (dateInput) dateInput.addEventListener('change', () => {
       _formState.date = dateInput.value;
+      _formState.dateTimeManuallyEdited = true;
       _updateDateLabels();
     });
     if (timeInput) timeInput.addEventListener('change', () => {
       _formState.time = timeInput.value;
+      _formState.dateTimeManuallyEdited = true;
       _updateDateLabels();
     });
 
@@ -390,14 +430,21 @@ const ExpenseApp = (() => {
   /* -----------------------------------------------------------------
      重置表单默认值（每次进入记账页或保存后调用）
      ----------------------------------------------------------------- */
-  function _resetFormDefaults() {
+  function _resetFormDefaults(options = {}) {
+    const { clearTransient = true } = options;
     const now = new Date();
     _formState.amountRaw = '';
     _formState.note = '';
     _formState.date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     _formState.time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    _formState.dateTimeManuallyEdited = false;
 
-    // 保留上一次的分类、地点、支付方式（方便连续记账）
+    if (clearTransient) {
+      _formState.location = '';
+      _formState.paymentMethod = '';
+    }
+
+    // 分类会保留为可见摘要，地点和支付方式不会默默带入新的一笔。
     const dateInput = document.getElementById('add-date');
     const timeInput = document.getElementById('add-time');
     const locInput = document.getElementById('add-location');
@@ -419,6 +466,22 @@ const ExpenseApp = (() => {
       dateQuick.innerHTML = `<span aria-hidden="true">日历</span><span id="add-date-label">今天</span><span id="add-time-label">${_formState.time}</span><span class="add-date-quick__chevron" aria-hidden="true">⌄</span>`;
       _updateDateLabels();
     }
+    _setPaymentPickerOpen(false);
+  }
+
+  function _refreshTimestampAfterSave() {
+    // 用户手动回填过时间时绝不覆盖；普通连续记账则把下一笔更新为现在。
+    if (_formState.dateTimeManuallyEdited) return;
+
+    const now = new Date();
+    _formState.date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    _formState.time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+    const dateInput = document.getElementById('add-date');
+    const timeInput = document.getElementById('add-time');
+    if (dateInput) dateInput.value = _formState.date;
+    if (timeInput) timeInput.value = _formState.time;
+    _updateDateLabels();
   }
 
   /* -----------------------------------------------------------------
@@ -432,6 +495,9 @@ const ExpenseApp = (() => {
       return;
     }
     if (!_formState.categoryId) {
+      _setCategoryValidation(true);
+      const categoryArea = document.querySelector('.add-category-area');
+      if (categoryArea) categoryArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
       _toast('请选择消费分类', 'warning');
       return;
     }
@@ -446,50 +512,84 @@ const ExpenseApp = (() => {
       note:          _formState.note,
     });
 
-    _toast(`已记录 ¥${amount.toFixed(2)}`, 'success');
-
-    // 清空金额和备注，保留分类/地点/支付方式（方便连续记账）
-    _formState.amountRaw = '';
-    _formState.note = '';
-    const noteInput = document.getElementById('add-note');
-    if (noteInput) noteInput.value = '';
-    _updateAmountDisplay();
-
-    // 取消分类收起态，展开网格但保持已选分类高亮
-    ExpenseCategories.uncollapse();
-    ExpenseCategories.renderGrid('add-category-grid', 'add-subcategories', (catId) => {
-      _formState.categoryId = catId;
+    _toast(`已记录 ¥${amount.toFixed(2)}`, 'success', {
+      actionLabel: '撤销',
+      duration: 5000,
+      onAction: () => {
+        ExpenseDB.deleteExpense(record.id);
+        _toast('已撤销本次记录', 'success');
+        ExpenseHome.render();
+        if (typeof ExpenseList !== 'undefined') ExpenseList.render();
+        if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
+      },
     });
 
-    // 刷新支付方式高亮（连续记账时保持上一次的支付选择状态）
+    // 连续记账只保留可见的分类摘要，避免地点和支付方式悄悄误带。
+    _formState.amountRaw = '';
+    _formState.note = '';
+    _formState.location = '';
+    _formState.paymentMethod = '';
+    const noteInput = document.getElementById('add-note');
+    const locInput = document.getElementById('add-location');
+    const moreFields = document.getElementById('add-more-fields');
+    if (noteInput) noteInput.value = '';
+    if (locInput) locInput.value = '';
+    if (moreFields) moreFields.open = false;
+    _updateAmountDisplay();
+    _refreshTimestampAfterSave();
+
+    // 分类继续保持收纳状态；想换分类时可点摘要展开。
+    _renderAddCategories();
+
+    // 支付方式回到“可选”状态，不让上一笔支付渠道造成误记。
     _renderPaymentMethods();
+    _setPaymentPickerOpen(false);
   }
 
   /* -----------------------------------------------------------------
      Toast 提示
      ----------------------------------------------------------------- */
-  function _toast(message, type) {
+  function _toast(message, type, options = {}) {
     const container = document.getElementById('toast-container');
     if (!container) return;
 
     const el = document.createElement('div');
     el.className = `toast toast--${type || ''}`;
-    el.textContent = message;
+    if (options.actionLabel && typeof options.onAction === 'function') el.classList.add('toast--actionable');
+    const copy = document.createElement('span');
+    copy.className = 'toast__copy';
+    copy.textContent = message;
+    el.appendChild(copy);
+
+    if (options.actionLabel && typeof options.onAction === 'function') {
+      const action = document.createElement('button');
+      action.className = 'toast__action';
+      action.type = 'button';
+      action.textContent = options.actionLabel;
+      el.appendChild(action);
+      action.addEventListener('click', () => {
+        removeEl();
+        options.onAction();
+      }, { once: true });
+    }
+
     container.appendChild(el);
 
-    // 1.5s 后开始消失动画
+    const removeEl = () => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    };
+
+    // 默认 1.5 秒；带撤销的成功反馈延长，给用户稳定的纠错窗口。
     setTimeout(() => {
+      if (!el.parentNode) return;
       el.classList.add('toast--removing');
 
       // 动画结束后从 DOM 移除
-      const removeEl = () => {
-        if (el.parentNode) el.parentNode.removeChild(el);
-      };
       el.addEventListener('animationend', removeEl, { once: true });
 
       // 兜底：0.35s 后强制移除（防止 animationend 不触发导致残留）
       setTimeout(removeEl, 350);
-    }, 1500);
+    }, options.duration || 1500);
   }
 
   /* -----------------------------------------------------------------
@@ -627,9 +727,7 @@ const ExpenseApp = (() => {
           ExpenseDB.deleteCategory(catId);
           if (_formState.categoryId === catId) _formState.categoryId = '';
           _renderCategoryManagerOverlay();
-          ExpenseCategories.renderGrid('add-category-grid', 'add-subcategories', (cid) => {
-            _formState.categoryId = cid;
-          });
+          _renderAddCategories();
         }
       });
     });
@@ -674,9 +772,7 @@ const ExpenseApp = (() => {
       ExpenseDB.addCategory({ name, icon, parentId });
       _toast(`已添加分类「${name}」`, 'success');
       _renderCategoryManagerOverlay();
-      ExpenseCategories.renderGrid('add-category-grid', 'add-subcategories', (catId) => {
-        _formState.categoryId = catId;
-      });
+      _renderAddCategories();
     });
 
     document.getElementById('new-cat-cancel').addEventListener('click', () => {
@@ -720,10 +816,8 @@ const ExpenseApp = (() => {
     document.getElementById('overlay-categories-back').addEventListener('click', () => {
       document.getElementById('overlay-categories').classList.remove('page-overlay--open');
       navigate('add');
-      // 刷新记账页的分类网格
-      ExpenseCategories.renderGrid('add-category-grid', 'add-subcategories', (catId) => {
-        _formState.categoryId = catId;
-      });
+      // 刷新记账页的分类入口
+      _renderAddCategories();
     });
 
     // 分类管理覆盖层 — "+ 新增"按钮

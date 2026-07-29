@@ -12,9 +12,9 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=150">
+  <link rel="stylesheet" href="css/common.css?v=159">
   <link rel="stylesheet" href="css/home.css?v=158">
-  <link rel="stylesheet" href="css/add.css?v=151">
+  <link rel="stylesheet" href="css/add.css?v=159">
   <link rel="stylesheet" href="css/list.css?v=150">
   <link rel="stylesheet" href="css/stats.css?v=150">
 </head>
@@ -171,7 +171,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260730-158 · 首页移动端字体与金额比例优化
+      v20260730-159 · 记账流程优先级优化
     </div>
   </main>
 
@@ -183,7 +183,7 @@
       <!-- 金额与日期：每一笔记录先确认金额，再补充信息 -->
       <header class="add-header">
         <div class="add-header__meta">
-          <p class="add-header__eyebrow">记录一笔支出</p>
+          <p class="add-header__eyebrow">快速记一笔</p>
           <div class="add-date-row">
             <button class="add-date-quick" id="add-date-quick" type="button" aria-expanded="false" aria-controls="add-date-inputs">
               <span aria-hidden="true">日历</span>
@@ -207,8 +207,7 @@
       <section class="add-category-area" aria-labelledby="add-category-title">
         <div class="add-section__header">
           <div>
-            <p class="add-section__eyebrow">选择分类</p>
-            <h2 class="add-section__title" id="add-category-title">这笔钱花在了哪里？ <span class="add-required">必选</span></h2>
+            <h2 class="add-section__title" id="add-category-title">选择分类 <span class="add-required">必填</span></h2>
           </div>
           <button class="add-category-manage" id="add-manage-categories" type="button" aria-label="管理消费分类">管理</button>
         </div>
@@ -217,16 +216,22 @@
           <span class="add-category-summary__text" id="add-category-summary-text"></span>
           <span class="add-category-summary__edit" id="add-category-summary-edit">更换</span>
         </button>
+        <div class="add-category-quick" id="add-category-quick" aria-label="常用分类"></div>
+        <button class="add-category-all" id="add-category-all" type="button" aria-expanded="false" aria-controls="add-category-grid">
+          <span>全部分类</span>
+          <span class="add-category-all__chevron" aria-hidden="true">⌄</span>
+        </button>
         <div class="add-subcategories scroll-x" id="add-subcategories" style="display:none"></div>
-        <div class="add-category-grid" id="add-category-grid"></div>
+        <div class="add-category-grid" id="add-category-grid" style="display:none"></div>
       </section>
 
       <section class="add-payment-section" aria-labelledby="add-payment-title">
-        <div class="add-payment-section__header">
-          <span id="add-payment-title">支付方式</span>
-          <span>可选</span>
-        </div>
-        <div class="add-payment-methods scroll-x" id="add-payment-methods"></div>
+        <button class="add-payment-toggle" id="add-payment-toggle" type="button" aria-expanded="false" aria-controls="add-payment-methods">
+          <span class="add-payment-toggle__label" id="add-payment-title">支付方式</span>
+          <span class="add-payment-toggle__value" id="add-payment-current">可选</span>
+          <span class="add-payment-toggle__chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div class="add-payment-methods scroll-x" id="add-payment-methods" style="display:none"></div>
       </section>
 
       <details class="add-more-fields" id="add-more-fields">
@@ -248,26 +253,26 @@
 
       <!-- 数字键盘：右侧保存键保持在拇指易触达区域 -->
       <div class="add-numpad numpad" id="add-numpad">
-        <button class="numpad__key" data-key="1">1</button>
-        <button class="numpad__key" data-key="2">2</button>
-        <button class="numpad__key" data-key="3">3</button>
-        <button class="numpad__key numpad__key--fn" data-key="backspace">⌫</button>
+        <button class="numpad__key" data-key="1" type="button">1</button>
+        <button class="numpad__key" data-key="2" type="button">2</button>
+        <button class="numpad__key" data-key="3" type="button">3</button>
+        <button class="numpad__key numpad__key--fn" data-key="backspace" type="button" aria-label="删除一位">⌫</button>
 
-        <button class="numpad__key" data-key="4">4</button>
-        <button class="numpad__key" data-key="5">5</button>
-        <button class="numpad__key" data-key="6">6</button>
+        <button class="numpad__key" data-key="4" type="button">4</button>
+        <button class="numpad__key" data-key="5" type="button">5</button>
+        <button class="numpad__key" data-key="6" type="button">6</button>
         <button class="numpad__key numpad__key--submit" data-key="submit" type="button">
           <span>保存</span>
           <span class="numpad__submit-amount" id="add-submit-amount">¥0.00</span>
         </button>
 
-        <button class="numpad__key" data-key="7">7</button>
-        <button class="numpad__key" data-key="8">8</button>
-        <button class="numpad__key" data-key="9">9</button>
+        <button class="numpad__key" data-key="7" type="button">7</button>
+        <button class="numpad__key" data-key="8" type="button">8</button>
+        <button class="numpad__key" data-key="9" type="button">9</button>
 
-        <button class="numpad__key" data-key="0">0</button>
-        <button class="numpad__key" data-key=".">.</button>
-        <button class="numpad__key numpad__key--fn" data-key="clear">C</button>
+        <button class="numpad__key" data-key="0" type="button">0</button>
+        <button class="numpad__key" data-key="." type="button">.</button>
+        <button class="numpad__key numpad__key--fn" data-key="clear" type="button" aria-label="清空金额">C</button>
       </div>
     </div>
   </main>
@@ -543,10 +548,10 @@
 <script src="js/storage.js?v=150"></script>
 <script src="js/data.js?v=150"></script>
 <script src="js/home.js?v=158"></script>
-<script src="js/categories.js?v=150"></script>
+<script src="js/categories.js?v=159"></script>
 <script src="js/list.js?v=150"></script>
 <script src="js/stats.js?v=150"></script>
-<script src="js/app.js?v=151"></script>
+<script src="js/app.js?v=159"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">

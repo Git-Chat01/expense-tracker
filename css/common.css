@@ -243,6 +243,30 @@ ul, ol {
   pointer-events: auto;
 }
 
+.toast--actionable {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  text-align: left;
+}
+
+.toast__copy { min-width: 0; }
+
+.toast__action {
+  flex: 0 0 auto;
+  min-height: 32px;
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 .toast--success {
   background: var(--color-success);
 }
