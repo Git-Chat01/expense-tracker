@@ -61,6 +61,15 @@
   font-weight: 500;
 }
 
+.add-amount-display--invalid .add-amount__currency,
+.add-amount-display--invalid .add-amount__value,
+.add-amount-display--invalid .add-amount__decimal {
+  color: var(--color-danger);
+}
+
+.add-amount-display--invalid { animation: addAmountNudge .24s ease-in-out 2; }
+@keyframes addAmountNudge { 50% { transform: translateX(4px); } }
+
 /* -----------------------------------------------------------------
    2. 日期行（紧凑可点击，替代两个独立 input）
    ----------------------------------------------------------------- */
@@ -405,6 +414,7 @@
 }
 .add-quick-category {
   display: grid;
+  position: relative;
   min-height: 66px;
   place-items: center;
   align-content: center;
@@ -416,11 +426,15 @@
   color: var(--color-text-primary);
   font: inherit;
   cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
   transition: transform var(--transition-fast), background var(--transition-fast), border-color var(--transition-fast);
 }
 .add-quick-category:active { transform: scale(.97); background: var(--color-primary-light); }
+.add-quick-category--pinned { border-color: rgba(15, 89, 102, .34); background: rgba(235, 243, 252, .76); }
 .add-quick-category__icon { font-size: 24px; line-height: 1; }
 .add-quick-category__name { max-width: 100%; overflow: hidden; font-size: 11px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.add-quick-category__pin { position: absolute; top: 5px; right: 6px; color: var(--color-primary); font-size: 11px; font-weight: 700; line-height: 1; }
 .add-category-all {
   display: inline-flex;
   width: fit-content;

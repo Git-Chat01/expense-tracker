@@ -22,6 +22,7 @@ const ExpenseCategories = (() => {
     'cat-transport',
     'cat-shopping-daily',
   ];
+  const _MAX_PINNED_QUICK_CATEGORIES = 4;
 
   // 初始化「修改」按钮（只绑定一次）
   let _summaryBound = false;
@@ -52,11 +53,14 @@ const ExpenseCategories = (() => {
 
   function _getQuickCategories() {
     const ids = [];
+    const pinnedIds = _getPinnedQuickCategoryIds();
     const addCategory = (id) => {
       if (!id || ids.includes(id)) return;
       const category = ExpenseDB.getCategory(id);
       if (category) ids.push(id);
     };
+
+    pinnedIds.forEach(addCategory);
 
     // 最近 60 笔按频率与新近程度综合排序；保留末级分类能让入口始终一键完成选择。
     const scores = new Map();
@@ -70,7 +74,75 @@ const ExpenseCategories = (() => {
       .forEach(([categoryId]) => addCategory(categoryId));
     _FALLBACK_QUICK_IDS.forEach(addCategory);
 
-    return ids.slice(0, 4).map(id => ExpenseDB.getCategory(id)).filter(Boolean);
+    return ids.slice(0, 4).map((id) => {
+      const category = ExpenseDB.getCategory(id);
+      return category ? { ...category, isQuickPinned: pinnedIds.includes(id) } : null;
+    }).filter(Boolean);
+  }
+
+  function _getPinnedQuickCategoryIds() {
+    const settings = ExpenseDB.getSettings();
+    const ids = Array.isArray(settings.pinnedQuickCategoryIds) ? settings.pinnedQuickCategoryIds : [];
+    return [...new Set(ids)]
+      .filter(id => Boolean(ExpenseDB.getCategory(id)))
+      .slice(0, _MAX_PINNED_QUICK_CATEGORIES);
+  }
+
+  function _toggleQuickCategoryPin(categoryId, containerId, subContainerId) {
+    const pinnedIds = _getPinnedQuickCategoryIds();
+    const existingIndex = pinnedIds.indexOf(categoryId);
+
+    if (existingIndex >= 0) {
+      pinnedIds.splice(existingIndex, 1);
+    } else if (pinnedIds.length < _MAX_PINNED_QUICK_CATEGORIES) {
+      pinnedIds.push(categoryId);
+    } else {
+      return;
+    }
+
+    ExpenseDB.saveSettings({ pinnedQuickCategoryIds: pinnedIds });
+    renderGrid(containerId, subContainerId, _onSelectStored);
+  }
+
+  function _bindQuickCategoryGesture(button, containerId, subContainerId) {
+    let holdTimer = null;
+    let longPressed = false;
+    let startX = 0;
+    let startY = 0;
+    const clearHoldTimer = () => {
+      if (holdTimer) window.clearTimeout(holdTimer);
+      holdTimer = null;
+    };
+
+    button.addEventListener('pointerdown', (event) => {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      longPressed = false;
+      startX = event.clientX;
+      startY = event.clientY;
+      clearHoldTimer();
+      holdTimer = window.setTimeout(() => {
+        holdTimer = null;
+        longPressed = true;
+        _toggleQuickCategoryPin(button.dataset.quickCatId, containerId, subContainerId);
+      }, 500);
+    });
+    button.addEventListener('pointermove', (event) => {
+      if (Math.abs(event.clientX - startX) > 10 || Math.abs(event.clientY - startY) > 10) clearHoldTimer();
+    });
+    button.addEventListener('pointerup', clearHoldTimer);
+    button.addEventListener('pointercancel', () => {
+      clearHoldTimer();
+      longPressed = false;
+    });
+    button.addEventListener('click', (event) => {
+      if (longPressed) {
+        event.preventDefault();
+        event.stopPropagation();
+        longPressed = false;
+        return;
+      }
+      _selectCategory(button.dataset.quickCatId, containerId, subContainerId);
+    });
   }
 
   function _selectCategory(catId, containerId, subContainerId) {
@@ -88,16 +160,15 @@ const ExpenseCategories = (() => {
 
     const categories = _getQuickCategories();
     quickGrid.innerHTML = categories.map(category => `
-      <button class="add-quick-category" data-quick-cat-id="${category.id}" type="button">
+      <button class="add-quick-category${category.isQuickPinned ? ' add-quick-category--pinned' : ''}" data-quick-cat-id="${category.id}" type="button" aria-label="${category.name}${category.isQuickPinned ? '，已固定，长按取消固定' : '，长按固定'}">
         <span class="add-quick-category__icon">${category.icon}</span>
         <span class="add-quick-category__name">${category.name}</span>
+        ${category.isQuickPinned ? '<span class="add-quick-category__pin" aria-hidden="true">⌖</span>' : ''}
       </button>
     `).join('');
 
     quickGrid.querySelectorAll('[data-quick-cat-id]').forEach(button => {
-      button.addEventListener('click', () => {
-        _selectCategory(button.dataset.quickCatId, containerId, subContainerId);
-      });
+      _bindQuickCategoryGesture(button, containerId, subContainerId);
     });
   }
 
