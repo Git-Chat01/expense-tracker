@@ -249,8 +249,14 @@ const ExpenseCategories = (() => {
     return ExpenseDB.getCategory(_selectedCategoryId);
   }
 
-  function setSelected(catId) {
+  function setSelected(catId, options = {}) {
     _selectedCategoryId = catId;
+    if (options.collapse) {
+      _collapsed = true;
+      _allCategoriesVisible = false;
+      _expandedParentId = null;
+      return;
+    }
     // 如果选中的是子分类，自动展开父级
     const cat = ExpenseDB.getCategory(catId);
     if (cat && cat.parentId) {
