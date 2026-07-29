@@ -13,7 +13,7 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/common.css?v=150">
-  <link rel="stylesheet" href="css/home.css?v=156">
+  <link rel="stylesheet" href="css/home.css?v=157">
   <link rel="stylesheet" href="css/add.css?v=151">
   <link rel="stylesheet" href="css/list.css?v=150">
   <link rel="stylesheet" href="css/stats.css?v=150">
@@ -70,18 +70,40 @@
             <span class="home-today__diff" id="home-today-diff"></span>
           </div>
 
-          <div class="home-budget-brief card home-budget-brief--setup" id="home-budget-summary">
-            <div class="home-budget-brief__copy">
-              <span class="home-budget-brief__eyebrow">预算</span>
-              <span class="home-budget-brief__label" id="home-budget-summary-label">还没有设置本月预算</span>
-              <span class="home-budget-brief__value" id="home-budget-summary-value"></span>
+          <div class="home-budget-brief card home-budget-brief--setup" id="home-budget-summary" aria-label="本月预算">
+            <div class="home-budget-brief__header">
+              <span class="home-budget-brief__eyebrow">本月预算</span>
+              <button class="home-budget-brief__action" id="home-set-budget" type="button">
+                <span id="home-budget-action-label">去设置</span><span aria-hidden="true">→</span>
+              </button>
             </div>
-            <button class="home-budget-brief__action" id="home-set-budget" type="button">
-              <span id="home-budget-action-label">去设置</span><span aria-hidden="true">→</span>
-            </button>
-            <div class="home-budget-brief__track" aria-hidden="true">
+            <div class="home-budget-brief__setup-copy">
+              <strong class="home-budget-brief__label" id="home-budget-summary-label">还没有设置本月预算</strong>
+              <span>设置后会告诉你每天可花多少</span>
+            </div>
+            <div class="home-budget-brief__body">
+              <div class="home-budget-brief__spent">
+                <span>本月已花</span>
+                <div class="home-budget-brief__spent-amount">
+                  <strong id="home-budget-summary-spent">¥0</strong>
+                  <span id="home-budget-summary-limit">/ ¥0</span>
+                </div>
+              </div>
+              <span class="home-budget-brief__status" id="home-budget-summary-status">节奏正常</span>
+            </div>
+            <div class="home-budget-brief__track" aria-label="预算使用进度">
               <span class="home-budget-brief__progress" id="home-budget-summary-progress"></span>
             </div>
+            <div class="home-budget-brief__decision" aria-live="polite">
+              <span id="home-budget-summary-decision-label">今天可安心花</span>
+              <strong id="home-budget-summary-decision-value">¥0</strong>
+            </div>
+            <div class="home-budget-brief__support">
+              <span id="home-budget-summary-remaining">还剩 ¥0</span>
+              <span aria-hidden="true">·</span>
+              <span id="home-budget-summary-days">本月剩 0 天</span>
+            </div>
+            <p class="home-budget-brief__forecast" id="home-budget-summary-forecast" hidden></p>
           </div>
         </section>
 
@@ -102,39 +124,7 @@
       </div>
 
       <aside class="home-dashboard__secondary">
-        <!-- 预算详情仅在接近或超过预算时出现 -->
-        <section class="home-section">
-          <div class="home-budget-alert card" id="home-budget-alert" style="display:none">
-            <div class="home-budget-alert__header">
-              <div class="home-budget-alert__header-left">
-                <span class="home-budget-alert__title">预算需要关注</span>
-              </div>
-              <div class="home-budget-alert__header-right">
-                <span class="home-budget-alert__status" id="home-budget-alert-status"></span>
-                <button class="home-budget-alert__edit" id="home-budget-alert-edit" type="button" aria-label="编辑预算">⚙️</button>
-              </div>
-            </div>
-            <div class="home-budget-alert__body">
-              <div class="home-budget-alert__ring" id="home-budget-alert-ring"></div>
-              <div class="home-budget-alert__info">
-                <div class="home-budget-alert__pct" id="home-budget-alert-pct"></div>
-                <div class="home-budget-alert__amounts">
-                  <div class="home-budget-alert__amount-item">
-                    <span class="home-budget-alert__amount-label">还可用</span>
-                    <span class="home-budget-alert__amount-value" id="home-budget-alert-remaining"></span>
-                  </div>
-                  <div class="home-budget-alert__amount-item">
-                    <span class="home-budget-alert__amount-label">日均可花</span>
-                    <span class="home-budget-alert__amount-value" id="home-budget-alert-daily"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="home-budget-alert__prediction" id="home-budget-alert-prediction"></div>
-          </div>
-        </section>
-
-        <!-- 智能提醒（仅在预算超标时出现） -->
+        <!-- 分类预算提醒（仅在需要关注时出现） -->
         <section class="home-section home-section--alerts" id="home-alerts-section" style="display:none">
           <h2 class="home-section__title">预算提醒</h2>
           <div class="home-alerts" id="home-alerts"></div>
@@ -181,7 +171,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260729-156 · 首页主卡行动区精简
+      v20260729-157 · 首页预算节奏卡优化
     </div>
   </main>
 
@@ -552,7 +542,7 @@
      ================================================================ -->
 <script src="js/storage.js?v=150"></script>
 <script src="js/data.js?v=150"></script>
-<script src="js/home.js?v=155"></script>
+<script src="js/home.js?v=157"></script>
 <script src="js/categories.js?v=150"></script>
 <script src="js/list.js?v=150"></script>
 <script src="js/stats.js?v=150"></script>
