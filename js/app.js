@@ -20,6 +20,8 @@ const ExpenseApp = (() => {
     time: '',
     dateTimeManuallyEdited: false,
   };
+  const _LARGE_AMOUNT_THRESHOLD = 10000;
+  let _confirmedLargeAmountRaw = null;
 
   let _currentView = 'home';
   let _editingExpenseId = null;  // 当前正在编辑的记录 ID（用于删除按钮）
@@ -57,6 +59,7 @@ const ExpenseApp = (() => {
 
     // 4. 渲染支付方式
     _renderPaymentMethods();
+    _updateAmountDisplay();
 
     // 5. 绑定事件
     _bindTabBar();
@@ -205,12 +208,18 @@ const ExpenseApp = (() => {
     ExpenseCategories.renderGrid('add-category-grid', 'add-subcategories', (catId) => {
       _formState.categoryId = catId;
       _setCategoryValidation(false);
+      _updateSaveState();
     });
   }
 
   function _setCategoryValidation(isInvalid) {
     const area = document.querySelector('.add-category-area');
     if (area) area.classList.toggle('add-category-area--invalid', Boolean(isInvalid));
+  }
+
+  function _setAmountValidation(isInvalid) {
+    const amountDisplay = document.querySelector('.add-amount-display');
+    if (amountDisplay) amountDisplay.classList.toggle('add-amount-display--invalid', Boolean(isInvalid));
   }
 
   /* -----------------------------------------------------------------
@@ -220,24 +229,29 @@ const ExpenseApp = (() => {
   function _handleNumpadKey(k) {
     if (k === 'submit') {
       _handleSave();
-    } else if (k === 'backspace') {
+      return;
+    }
+
+    const previousAmountRaw = _formState.amountRaw;
+    if (k === 'backspace') {
       _formState.amountRaw = _formState.amountRaw.slice(0, -1);
-      _updateAmountDisplay();
     } else if (k === 'clear') {
       _formState.amountRaw = '';
-      _updateAmountDisplay();
     } else if (k === '.') {
       if (!_formState.amountRaw.includes('.')) {
         _formState.amountRaw += _formState.amountRaw === '' ? '0.' : '.';
-        _updateAmountDisplay();
       }
     } else {
       const parts = _formState.amountRaw.split('.');
       if (parts.length === 2 && parts[1].length >= 2) return;
       if (parts[0].length >= 8 && parts.length === 1) return;
       _formState.amountRaw += k;
-      _updateAmountDisplay();
     }
+
+    if (_formState.amountRaw === previousAmountRaw) return;
+    _confirmedLargeAmountRaw = null;
+    _setAmountValidation(false);
+    _updateAmountDisplay();
   }
 
   function _bindNumpad() {
@@ -292,6 +306,24 @@ const ExpenseApp = (() => {
         const amount = parseFloat(_formState.amountRaw);
         submitAmount.textContent = `¥${Number.isFinite(amount) ? amount.toFixed(2) : '0.00'}`;
       }
+    }
+    _updateSaveState();
+  }
+
+  function _updateSaveState() {
+    const label = document.getElementById('add-submit-label');
+    const submit = document.querySelector('.numpad__key--submit');
+    const amount = parseFloat(_formState.amountRaw);
+    const hasAmount = Number.isFinite(amount) && amount > 0;
+    let text = '保存';
+
+    if (!hasAmount) text = '输入金额';
+    else if (!_formState.categoryId) text = '选择分类';
+
+    if (label) label.textContent = text;
+    if (submit) {
+      const amountText = hasAmount ? `，金额 ¥${amount.toFixed(2)}` : '';
+      submit.setAttribute('aria-label', `${text}${amountText}`);
     }
   }
 
@@ -457,6 +489,7 @@ const ExpenseApp = (() => {
       ExpenseCategories.setSelected(suggestion.categoryId, { collapse: true });
       _renderAddCategories();
       _setCategoryValidation(false);
+      _updateSaveState();
     }
   }
 
@@ -571,6 +604,7 @@ const ExpenseApp = (() => {
     const { clearTransient = true } = options;
     const now = new Date();
     _formState.amountRaw = '';
+    _confirmedLargeAmountRaw = null;
     _formState.note = '';
     _formState.date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     _formState.time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -628,15 +662,26 @@ const ExpenseApp = (() => {
     // 校验
     const amount = parseFloat(_formState.amountRaw);
     if (!amount || amount <= 0) {
+      _setAmountValidation(true);
       _toast('请输入金额', 'warning');
       return;
     }
+    _setAmountValidation(false);
     if (!_formState.categoryId) {
       _setCategoryValidation(true);
       const categoryArea = document.querySelector('.add-category-area');
       if (categoryArea) categoryArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
       _toast('请选择消费分类', 'warning');
       return;
+    }
+
+    if (amount >= _LARGE_AMOUNT_THRESHOLD && _confirmedLargeAmountRaw !== _formState.amountRaw) {
+      const amountText = amount.toLocaleString('zh-CN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      if (!window.confirm(`确认记录 ¥${amountText} 的支出？`)) return;
+      _confirmedLargeAmountRaw = _formState.amountRaw;
     }
 
     const record = ExpenseDB.addExpense({
@@ -664,6 +709,7 @@ const ExpenseApp = (() => {
 
     // 连续记账只保留可见的分类摘要，避免地点和支付方式悄悄误带。
     _formState.amountRaw = '';
+    _confirmedLargeAmountRaw = null;
     _formState.note = '';
     _formState.location = '';
     _formState.paymentMethod = '';
@@ -867,6 +913,7 @@ const ExpenseApp = (() => {
           if (_formState.categoryId === catId) _formState.categoryId = '';
           _renderCategoryManagerOverlay();
           _renderAddCategories();
+          _updateSaveState();
         }
       });
     });

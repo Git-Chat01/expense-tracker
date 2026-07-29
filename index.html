@@ -14,7 +14,7 @@
   <!-- CSS -->
   <link rel="stylesheet" href="css/common.css?v=159">
   <link rel="stylesheet" href="css/home.css?v=158">
-  <link rel="stylesheet" href="css/add.css?v=160">
+  <link rel="stylesheet" href="css/add.css?v=161">
   <link rel="stylesheet" href="css/list.css?v=150">
   <link rel="stylesheet" href="css/stats.css?v=150">
 </head>
@@ -171,7 +171,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260730-160 · 记账日期与常用内容优化
+      v20260730-161 · 记账金额与常用分类优化
     </div>
   </main>
 
@@ -270,7 +270,7 @@
         <button class="numpad__key" data-key="5" type="button">5</button>
         <button class="numpad__key" data-key="6" type="button">6</button>
         <button class="numpad__key numpad__key--submit" data-key="submit" type="button">
-          <span>保存</span>
+          <span id="add-submit-label">保存</span>
           <span class="numpad__submit-amount" id="add-submit-amount">¥0.00</span>
         </button>
 
@@ -556,10 +556,10 @@
 <script src="js/storage.js?v=150"></script>
 <script src="js/data.js?v=150"></script>
 <script src="js/home.js?v=158"></script>
-<script src="js/categories.js?v=160"></script>
+<script src="js/categories.js?v=161"></script>
 <script src="js/list.js?v=150"></script>
 <script src="js/stats.js?v=150"></script>
-<script src="js/app.js?v=160"></script>
+<script src="js/app.js?v=161"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
