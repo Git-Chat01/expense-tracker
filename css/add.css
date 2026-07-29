@@ -437,7 +437,7 @@
 .add-quick-category__pin { position: absolute; top: 5px; right: 6px; color: var(--color-primary); font-size: 11px; font-weight: 700; line-height: 1; }
 
 /* v162 · 记账分类图标：统一线性图形 + 柔和色块，替代不同系统渲染不一致的 Emoji。 */
-.add-category-icon {
+.category-icon {
   display: inline-grid;
   width: 30px;
   height: 30px;
@@ -447,33 +447,35 @@
   color: var(--category-icon-color, #6E767C);
   line-height: 1;
 }
-.add-category-icon svg { width: 17px; height: 17px; overflow: visible; }
-.add-category-icon--emoji { font-size: 17px; }
-.add-category-icon--food { --category-icon-bg: #FFF0E5; --category-icon-color: #A35F2F; }
-.add-category-icon--transport { --category-icon-bg: #E7F4FB; --category-icon-color: #2677A7; }
-.add-category-icon--shopping { --category-icon-bg: #F0EBFE; --category-icon-color: #7459B8; }
-.add-category-icon--entertain { --category-icon-bg: #FBEAF0; --category-icon-color: #B4557A; }
-.add-category-icon--housing { --category-icon-bg: #E4F5F0; --category-icon-color: #1F806D; }
-.add-category-icon--utilities { --category-icon-bg: #FFF4DB; --category-icon-color: #AA741B; }
-.add-category-icon--phone { --category-icon-bg: #E8F2FC; --category-icon-color: #3979B2; }
-.add-category-icon--learning { --category-icon-bg: #EAEDFF; --category-icon-color: #5164B3; }
-.add-category-icon--work { --category-icon-bg: #EDF0F2; --category-icon-color: #4D6070; }
-.add-category-icon--medical { --category-icon-bg: #FDEDEC; --category-icon-color: #C75A54; }
-.add-category-icon--social { --category-icon-bg: #FBEAF1; --category-icon-color: #AD5C79; }
-.add-category-icon--travel { --category-icon-bg: #E5F5F7; --category-icon-color: #28889B; }
-.add-category-icon--subscription { --category-icon-bg: #F0EDFC; --category-icon-color: #6B5DB7; }
-.add-category-icon--other { --category-icon-bg: #EFF1F2; --category-icon-color: #6E767C; }
+.category-icon svg { width: 17px; height: 17px; overflow: visible; }
+.category-icon--emoji { font-size: 17px; }
+.category-icon--food { --category-icon-bg: #FFF0E5; --category-icon-color: #A35F2F; }
+.category-icon--transport { --category-icon-bg: #E7F4FB; --category-icon-color: #2677A7; }
+.category-icon--shopping { --category-icon-bg: #F0EBFE; --category-icon-color: #7459B8; }
+.category-icon--entertain { --category-icon-bg: #FBEAF0; --category-icon-color: #B4557A; }
+.category-icon--housing { --category-icon-bg: #E4F5F0; --category-icon-color: #1F806D; }
+.category-icon--utilities { --category-icon-bg: #FFF4DB; --category-icon-color: #AA741B; }
+.category-icon--phone { --category-icon-bg: #E8F2FC; --category-icon-color: #3979B2; }
+.category-icon--learning { --category-icon-bg: #EAEDFF; --category-icon-color: #5164B3; }
+.category-icon--work { --category-icon-bg: #EDF0F2; --category-icon-color: #4D6070; }
+.category-icon--medical { --category-icon-bg: #FDEDEC; --category-icon-color: #C75A54; }
+.category-icon--social { --category-icon-bg: #FBEAF1; --category-icon-color: #AD5C79; }
+.category-icon--travel { --category-icon-bg: #E5F5F7; --category-icon-color: #28889B; }
+.category-icon--subscription { --category-icon-bg: #F0EDFC; --category-icon-color: #6B5DB7; }
+.category-icon--other { --category-icon-bg: #EFF1F2; --category-icon-color: #6E767C; }
 
 .add-category-summary__icon { display: inline-flex; flex: 0 0 auto; align-items: center; }
-.add-category-summary__icon .add-category-icon { width: 32px; height: 32px; border-radius: 10px; }
+.add-category-summary__icon .category-icon { width: 32px; height: 32px; border-radius: 10px; }
 .cat-btn__icon { display: inline-flex; align-items: center; justify-content: center; }
-.cat-btn__icon .add-category-icon { width: 30px; height: 30px; border-radius: 10px; }
+.cat-btn__icon .category-icon { width: 30px; height: 30px; border-radius: 10px; }
 .cat-chip__icon { display: inline-flex; align-items: center; justify-content: center; }
-.cat-chip__icon .add-category-icon { width: 26px; height: 26px; border-radius: 8px; }
-.cat-chip__icon .add-category-icon svg { width: 15px; height: 15px; }
+.cat-chip__icon .category-icon { width: 26px; height: 26px; border-radius: 8px; }
+.cat-chip__icon .category-icon svg { width: 15px; height: 15px; }
 .add-quick-category__icon { display: inline-flex; align-items: center; justify-content: center; }
-.add-quick-category__icon .add-category-icon { width: 30px; height: 30px; border-radius: 10px; }
-.add-quick-category--pinned .add-category-icon { box-shadow: 0 0 0 1px rgba(15, 89, 102, .12); }
+.add-quick-category__icon .category-icon { width: 30px; height: 30px; border-radius: 10px; }
+.add-quick-category--pinned .category-icon { box-shadow: 0 0 0 1px rgba(15, 89, 102, .12); }
+.add-merchant-suggestion__icon .category-icon { width: 22px; height: 22px; border-radius: 7px; }
+.add-merchant-suggestion__icon .category-icon svg { width: 13px; height: 13px; }
 .add-category-all {
   display: inline-flex;
   width: fit-content;

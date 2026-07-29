@@ -76,10 +76,10 @@ const ExpenseCategories = (() => {
   function _categoryIconMarkup(category) {
     const iconData = category && _CATEGORY_ICON_DATA[category.id];
     if (!iconData) {
-      return `<span class="add-category-icon add-category-icon--emoji" aria-hidden="true">${_escapeHtml(category && category.icon ? category.icon : '•')}</span>`;
+      return `<span class="category-icon category-icon--emoji" aria-hidden="true">${_escapeHtml(category && category.icon ? category.icon : '•')}</span>`;
     }
     const [iconName, tone] = iconData;
-    return `<span class="add-category-icon add-category-icon--${tone}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${_CATEGORY_ICON_PATHS[iconName]}</svg></span>`;
+    return `<span class="category-icon category-icon--${tone}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${_CATEGORY_ICON_PATHS[iconName]}</svg></span>`;
   }
 
   // 初始化「修改」按钮（只绑定一次）
@@ -417,14 +417,14 @@ const ExpenseCategories = (() => {
       return `
         <div style="margin-bottom:16px">
           <div style="display:flex;align-items:center;gap:8px;padding:8px 0;font-weight:600">
-            <span>${p.icon}</span>
+            ${_categoryIconMarkup(p)}
             <span>${p.name}</span>
             <span style="font-size:11px;color:var(--color-text-tertiary)">${p.isPreset ? '预设' : '自定义'}</span>
           </div>
           <div style="padding-left:24px">
             ${children.map(c => `
               <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--color-divider)">
-                <span>${c.icon} ${c.name}</span>
+                <span style="display:flex;align-items:center;gap:6px">${_categoryIconMarkup(c)} ${c.name}</span>
                 ${!c.isPreset ? `<button class="btn btn--ghost btn--small" data-del-cat="${c.id}" style="color:var(--color-danger)">删除</button>` : `<span style="font-size:11px;color:var(--color-text-tertiary)">预设</span>`}
               </div>
             `).join('')}
@@ -450,6 +450,7 @@ const ExpenseCategories = (() => {
     renderGrid,
     getSelectedId,
     getSelectedCategory,
+    getIconMarkup: _categoryIconMarkup,
     setSelected,
     clearSelection,
     uncollapse,

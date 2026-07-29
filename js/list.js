@@ -157,7 +157,7 @@ const ExpenseList = (() => {
   /** 渲染单条记录 */
   function _renderItem(expense) {
     const cat = ExpenseDB.getCategory(expense.categoryId);
-    const icon = cat ? cat.icon : '📌';
+    const icon = ExpenseCategories.getIconMarkup(cat);
     const name = cat ? cat.name : '未分类';
 
     // 备注关键词高亮
@@ -340,7 +340,7 @@ const ExpenseList = (() => {
     } else if (filterType === 'category') {
       dropdown.innerHTML = ExpenseDB.getParentCategories().map(cat => `
         <div class="list-dropdown__item ${_filters.categoryIds.includes(cat.id) ? 'list-dropdown__item--active' : ''}" data-val="${cat.id}">
-          ${cat.icon} ${cat.name}
+          ${ExpenseCategories.getIconMarkup(cat)} ${cat.name}
         </div>`).join('');
     } else if (filterType === 'date') {
       const today = new Date();
@@ -461,7 +461,7 @@ const ExpenseList = (() => {
     if (_filters.dateFrom) chips.push({ label: `📅 ${_filters.dateFrom}~${_filters.dateTo || '今天'}`, key: 'date' });
     _filters.categoryIds.forEach(cid => {
       const cat = ExpenseDB.getCategory(cid);
-      chips.push({ label: `${cat ? cat.icon : ''} ${cat ? cat.name : cid}`, key: 'cat-' + cid });
+      chips.push({ label: cat ? cat.name : cid, iconMarkup: ExpenseCategories.getIconMarkup(cat), key: 'cat-' + cid });
     });
     _filters.locationIds.forEach(loc => {
       chips.push({ label: `📍 ${loc}`, key: 'loc-' + loc });
@@ -478,7 +478,7 @@ const ExpenseList = (() => {
 
     container.innerHTML = chips.map(c => `
       <span class="filter-chip">
-        ${c.label}
+        ${c.iconMarkup || ''}${c.label}
         <span class="filter-chip__remove" data-clear="${c.key}">×</span>
       </span>
     `).join('') + `

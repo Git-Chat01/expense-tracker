@@ -460,7 +460,7 @@ const ExpenseApp = (() => {
 
       const icon = document.createElement('span');
       icon.className = 'add-merchant-suggestion__icon';
-      icon.textContent = category ? category.icon : '↺';
+      icon.innerHTML = ExpenseCategories.getIconMarkup(category);
 
       const text = document.createElement('span');
       text.className = 'add-merchant-suggestion__text';
@@ -806,7 +806,7 @@ const ExpenseApp = (() => {
             const spent = ExpenseDB.getCategorySpent(cat.id);
             return `
               <div style="display:flex;align-items:center;gap:8px">
-                <span style="width:32px;text-align:center">${cat.icon}</span>
+                <span style="width:32px;display:inline-flex;align-items:center;justify-content:center">${ExpenseCategories.getIconMarkup(cat)}</span>
                 <span style="flex:1;font-size:14px">${cat.name}</span>
                 <div style="display:flex;align-items:center;gap:4px">
                   <span style="font-size:14px">¥</span>
@@ -881,7 +881,7 @@ const ExpenseApp = (() => {
       return `
         <div style="margin-bottom:20px">
           <div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-weight:600;font-size:15px">
-            <span>${p.icon}</span>
+            ${ExpenseCategories.getIconMarkup(p)}
             <span>${p.name}</span>
             <span style="font-size:11px;color:var(--color-text-tertiary);font-weight:400">${p.isPreset ? '预设' : '自定义'}</span>
             ${!p.isPreset ? `<button class="btn btn--ghost btn--small" data-del-cat="${p.id}" style="color:var(--color-danger);font-size:11px;margin-left:auto">删除</button>` : ''}
@@ -890,7 +890,7 @@ const ExpenseApp = (() => {
             ${children.map(c => `
               <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--color-divider)">
                 <span style="display:flex;align-items:center;gap:4px;font-size:14px">
-                  <span>${c.icon}</span>
+                  ${ExpenseCategories.getIconMarkup(c)}
                   <span>${c.name}</span>
                   <span style="font-size:11px;color:var(--color-text-tertiary)">${c.isPreset ? '预设' : '自定义'}</span>
                 </span>

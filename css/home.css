@@ -1004,3 +1004,8 @@
   .home-dashboard__secondary .home-backup { min-height: 0; }
   .app-version { padding-bottom: 20px; }
 }
+
+/* v163 · 首页消费记录沿用记账页的分类图形体系。 */
+.home-recent__icon { background: transparent; }
+.home-recent__icon .category-icon { width: 40px; height: 40px; border-radius: 13px; }
+.home-recent__icon .category-icon svg { width: 21px; height: 21px; }

@@ -283,3 +283,10 @@
   position: relative;
   flex-shrink: 0;
 }
+
+/* v163 · 账单列表、分类筛选与首页保持同一套图形比例。 */
+.list-item__icon { background: transparent; }
+.list-item__icon .category-icon { width: 36px; height: 36px; border-radius: 12px; }
+.list-item__icon .category-icon svg { width: 19px; height: 19px; }
+.list-dropdown__item .category-icon { width: 25px; height: 25px; border-radius: 8px; flex: 0 0 auto; }
+.list-dropdown__item .category-icon svg { width: 14px; height: 14px; }
