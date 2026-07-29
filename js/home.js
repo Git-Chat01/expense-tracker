@@ -200,8 +200,8 @@ const ExpenseHome = (() => {
     _$budgetSummaryProgress.style.width = Math.max(0, Math.min(100, spentPct)) + '%';
     _$budgetSummaryProgress.parentElement.setAttribute('aria-label', '预算已使用 ' + spentPct + '%');
     if (_$budgetActionLabel) _$budgetActionLabel.textContent = '调整';
-    if (_$budgetSummarySpent) _$budgetSummarySpent.textContent = '¥' + roundedSpent;
-    if (_$budgetSummaryLimit) _$budgetSummaryLimit.textContent = '/ ¥' + roundedBudget;
+    if (_$budgetSummarySpent) _$budgetSummarySpent.innerHTML = _moneyMarkup(roundedSpent);
+    if (_$budgetSummaryLimit) _$budgetSummaryLimit.innerHTML = '/ ' + _moneyMarkup(roundedBudget);
     if (_$budgetSummaryStatus) {
       _$budgetSummaryStatus.textContent = state === 'over' ? '超出预算' : (state === 'watch' ? '花得偏快' : '节奏正常');
     }
@@ -213,14 +213,14 @@ const ExpenseHome = (() => {
         : (state === 'watch' ? '今天建议不超过' : '今天可安心花');
     }
     if (_$budgetSummaryDecisionValue) {
-      _$budgetSummaryDecisionValue.textContent = state === 'over'
-        ? '¥' + Math.round(-remainingAmount).toLocaleString()
-        : '¥' + dailyAllowance.toLocaleString();
+      _$budgetSummaryDecisionValue.innerHTML = state === 'over'
+        ? _moneyMarkup(Math.round(-remainingAmount).toLocaleString())
+        : _moneyMarkup(dailyAllowance.toLocaleString());
     }
     if (_$budgetSummaryRemaining) {
-      _$budgetSummaryRemaining.textContent = state === 'over'
-        ? '已超 ¥' + Math.round(-remainingAmount).toLocaleString()
-        : '还剩 ¥' + roundedRemaining;
+      _$budgetSummaryRemaining.innerHTML = state === 'over'
+        ? '已超 ' + _moneyMarkup(Math.round(-remainingAmount).toLocaleString())
+        : '还剩 ' + _moneyMarkup(roundedRemaining);
     }
     if (_$budgetSummaryDays) _$budgetSummaryDays.textContent = '本月剩 ' + daysLeft + ' 天';
 
@@ -595,7 +595,7 @@ const ExpenseHome = (() => {
             <div class="home-recent__name">${name}</div>
             ${metaParts.length ? `<div class="home-recent__meta">${metaParts.join(' · ')}</div>` : ''}
           </div>
-          <span class="home-recent__amount">-¥${e.amount.toFixed(2)}</span>
+          <span class="home-recent__amount">-${_moneyMarkup(e.amount.toFixed(2))}</span>
         </div>`;
     }).join('');
 
@@ -625,6 +625,10 @@ const ExpenseHome = (() => {
     const d = new Date();
     d.setMonth(d.getMonth() - 1);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  function _moneyMarkup(amount) {
+    return '<span class="home-overview__currency">¥</span>' + amount;
   }
 
   /** 上月总消费 */

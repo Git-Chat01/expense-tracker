@@ -48,7 +48,7 @@
 }
 
 .home-section__all {
-  font-size: var(--font-size-xs);
+  font-size: 12px;
   color: var(--color-text-tertiary);
   text-decoration: none;
   cursor: pointer;
@@ -104,10 +104,10 @@
 }
 
 .home-overview__currency {
-  font-size: 14px;
+  font-size: 0.64em;
   font-weight: 600;
   margin-right: 1px;
-  vertical-align: baseline;
+  vertical-align: 0.08em;
 }
 
 .home-overview__diff {
@@ -431,7 +431,7 @@
 }
 
 .home-recent__meta {
-  font-size: var(--font-size-xs);
+  font-size: 12px;
   color: var(--color-text-tertiary);
   margin-top: 2px;
 }
@@ -461,7 +461,7 @@
 .home-header__date { padding: 6px 8px; border: 1px solid var(--color-border); border-radius: 999px; background: rgba(255, 255, 253, 0.68); font-size: 12px; }
 .home-section { padding: 0 var(--space-xl) var(--space-lg); }
 .home-section__title { color: var(--color-text-secondary); letter-spacing: 0.08em; }
-.home-section__all { padding: 2px 0; border: 0; background: transparent; color: var(--color-primary); font: inherit; font-size: var(--font-size-xs); cursor: pointer; }
+.home-section__all { padding: 2px 0; border: 0; background: transparent; color: var(--color-primary); font: inherit; font-size: 12px; cursor: pointer; }
 .home-overview { gap: 10px; }
 .home-overview__card { align-items: flex-start; border: 1px solid rgba(15, 89, 102, 0.05); border-radius: var(--radius-lg); padding: 16px 14px 14px; text-align: left; }
 .home-overview__card:first-child { background: var(--color-primary); border-color: var(--color-primary); box-shadow: 0 10px 22px rgba(15, 89, 102, 0.20); }
@@ -557,7 +557,7 @@
 .home-summary__amount .home-overview__currency {
   margin-right: 2px;
   color: inherit;
-  font-size: 0.46em;
+  font-size: 0.52em;
   font-weight: 700;
   vertical-align: 0.08em;
 }
@@ -649,7 +649,7 @@
   background: transparent;
   color: var(--color-primary-dark);
   font: inherit;
-  font-size: var(--font-size-xs);
+  font-size: 12px;
   font-weight: 800;
   cursor: pointer;
 }
@@ -665,7 +665,7 @@
   gap: 3px;
   margin-top: 10px;
   color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: 12px;
 }
 
 .home-budget-brief__label {
@@ -681,7 +681,7 @@
   min-width: 0;
   gap: 4px;
   color: var(--color-text-tertiary);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .home-budget-brief__spent-amount {
@@ -708,13 +708,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+.home-budget-brief__spent-amount > span .home-overview__currency {
+  font-size: 0.78em;
+}
+
 .home-budget-brief__status {
   flex-shrink: 0;
   padding: 5px 8px;
   border-radius: 999px;
   background: var(--budget-tone-soft);
   color: var(--budget-tone);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -753,13 +757,17 @@
   font-variant-numeric: tabular-nums;
 }
 
+.home-budget-brief__decision strong .home-overview__currency { font-size: 0.7em; }
+
 .home-budget-brief__support {
   flex-wrap: wrap;
   gap: 5px;
   margin-top: 9px;
   color: var(--color-text-tertiary);
-  font-size: 11px;
+  font-size: 12px;
 }
+
+.home-budget-brief__support .home-overview__currency { font-size: 0.75em; }
 
 .home-budget-brief__forecast {
   margin: 10px 0 0;
@@ -827,7 +835,7 @@
   min-width: 0;
 }
 
-.home-primary-action__copy strong { font-size: var(--font-size-md); line-height: 1; }
+.home-primary-action__copy strong { font-size: 16px; line-height: 1; }
 
 .home-primary-action__icon {
   display: grid;
@@ -859,9 +867,9 @@
 }
 
 .home-today__label { color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: 700; }
-.home-today__count { color: var(--color-text-tertiary); font-size: 11px; }
+.home-today__count { color: var(--color-text-tertiary); font-size: 12px; }
 .home-today__amount { color: var(--color-text-primary); font-family: var(--font-mono); font-size: 22px; font-weight: 800; letter-spacing: -0.04em; }
-.home-today__diff { align-self: end; color: var(--color-text-tertiary); font-size: 11px; text-align: right; }
+.home-today__diff { align-self: end; color: var(--color-text-tertiary); font-size: 12px; text-align: right; }
 
 .home-recent--empty {
   border-color: var(--color-border);
@@ -902,7 +910,7 @@
 .home-recent__empty-copy {
   margin-top: 2px;
   color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: 12px;
 }
 
 .home-budget-alert {
