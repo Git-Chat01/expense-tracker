@@ -416,3 +416,8 @@
 .stats-empty__hint {
   font-size: var(--font-size-sm);
 }
+
+/* v163 · 图表详情也使用对应分类图形，避免统计页回退为 Emoji。 */
+.stats-tooltip__title { display: flex; align-items: center; gap: 6px; }
+.stats-tooltip__title .category-icon { width: 22px; height: 22px; border-radius: 7px; flex: 0 0 auto; }
+.stats-tooltip__title .category-icon svg { width: 13px; height: 13px; }

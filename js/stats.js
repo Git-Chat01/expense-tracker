@@ -288,9 +288,9 @@ const ExpenseStats = (() => {
       }
       const parentCat = parentId !== 'unknown' ? ExpenseDB.getCategory(parentId) : null;
       const name = parentCat ? parentCat.name : '未分类';
-      const icon = parentCat ? parentCat.icon : '📌';
+      const category = parentCat;
 
-      if (!catMap.has(parentId)) catMap.set(parentId, { name, icon, total: 0 });
+      if (!catMap.has(parentId)) catMap.set(parentId, { name, category, total: 0 });
       catMap.get(parentId).total += e.amount;
     });
 
@@ -299,7 +299,7 @@ const ExpenseStats = (() => {
     const top8 = sorted.slice(0, 8);
     let otherTotal = 0;
     sorted.slice(8).forEach(c => { otherTotal += c.total; });
-    if (otherTotal > 0) top8.push({ name: '其他', icon: '📦', total: otherTotal });
+    if (otherTotal > 0) top8.push({ name: '其他', category: null, total: otherTotal });
 
     const labels = top8.map(c => c.name);
     const data = top8.map(c => Math.round(c.total * 100) / 100);
@@ -308,7 +308,7 @@ const ExpenseStats = (() => {
     const total = data.reduce((s, v) => s + v, 0);
     const maxTotal = top8.length > 0 ? Math.max(...top8.map(c => c.total)) : 0;
     const meta = top8.map((c, i) => ({
-      icon: c.icon,
+      category: c.category,
       name: c.name,
       amount: Math.round(c.total),
       pct: total > 0 ? Math.round(c.total / total * 100) : 0,
@@ -505,7 +505,7 @@ const ExpenseStats = (() => {
 
     // 构建 HTML
     var html = '';
-    html += '<div class="stats-tooltip__title" style="color:' + seg.color + '">' + (seg.icon || '') + ' ' + seg.name + '</div>';
+    html += '<div class="stats-tooltip__title" style="color:' + seg.color + '">' + ExpenseCategories.getIconMarkup(seg.category) + '<span>' + seg.name + '</span></div>';
     html += '<div class="stats-tooltip__amount" style="color:' + seg.color + '"><span class="stats-tooltip__currency">¥</span>' + seg.amount.toLocaleString() + '</div>';
     html += '<div class="stats-tooltip__pct">占比 ' + seg.pct + '%</div>';
     if (seg.isHighest) {

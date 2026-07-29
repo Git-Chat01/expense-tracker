@@ -571,7 +571,7 @@ const ExpenseHome = (() => {
 
     _$recent.innerHTML = recent.map(e => {
       const cat = ExpenseDB.getCategory(e.categoryId);
-      const icon = cat ? cat.icon : '📌';
+      const icon = ExpenseCategories.getIconMarkup(cat);
       const name = cat ? cat.name : '未分类';
       const metaParts = [];
       const today = _todayStr();

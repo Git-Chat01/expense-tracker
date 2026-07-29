@@ -1028,3 +1028,7 @@ ul, ol {
 
   .tab-bar__item { flex-direction: row; gap: 7px; }
 }
+
+/* v163 · 账单页已选分类筛选条件。 */
+.filter-chip .category-icon { width: 20px; height: 20px; border-radius: 7px; flex: 0 0 auto; }
+.filter-chip .category-icon svg { width: 12px; height: 12px; }
