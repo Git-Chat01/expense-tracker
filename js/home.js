@@ -17,6 +17,9 @@ const ExpenseHome = (() => {
   let _$budgetAlertDaily, _$budgetAlertRemaining, _$budgetAlertPrediction;
   let _$budgetSummary, _$budgetSummaryLabel, _$budgetSummaryValue;
   let _$budgetSummaryProgress, _$budgetActionLabel;
+  let _$budgetSummarySpent, _$budgetSummaryLimit, _$budgetSummaryStatus;
+  let _$budgetSummaryDecisionLabel, _$budgetSummaryDecisionValue;
+  let _$budgetSummaryRemaining, _$budgetSummaryDays, _$budgetSummaryForecast;
 
   /**
    * 初始化 DOM 引用（在 render 前调用一次）
@@ -48,6 +51,14 @@ const ExpenseHome = (() => {
     _$budgetSummaryValue = document.getElementById('home-budget-summary-value');
     _$budgetSummaryProgress = document.getElementById('home-budget-summary-progress');
     _$budgetActionLabel = document.getElementById('home-budget-action-label');
+    _$budgetSummarySpent = document.getElementById('home-budget-summary-spent');
+    _$budgetSummaryLimit = document.getElementById('home-budget-summary-limit');
+    _$budgetSummaryStatus = document.getElementById('home-budget-summary-status');
+    _$budgetSummaryDecisionLabel = document.getElementById('home-budget-summary-decision-label');
+    _$budgetSummaryDecisionValue = document.getElementById('home-budget-summary-decision-value');
+    _$budgetSummaryRemaining = document.getElementById('home-budget-summary-remaining');
+    _$budgetSummaryDays = document.getElementById('home-budget-summary-days');
+    _$budgetSummaryForecast = document.getElementById('home-budget-summary-forecast');
   }
 
   /* -----------------------------------------------------------------
@@ -59,7 +70,7 @@ const ExpenseHome = (() => {
     _renderHeader();
     _renderToday();
     _renderMonth();
-    _renderBudgetAlert();
+    _renderBudgetSummary();
     _renderAlerts();
     _renderRecent();
   }
@@ -155,7 +166,87 @@ const ExpenseHome = (() => {
      预算进度卡片：圆环 + 信息区 + 预测
      时间感知状态：节奏比 = 已用% / 时间进度%
      ----------------------------------------------------------------- */
-  function _renderBudgetSummary(options) {
+  function _renderBudgetSummary() {
+    if (!_$budgetSummary || !_$budgetSummaryLabel || !_$budgetSummaryProgress) return;
+
+    var budget = ExpenseDB.getBudget() || {};
+    var monthlyBudget = Number(budget.monthlyTotal) || 0;
+
+    if (monthlyBudget <= 0) {
+      _$budgetSummary.className = 'home-budget-brief card home-budget-brief--setup';
+      _$budgetSummaryLabel.textContent = '还没有设置本月预算';
+      _$budgetSummaryProgress.style.width = '0%';
+      if (_$budgetActionLabel) _$budgetActionLabel.textContent = '去设置';
+      if (_$budgetSummaryForecast) _$budgetSummaryForecast.hidden = true;
+      return;
+    }
+
+    var monthSpent = Math.max(0, Number(ExpenseDB.getMonthTotal()) || 0);
+    var now = new Date();
+    var dayOfMonth = now.getDate();
+    var daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    var daysLeft = _daysLeftInMonth();
+    var remainingAmount = monthlyBudget - monthSpent;
+    var remaining = Math.max(0, remainingAmount);
+    var spentPct = Math.round((monthSpent / monthlyBudget) * 100);
+    var paceRatio = (monthSpent / monthlyBudget) / Math.max(dayOfMonth / daysInMonth, 0.05);
+    var state = remainingAmount < 0 ? 'over' : (paceRatio > 1.2 ? 'watch' : 'safe');
+    var roundedSpent = Math.round(monthSpent).toLocaleString();
+    var roundedBudget = Math.round(monthlyBudget).toLocaleString();
+    var roundedRemaining = Math.round(remaining).toLocaleString();
+
+    _$budgetSummary.className = 'home-budget-brief card home-budget-brief--' + state;
+    _$budgetSummaryLabel.textContent = '已设置本月预算';
+    _$budgetSummaryProgress.style.width = Math.max(0, Math.min(100, spentPct)) + '%';
+    _$budgetSummaryProgress.parentElement.setAttribute('aria-label', '预算已使用 ' + spentPct + '%');
+    if (_$budgetActionLabel) _$budgetActionLabel.textContent = '调整';
+    if (_$budgetSummarySpent) _$budgetSummarySpent.textContent = '¥' + roundedSpent;
+    if (_$budgetSummaryLimit) _$budgetSummaryLimit.textContent = '/ ¥' + roundedBudget;
+    if (_$budgetSummaryStatus) {
+      _$budgetSummaryStatus.textContent = state === 'over' ? '超出预算' : (state === 'watch' ? '花得偏快' : '节奏正常');
+    }
+
+    var dailyAllowance = (daysLeft > 0 && remaining > 0) ? Math.floor(remaining / daysLeft) : 0;
+    if (_$budgetSummaryDecisionLabel) {
+      _$budgetSummaryDecisionLabel.textContent = state === 'over'
+        ? '本月已超支'
+        : (state === 'watch' ? '今天建议不超过' : '今天可安心花');
+    }
+    if (_$budgetSummaryDecisionValue) {
+      _$budgetSummaryDecisionValue.textContent = state === 'over'
+        ? '¥' + Math.round(-remainingAmount).toLocaleString()
+        : '¥' + dailyAllowance.toLocaleString();
+    }
+    if (_$budgetSummaryRemaining) {
+      _$budgetSummaryRemaining.textContent = state === 'over'
+        ? '已超 ¥' + Math.round(-remainingAmount).toLocaleString()
+        : '还剩 ¥' + roundedRemaining;
+    }
+    if (_$budgetSummaryDays) _$budgetSummaryDays.textContent = '本月剩 ' + daysLeft + ' 天';
+
+    if (!_$budgetSummaryForecast) return;
+    if (state === 'safe') {
+      _$budgetSummaryForecast.hidden = true;
+      return;
+    }
+
+    _$budgetSummaryForecast.hidden = false;
+    if (state === 'over') {
+      _$budgetSummaryForecast.textContent = '建议暂停非必要消费，或调整本月预算。';
+      return;
+    }
+
+    if (dayOfMonth < 3) {
+      _$budgetSummaryForecast.textContent = '月初数据较少，先按今天的建议控制即可。';
+      return;
+    }
+
+    var projectedTotal = (monthSpent / dayOfMonth) * daysInMonth;
+    var projectedOver = Math.max(0, Math.round(projectedTotal - monthlyBudget));
+    _$budgetSummaryForecast.textContent = '按当前节奏，月末预计超出 ¥' + projectedOver.toLocaleString() + '。';
+  }
+
+  function _renderLegacyBudgetSummary(options) {
     if (!_$budgetSummary || !_$budgetSummaryLabel || !_$budgetSummaryValue || !_$budgetSummaryProgress) return;
 
     var state = options.state || 'safe';
@@ -166,7 +257,7 @@ const ExpenseHome = (() => {
     if (_$budgetActionLabel) _$budgetActionLabel.textContent = options.action || '调整预算';
   }
 
-  function _renderBudgetAlert() {
+  function _renderLegacyBudgetAlert() {
     if (!_$budgetAlert) return;
 
     var budget = ExpenseDB.getBudget();
@@ -189,7 +280,7 @@ const ExpenseHome = (() => {
     if (!closest) {
       var monthlyBudget = budget.monthlyTotal || 0;
       if (monthlyBudget <= 0) {
-        _renderBudgetSummary({
+        _renderLegacyBudgetSummary({
           label: '还没有设置本月预算',
           value: '',
           progress: 0,
@@ -245,7 +336,7 @@ const ExpenseHome = (() => {
       var category = ExpenseDB.getCategory(closest.categoryId);
       summaryScope = (category ? category.name : '分类') + '预算';
     }
-    _renderBudgetSummary({
+    _renderLegacyBudgetSummary({
       label: summaryScope + ' ¥' + closest.budget.toLocaleString(),
       value: '已用 ' + spentPct + '%',
       progress: spentPct,
