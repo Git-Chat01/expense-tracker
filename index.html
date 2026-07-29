@@ -14,7 +14,7 @@
   <!-- CSS -->
   <link rel="stylesheet" href="css/common.css?v=159">
   <link rel="stylesheet" href="css/home.css?v=158">
-  <link rel="stylesheet" href="css/add.css?v=159">
+  <link rel="stylesheet" href="css/add.css?v=160">
   <link rel="stylesheet" href="css/list.css?v=150">
   <link rel="stylesheet" href="css/stats.css?v=150">
 </head>
@@ -171,7 +171,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260730-159 · 记账流程优先级优化
+      v20260730-160 · 记账日期与常用内容优化
     </div>
   </main>
 
@@ -194,8 +194,15 @@
           </div>
         </div>
         <div class="add-date-inputs" id="add-date-inputs" style="display:none">
-          <input type="date" class="input" id="add-date" aria-label="记账日期">
-          <input type="time" class="input" id="add-time" aria-label="记账时间">
+          <div class="add-date-shortcuts" aria-label="日期快捷选择">
+            <button class="add-date-shortcut" type="button" data-date-shortcut="today">今天</button>
+            <button class="add-date-shortcut" type="button" data-date-shortcut="yesterday">昨天</button>
+            <button class="add-date-shortcut add-date-shortcut--now" type="button" data-date-shortcut="now">现在</button>
+          </div>
+          <div class="add-date-controls">
+            <input type="date" class="input" id="add-date" aria-label="记账日期">
+            <input type="time" class="input" id="add-time" aria-label="记账时间">
+          </div>
         </div>
         <div class="add-amount-display" aria-live="polite" aria-label="本次支出金额">
           <span class="add-amount__currency">¥</span>
@@ -240,6 +247,7 @@
           <span class="add-more-fields__hint">可选</span>
         </summary>
         <div class="add-more-fields__body">
+          <div class="add-merchant-suggestions" id="add-merchant-suggestions" hidden aria-label="常用商家"></div>
           <label class="add-field">
             <span>地点</span>
             <input type="text" class="input" id="add-location" placeholder="例如：公司楼下" maxlength="50">
@@ -548,10 +556,10 @@
 <script src="js/storage.js?v=150"></script>
 <script src="js/data.js?v=150"></script>
 <script src="js/home.js?v=158"></script>
-<script src="js/categories.js?v=159"></script>
+<script src="js/categories.js?v=160"></script>
 <script src="js/list.js?v=150"></script>
 <script src="js/stats.js?v=150"></script>
-<script src="js/app.js?v=159"></script>
+<script src="js/app.js?v=160"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">

@@ -473,3 +473,56 @@
 /* 右侧保存键贯穿三个数字行，补齐底行空白并保持拇指可达。 */
 .add-numpad .numpad__key--submit { grid-row: span 3; }
 .add-numpad .numpad__key--submit:active { transform: none; }
+
+/* v160 · 补记日期与常用内容 */
+.add-date-inputs { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.add-date-shortcuts { display: flex; gap: 7px; }
+.add-date-shortcut {
+  min-height: 40px;
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+.add-date-shortcut--active { border-color: rgba(15, 89, 102, .35); background: var(--color-primary-light); color: var(--color-primary-dark); }
+.add-date-shortcut--now { color: var(--color-primary); }
+.add-date-controls { display: flex; gap: var(--space-sm); }
+.add-date-controls .input { min-width: 0; flex: 1; max-width: none; }
+
+.add-merchant-suggestions {
+  display: grid;
+  gap: 7px;
+  padding: 10px;
+  border: 1px solid rgba(15, 89, 102, .14);
+  border-radius: 12px;
+  background: rgba(235, 243, 252, .52);
+}
+.add-merchant-suggestions__label { margin: 0; color: var(--color-text-tertiary); font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+.add-merchant-suggestions__chips { display: flex; gap: 7px; overflow-x: auto; scrollbar-width: none; }
+.add-merchant-suggestions__chips::-webkit-scrollbar { display: none; }
+.add-merchant-suggestion {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 40px;
+  flex: 0 0 auto;
+  max-width: 156px;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border: 1px solid rgba(15, 89, 102, .18);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+.add-merchant-suggestion:active { transform: scale(.98); background: var(--color-primary-light); }
+.add-merchant-suggestion__icon { flex: 0 0 auto; font-size: 16px; }
+.add-merchant-suggestion__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

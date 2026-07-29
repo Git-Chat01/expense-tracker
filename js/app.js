@@ -63,6 +63,7 @@ const ExpenseApp = (() => {
     _bindNumpad();
     _bindAddForm();
     _bindDateToggle();
+    _bindDateShortcuts();
     _bindPaymentToggle();
     _bindOverlays();
     _bindHomeEvents();
@@ -81,6 +82,7 @@ const ExpenseApp = (() => {
 
     // 8. 渲染首页
     ExpenseHome.render();
+    _renderMerchantSuggestions();
   }
 
   /* -----------------------------------------------------------------
@@ -151,6 +153,7 @@ const ExpenseApp = (() => {
       }
       _renderAddCategories();
       _renderPaymentMethods();
+      _renderMerchantSuggestions();
       _updateAmountDisplay();
     } else if (viewId === 'list') {
       if (typeof ExpenseList !== 'undefined') {
@@ -372,6 +375,91 @@ const ExpenseApp = (() => {
 
   }
 
+  function _getMerchantSuggestions() {
+    const suggestions = new Map();
+
+    ExpenseDB.getExpenses().slice(0, 80).forEach((expense, index) => {
+      const note = (expense.note || '').trim();
+      const location = (expense.location || '').trim();
+      if (!note && !location) return;
+
+      const key = `${note}\u0000${location}`;
+      const recencyWeight = Math.max(1, 10 - Math.floor(index / 8));
+      const existing = suggestions.get(key);
+      if (existing) {
+        existing.score += recencyWeight;
+      } else {
+        suggestions.set(key, {
+          note,
+          location,
+          categoryId: expense.categoryId,
+          score: recencyWeight,
+        });
+      }
+    });
+
+    return [...suggestions.values()]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 4);
+  }
+
+  function _renderMerchantSuggestions() {
+    const container = document.getElementById('add-merchant-suggestions');
+    if (!container) return;
+
+    const suggestions = _getMerchantSuggestions();
+    container.replaceChildren();
+    container.hidden = suggestions.length === 0;
+    if (suggestions.length === 0) return;
+
+    const label = document.createElement('p');
+    label.className = 'add-merchant-suggestions__label';
+    label.textContent = '常用内容';
+    container.appendChild(label);
+
+    const chips = document.createElement('div');
+    chips.className = 'add-merchant-suggestions__chips';
+    suggestions.forEach(suggestion => {
+      const category = ExpenseDB.getCategory(suggestion.categoryId);
+      const button = document.createElement('button');
+      button.className = 'add-merchant-suggestion';
+      button.type = 'button';
+      button.title = suggestion.note || suggestion.location;
+
+      const icon = document.createElement('span');
+      icon.className = 'add-merchant-suggestion__icon';
+      icon.textContent = category ? category.icon : '↺';
+
+      const text = document.createElement('span');
+      text.className = 'add-merchant-suggestion__text';
+      text.textContent = suggestion.note || suggestion.location;
+
+      button.append(icon, text);
+      button.addEventListener('click', () => _applyMerchantSuggestion(suggestion));
+      chips.appendChild(button);
+    });
+    container.appendChild(chips);
+  }
+
+  function _applyMerchantSuggestion(suggestion) {
+    _formState.note = suggestion.note;
+    _formState.location = suggestion.location;
+
+    const noteInput = document.getElementById('add-note');
+    const locationInput = document.getElementById('add-location');
+    const moreFields = document.getElementById('add-more-fields');
+    if (noteInput) noteInput.value = suggestion.note;
+    if (locationInput) locationInput.value = suggestion.location;
+    if (moreFields) moreFields.open = true;
+
+    if (ExpenseDB.getCategory(suggestion.categoryId)) {
+      _formState.categoryId = suggestion.categoryId;
+      ExpenseCategories.setSelected(suggestion.categoryId, { collapse: true });
+      _renderAddCategories();
+      _setCategoryValidation(false);
+    }
+  }
+
   /* -----------------------------------------------------------------
      日期显示更新：将 date/time 转为 "今天 14:30" 格式
      ----------------------------------------------------------------- */
@@ -380,10 +468,9 @@ const ExpenseApp = (() => {
     const timeLabel = document.getElementById('add-time-label');
     if (!dateLabel || !timeLabel) return;
 
-    const now = new Date();
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    const yesterday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate() - 1).padStart(2, '0')}`;
-    const tomorrow = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate() + 1).padStart(2, '0')}`;
+    const today = _relativeDateValue(0);
+    const yesterday = _relativeDateValue(-1);
+    const tomorrow = _relativeDateValue(1);
 
     if (_formState.date === today) {
       dateLabel.textContent = '今天';
@@ -400,6 +487,32 @@ const ExpenseApp = (() => {
     }
 
     timeLabel.textContent = _formState.time || '';
+    _updateDateShortcutState();
+  }
+
+  function _dateValue(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  }
+
+  function _timeValue(date) {
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function _relativeDateValue(offset) {
+    const date = new Date();
+    date.setDate(date.getDate() + offset);
+    return _dateValue(date);
+  }
+
+  function _updateDateShortcutState() {
+    const today = _relativeDateValue(0);
+    const yesterday = _relativeDateValue(-1);
+    document.querySelectorAll('[data-date-shortcut]').forEach(button => {
+      const shortcut = button.dataset.dateShortcut;
+      const isActive = (shortcut === 'today' && _formState.date === today)
+        || (shortcut === 'yesterday' && _formState.date === yesterday);
+      button.classList.toggle('add-date-shortcut--active', isActive);
+    });
   }
 
   /* -----------------------------------------------------------------
@@ -427,8 +540,32 @@ const ExpenseApp = (() => {
     });
   }
 
+  function _bindDateShortcuts() {
+    document.querySelectorAll('[data-date-shortcut]').forEach(button => {
+      button.addEventListener('click', () => {
+        const shortcut = button.dataset.dateShortcut;
+        if (shortcut === 'today') {
+          _formState.date = _relativeDateValue(0);
+        } else if (shortcut === 'yesterday') {
+          _formState.date = _relativeDateValue(-1);
+        } else if (shortcut === 'now') {
+          const now = new Date();
+          _formState.date = _dateValue(now);
+          _formState.time = _timeValue(now);
+        }
+
+        _formState.dateTimeManuallyEdited = true;
+        const dateInput = document.getElementById('add-date');
+        const timeInput = document.getElementById('add-time');
+        if (dateInput) dateInput.value = _formState.date;
+        if (timeInput) timeInput.value = _formState.time;
+        _updateDateLabels();
+      });
+    });
+  }
+
   /* -----------------------------------------------------------------
-     重置表单默认值（每次进入记账页或保存后调用）
+     重置表单默认值（每次从其他页面进入记账页时调用）
      ----------------------------------------------------------------- */
   function _resetFormDefaults(options = {}) {
     const { clearTransient = true } = options;
@@ -521,6 +658,7 @@ const ExpenseApp = (() => {
         ExpenseHome.render();
         if (typeof ExpenseList !== 'undefined') ExpenseList.render();
         if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
+        _renderMerchantSuggestions();
       },
     });
 
@@ -544,6 +682,7 @@ const ExpenseApp = (() => {
     // 支付方式回到“可选”状态，不让上一笔支付渠道造成误记。
     _renderPaymentMethods();
     _setPaymentPickerOpen(false);
+    _renderMerchantSuggestions();
   }
 
   /* -----------------------------------------------------------------
