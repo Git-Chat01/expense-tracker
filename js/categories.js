@@ -322,68 +322,85 @@ const ExpenseCategories = (() => {
       allToggle.innerHTML = '<span>全部分类</span><span class="add-category-all__chevron" aria-hidden="true">⌄</span>';
     }
 
-    grid.style.display = _drawerOpen ? 'grid' : 'none';
     if (!_drawerOpen) {
+      grid.style.display = 'none';
       if (subRow) subRow.style.display = 'none';
       return;
     }
 
     const parents = ExpenseDB.getParentCategories();
     const selectedCat = ExpenseDB.getCategory(_selectedCategoryId);
+
+    // 有子分类时进入二级选择态：隐藏冗长的大类网格，把下一步直接放到抽屉可视区。
+    if (_expandedParentId) {
+      const parent = ExpenseDB.getCategory(_expandedParentId);
+      const children = ExpenseDB.getChildCategories(_expandedParentId);
+      if (parent && children.length > 0) {
+        grid.style.display = 'none';
+        subRow.style.display = 'grid';
+        subRow.innerHTML = `
+          <div class="category-subcategory-panel">
+            <div class="category-subcategory-panel__heading">
+              <button class="category-subcategory-panel__back" type="button" data-category-back aria-label="返回大类选择">
+                <span aria-hidden="true">‹</span><span>大类</span>
+              </button>
+              <div class="category-subcategory-panel__context">
+                ${_categoryIconMarkup(parent)}
+                <span><strong>${parent.name}</strong><small>选择细分分类</small></span>
+              </div>
+            </div>
+            <div class="category-subcategory-grid" role="group" aria-label="${parent.name}的子分类">
+              ${children.map(cat => {
+                const isSelected = _selectedCategoryId === cat.id;
+                return `
+                  <button class="cat-chip ${isSelected ? 'cat-chip--selected' : ''}" data-cat-id="${cat.id}" type="button">
+                    <span class="cat-chip__icon">${_categoryIconMarkup(cat)}</span>
+                    <span class="cat-chip__name">${cat.name}</span>
+                  </button>`;
+              }).join('')}
+            </div>
+          </div>`;
+
+        const backButton = subRow.querySelector('[data-category-back]');
+        if (backButton) backButton.addEventListener('click', () => {
+          _expandedParentId = null;
+          renderGrid(containerId, subContainerId, _onSelectStored);
+        });
+        subRow.querySelectorAll('.cat-chip').forEach(chip => {
+          chip.addEventListener('click', () => {
+            _selectCategory(chip.dataset.catId, containerId, subContainerId);
+          });
+        });
+        return;
+      }
+      _expandedParentId = null;
+    }
+
+    grid.style.display = 'grid';
+    subRow.style.display = 'none';
     grid.innerHTML = parents.map(cat => {
       const isSelected = _selectedCategoryId === cat.id
         || (selectedCat && selectedCat.parentId === cat.id);
-      const isExpanded = _expandedParentId === cat.id;
       return `
         <button class="cat-btn ${isSelected ? 'cat-btn--selected' : ''}"
                 data-cat-id="${cat.id}"
                 data-has-children="${ExpenseDB.getChildCategories(cat.id).length > 0}">
           <span class="cat-btn__icon">${_categoryIconMarkup(cat)}</span>
           <span class="cat-btn__name">${cat.name}</span>
-          ${isExpanded ? '<span style="font-size:10px">▲</span>' : ''}
         </button>`;
     }).join('');
-
-    if (_expandedParentId) {
-      const children = ExpenseDB.getChildCategories(_expandedParentId);
-      if (children.length > 0) {
-        subRow.style.display = 'flex';
-        subRow.innerHTML = children.map(cat => {
-          const isSelected = _selectedCategoryId === cat.id;
-          return `
-            <button class="cat-chip ${isSelected ? 'cat-chip--selected' : ''}"
-                    data-cat-id="${cat.id}">
-              <span class="cat-chip__icon">${_categoryIconMarkup(cat)}</span>
-              <span class="cat-chip__name">${cat.name}</span>
-            </button>`;
-        }).join('');
-      } else {
-        subRow.style.display = 'none';
-      }
-    } else {
-      subRow.style.display = 'none';
-    }
 
     grid.querySelectorAll('.cat-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const catId = btn.dataset.catId;
         const hasChildren = btn.dataset.hasChildren === 'true';
 
-        if (hasChildren && _expandedParentId !== catId) {
+        if (hasChildren) {
           _expandedParentId = catId;
-          renderGrid(containerId, subContainerId, _onSelectStored);
-        } else if (hasChildren && _expandedParentId === catId) {
-          _expandedParentId = null;
           renderGrid(containerId, subContainerId, _onSelectStored);
         } else {
           _selectCategory(catId, containerId, subContainerId);
         }
-      });
-    });
-
-    subRow.querySelectorAll('.cat-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        _selectCategory(chip.dataset.catId, containerId, subContainerId);
       });
     });
   }
