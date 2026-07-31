@@ -321,8 +321,8 @@ const ExpenseDB = (() => {
    * @param {string} [yearMonth] - YYYY-MM，默认当月
    * @returns {number}
    */
-  function getCategorySpent(categoryId, yearMonth) {
-    const ym = yearMonth || yearMonth();
+  function getCategorySpent(categoryId, month) {
+    const ym = month || yearMonth();
     const expenses = _read(KEYS.expenses) || [];
 
     // 收集该分类 ID 及所有子分类 ID
@@ -339,8 +339,8 @@ const ExpenseDB = (() => {
    * @param {string} [yearMonth] - YYYY-MM
    * @returns {number}
    */
-  function getMonthTotal(yearMonth) {
-    const ym = yearMonth || yearMonth();
+  function getMonthTotal(month) {
+    const ym = month || yearMonth();
     const expenses = _read(KEYS.expenses) || [];
     return expenses
       .filter(e => e.date.startsWith(ym))
@@ -353,7 +353,7 @@ const ExpenseDB = (() => {
    * @returns {number}
    */
   function getDayTotal(date) {
-    const d = date || _today();
+    const d = date || today();
     const expenses = _read(KEYS.expenses) || [];
     return expenses
       .filter(e => e.date === d)
