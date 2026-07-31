@@ -11,9 +11,11 @@ const ExpenseCategories = (() => {
      ----------------------------------------------------------------- */
   let _selectedCategoryId = null;     // 当前选中的分类 ID
   let _expandedParentId = null;       // 当前展开子分类的一级分类 ID
-  let _collapsed = false;             // 选中后是否已收起为摘要
-  let _allCategoriesVisible = false;  // 是否展开完整分类网格
+  let _collapsed = false;             // 保留给连续记账的摘要状态
+  let _drawerOpen = false;             // 完整分类是否在底部抽屉内展开
   let _onSelectStored = null;         // 缓存的选中回调（摘要展开时恢复）
+  let _gridContainerId = 'add-category-picker-grid';
+  let _subContainerId = 'add-category-picker-subcategories';
 
   // 新用户也能一键记账；有历史记录后会被真实使用习惯自动替换。
   const _FALLBACK_QUICK_IDS = [
@@ -82,31 +84,52 @@ const ExpenseCategories = (() => {
     return `<span class="category-icon category-icon--${tone}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${_CATEGORY_ICON_PATHS[iconName]}</svg></span>`;
   }
 
-  // 初始化「修改」按钮（只绑定一次）
-  let _summaryBound = false;
-  function _bindSummaryEdit() {
-    if (_summaryBound) return;
-    const editBtn = document.getElementById('add-category-summary-edit');
+  // 分类入口只绑定一次：完整网格放进抽屉，主页面高度始终稳定。
+  let _pickerControlsBound = false;
+
+  function _setPickerOpen(isOpen) {
+    _drawerOpen = Boolean(isOpen);
+    const picker = document.getElementById('add-category-picker');
+    if (picker) picker.setAttribute('aria-hidden', String(!_drawerOpen));
+    document.body.classList.toggle('category-picker-open', _drawerOpen);
+
+    if (!_drawerOpen) _expandedParentId = null;
+  }
+
+  function openPicker() {
+    if (_selectedCategoryId) {
+      const selected = ExpenseDB.getCategory(_selectedCategoryId);
+      _expandedParentId = selected && selected.parentId ? selected.parentId : null;
+    }
+    _setPickerOpen(true);
+    renderGrid(_gridContainerId, _subContainerId, _onSelectStored);
+  }
+
+  function closePicker() {
+    _setPickerOpen(false);
+    renderGrid(_gridContainerId, _subContainerId, _onSelectStored);
+  }
+
+  function _bindPickerControls() {
+    if (_pickerControlsBound) return;
+
     const summary = document.getElementById('add-category-summary');
-    if (!editBtn || !summary) return;
-    editBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      _collapsed = false;
-      _allCategoriesVisible = true;
-      // 如果选中的是子分类，展开父级以便看到选中态
-      const cat = ExpenseDB.getCategory(_selectedCategoryId);
-      if (cat && cat.parentId) _expandedParentId = cat.parentId;
-      ExpenseCategories.renderGrid('add-category-grid', 'add-subcategories', _onSelectStored);
+    const allButton = document.getElementById('add-category-all');
+    const closeButton = document.getElementById('add-category-picker-close');
+    const backdrop = document.getElementById('add-category-picker-backdrop');
+
+    if (summary) summary.addEventListener('click', openPicker);
+    if (allButton) allButton.addEventListener('click', openPicker);
+    if (closeButton) closeButton.addEventListener('click', closePicker);
+    if (backdrop) backdrop.addEventListener('click', closePicker);
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape' || !_drawerOpen) return;
+      event.preventDefault();
+      closePicker();
     });
-    // 点击摘要整体也可展开
-    summary.addEventListener('click', () => {
-      _collapsed = false;
-      _allCategoriesVisible = true;
-      const cat = ExpenseDB.getCategory(_selectedCategoryId);
-      if (cat && cat.parentId) _expandedParentId = cat.parentId;
-      ExpenseCategories.renderGrid('add-category-grid', 'add-subcategories', _onSelectStored);
-    });
-    _summaryBound = true;
+
+    _pickerControlsBound = true;
   }
 
   function _getQuickCategories() {
@@ -206,8 +229,8 @@ const ExpenseCategories = (() => {
   function _selectCategory(catId, containerId, subContainerId) {
     _selectedCategoryId = catId;
     _expandedParentId = null;
-    _allCategoriesVisible = false;
     _collapsed = true;
+    _setPickerOpen(false);
     renderGrid(containerId, subContainerId, _onSelectStored);
     if (_onSelectStored) _onSelectStored(catId);
   }
@@ -240,12 +263,13 @@ const ExpenseCategories = (() => {
     const allToggle = document.getElementById('add-category-all');
     if (!grid) return;
 
-    // 缓存回调，确保摘要展开后也能正常选中
     if (onSelect) _onSelectStored = onSelect;
+    _gridContainerId = containerId;
+    _subContainerId = subContainerId;
+    _bindPickerControls();
 
-    // 已选中 + 已收起 → 显示摘要行，隐藏网格
     const summary = document.getElementById('add-category-summary');
-    if (_selectedCategoryId && _collapsed) {
+    if (_selectedCategoryId) {
       const cat = ExpenseDB.getCategory(_selectedCategoryId);
       if (cat && summary) {
         const iconEl = document.getElementById('add-category-summary-icon');
@@ -260,47 +284,32 @@ const ExpenseCategories = (() => {
         }
         summary.style.display = 'flex';
       }
-      grid.style.display = 'none';
-      if (subRow) subRow.style.display = 'none';
       if (quickGrid) quickGrid.style.display = 'none';
-      if (allToggle) {
-        allToggle.style.display = 'none';
-        allToggle.setAttribute('aria-expanded', 'false');
+    } else {
+      if (summary) summary.style.display = 'none';
+      if (quickGrid) {
+        quickGrid.style.display = 'grid';
+        _renderQuickCategories(containerId, subContainerId);
       }
-      _bindSummaryEdit();
+    }
+
+    // 无论是否已选，都保留“全部分类”入口；选中后不再让页面内容突然消失。
+    if (allToggle) {
+      allToggle.style.display = 'inline-flex';
+      allToggle.innerHTML = _selectedCategoryId
+        ? '<span>浏览全部分类</span><span class="add-category-all__chevron" aria-hidden="true">⌄</span>'
+        : '<span>全部分类</span><span class="add-category-all__chevron" aria-hidden="true">⌄</span>';
+    }
+
+    grid.style.display = _drawerOpen ? 'grid' : 'none';
+    if (!_drawerOpen) {
+      if (subRow) subRow.style.display = 'none';
       return;
     }
 
-    // 未收起：先给出 4 个一键常用分类，完整分类仅在需要时展开。
-    if (summary) summary.style.display = 'none';
-    if (quickGrid) {
-      quickGrid.style.display = _allCategoriesVisible ? 'none' : 'grid';
-      if (!_allCategoriesVisible) _renderQuickCategories(containerId, subContainerId);
-    }
-    if (allToggle) {
-      allToggle.style.display = 'inline-flex';
-      allToggle.setAttribute('aria-expanded', String(_allCategoriesVisible));
-      allToggle.innerHTML = _allCategoriesVisible
-        ? '<span>收起分类</span><span class="add-category-all__chevron" aria-hidden="true">⌃</span>'
-        : '<span>全部分类</span><span class="add-category-all__chevron" aria-hidden="true">⌄</span>';
-      allToggle.onclick = () => {
-        const isClosing = _allCategoriesVisible;
-        _allCategoriesVisible = !_allCategoriesVisible;
-        _expandedParentId = null;
-        // 已有选择时收起应回到摘要，不能让用户看不见仍会被保存的旧分类。
-        if (isClosing && _selectedCategoryId) _collapsed = true;
-        renderGrid(containerId, subContainerId, _onSelectStored);
-      };
-    }
-    grid.style.display = _allCategoriesVisible ? 'grid' : 'none';
-    _bindSummaryEdit();
-
     const parents = ExpenseDB.getParentCategories();
-
-    // 一级分类网格
     const selectedCat = ExpenseDB.getCategory(_selectedCategoryId);
     grid.innerHTML = parents.map(cat => {
-      // 直接选中该分类，或其子分类被选中 → 父级高亮
       const isSelected = _selectedCategoryId === cat.id
         || (selectedCat && selectedCat.parentId === cat.id);
       const isExpanded = _expandedParentId === cat.id;
@@ -314,8 +323,7 @@ const ExpenseCategories = (() => {
         </button>`;
     }).join('');
 
-    // 子分类行（仅当完整分类与父分类均展开时显示）
-    if (_allCategoriesVisible && _expandedParentId) {
+    if (_expandedParentId) {
       const children = ExpenseDB.getChildCategories(_expandedParentId);
       if (children.length > 0) {
         subRow.style.display = 'flex';
@@ -335,25 +343,18 @@ const ExpenseCategories = (() => {
       subRow.style.display = 'none';
     }
 
-    // 未展开完整分类时，无需继续绑定隐藏网格的事件。
-    if (!_allCategoriesVisible) return;
-
-    // 绑定点击事件
     grid.querySelectorAll('.cat-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const catId = btn.dataset.catId;
         const hasChildren = btn.dataset.hasChildren === 'true';
 
         if (hasChildren && _expandedParentId !== catId) {
-          // 点击一级分类 → 展开/切换子分类，不清除已选中的分类（浏览子类不代表要放弃选择）
           _expandedParentId = catId;
           renderGrid(containerId, subContainerId, _onSelectStored);
         } else if (hasChildren && _expandedParentId === catId) {
-          // 再次点击同一个一级分类 → 收起
           _expandedParentId = null;
           renderGrid(containerId, subContainerId, _onSelectStored);
         } else {
-          // 没有子分类 → 直接选中并收起
           _selectCategory(catId, containerId, subContainerId);
         }
       });
@@ -382,7 +383,7 @@ const ExpenseCategories = (() => {
     _selectedCategoryId = catId;
     if (options.collapse) {
       _collapsed = true;
-      _allCategoriesVisible = false;
+      _setPickerOpen(false);
       _expandedParentId = null;
       return;
     }
@@ -397,10 +398,10 @@ const ExpenseCategories = (() => {
     _selectedCategoryId = null;
     _expandedParentId = null;
     _collapsed = false;
-    _allCategoriesVisible = false;
+    _setPickerOpen(false);
   }
 
-  /** 仅取消收起态，保留已选分类（用于保存后恢复网格） */
+  /** 保留兼容 API：新的分类选择器没有主页面内展开态。 */
   function uncollapse() {
     _collapsed = false;
   }
@@ -454,6 +455,7 @@ const ExpenseCategories = (() => {
     setSelected,
     clearSelection,
     uncollapse,
+    closePicker,
     renderManager,
   };
 })();

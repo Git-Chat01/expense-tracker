@@ -581,3 +581,175 @@
 .add-merchant-suggestion:active { transform: scale(.98); background: var(--color-primary-light); }
 .add-merchant-suggestion__icon { flex: 0 0 auto; font-size: 16px; }
 .add-merchant-suggestion__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* =================================================================
+   v164 · 手机记账主流程：稳定主页面 + 分类抽屉 + 显性支付方式
+   ================================================================= */
+
+/* 选中前后的分类区占用同一节奏，避免点选后页面突然跳动。 */
+.add-category-summary { min-height: 66px; }
+.add-category-all {
+  width: 100%;
+  justify-content: space-between;
+  padding: 8px 2px;
+  border-top: 1px solid var(--color-divider);
+}
+
+/* 支付方式只有五种，全部展示比再点一次“展开”更适合高频记账。 */
+.add-payment-section {
+  gap: 9px;
+  padding: 12px 0 14px;
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+}
+.add-payment-section__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-md);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+}
+.add-payment-section__header > span:last-child {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+}
+.add-payment-methods {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  overflow: visible;
+  padding: 0;
+}
+.add-payment-methods .chip--payment {
+  min-width: 0;
+  min-height: 44px;
+  justify-content: center;
+  padding: 7px 4px;
+  font-size: 12px;
+}
+
+/* 键盘永远避开底部导航，滚动时仍在拇指区域可达。 */
+.add-numpad {
+  bottom: calc(var(--tab-bar-height) + var(--safe-area-bottom));
+  z-index: 20;
+  padding-top: 10px;
+  box-shadow: 0 -12px 20px rgba(244, 245, 242, .96);
+}
+
+/* 完整分类改为底部抽屉：只在需要时覆盖当前页面，不推走金额和键盘。 */
+.category-picker {
+  position: fixed;
+  z-index: 220;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+  visibility: hidden;
+  transition: visibility 0s linear .24s;
+}
+.category-picker[aria-hidden="false"] {
+  pointer-events: auto;
+  visibility: visible;
+  transition-delay: 0s;
+}
+.category-picker__backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(20, 34, 35, .36);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+.category-picker[aria-hidden="false"] .category-picker__backdrop { opacity: 1; }
+.category-picker__sheet {
+  position: relative;
+  display: flex;
+  width: min(100%, var(--app-max-width));
+  max-height: min(78dvh, 640px);
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 22px 22px 0 0;
+  background: var(--color-surface);
+  box-shadow: 0 -16px 38px rgba(20, 34, 35, .18);
+  transform: translateY(104%);
+  transition: transform var(--transition-normal);
+}
+.category-picker[aria-hidden="false"] .category-picker__sheet { transform: translateY(0); }
+.category-picker__handle {
+  width: 34px;
+  height: 4px;
+  margin: 8px auto 2px;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+.category-picker__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 12px var(--space-lg) 14px;
+  border-bottom: 1px solid var(--color-divider);
+}
+.category-picker__eyebrow {
+  margin: 0 0 2px;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+.category-picker__header h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 18px;
+  line-height: 1.25;
+  letter-spacing: -.02em;
+}
+.category-picker__close {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.category-picker__body {
+  display: grid;
+  min-height: 0;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 14px var(--space-lg) 18px;
+  overscroll-behavior: contain;
+}
+.category-picker__body .add-category-grid { gap: 9px; }
+.category-picker__body .add-subcategories {
+  order: 2;
+  padding: 2px 0 0;
+}
+.category-picker__footer {
+  padding: 8px var(--space-lg) calc(8px + var(--safe-area-bottom));
+  border-top: 1px solid var(--color-divider);
+  background: var(--color-surface);
+}
+.category-picker__footer .add-category-manage {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 0;
+  border-radius: 10px;
+  background: var(--color-primary-light);
+  font-weight: 650;
+  text-align: center;
+}
+body.category-picker-open .main-view--active { overflow: hidden; }
+.category-picker__close:focus-visible,
+.category-picker__footer .add-category-manage:focus-visible {
+  outline: 3px solid rgba(15, 89, 102, .3);
+  outline-offset: 2px;
+}

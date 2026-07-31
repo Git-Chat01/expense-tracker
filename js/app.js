@@ -67,7 +67,6 @@ const ExpenseApp = (() => {
     _bindAddForm();
     _bindDateToggle();
     _bindDateShortcuts();
-    _bindPaymentToggle();
     _bindOverlays();
     _bindHomeEvents();
 
@@ -205,7 +204,7 @@ const ExpenseApp = (() => {
   }
 
   function _renderAddCategories() {
-    ExpenseCategories.renderGrid('add-category-grid', 'add-subcategories', (catId) => {
+    ExpenseCategories.renderGrid('add-category-picker-grid', 'add-category-picker-subcategories', (catId) => {
       _formState.categoryId = catId;
       _setCategoryValidation(false);
       _updateSaveState();
@@ -262,6 +261,7 @@ const ExpenseApp = (() => {
 
     // 物理键盘支持（桌面端）：在记账页可见时监听
     document.addEventListener('keydown', (e) => {
+      if (e.defaultPrevented) return;
       // 仅记账页可见时处理，避免在其他页面误触
       if (_currentView !== 'add') return;
       // 如果有 input/textarea 聚焦，不劫持（用户可能正在填写备注/地点）
@@ -338,30 +338,9 @@ const ExpenseApp = (() => {
     return `${r},${g},${b}`;
   }
 
-  function _setPaymentPickerOpen(isOpen) {
-    const toggle = document.getElementById('add-payment-toggle');
-    const methods = document.getElementById('add-payment-methods');
-    if (toggle) toggle.setAttribute('aria-expanded', String(Boolean(isOpen)));
-    if (methods) methods.style.display = isOpen ? 'flex' : 'none';
-  }
-
-  function _bindPaymentToggle() {
-    const toggle = document.getElementById('add-payment-toggle');
-    if (!toggle) return;
-    toggle.addEventListener('click', () => {
-      _setPaymentPickerOpen(toggle.getAttribute('aria-expanded') !== 'true');
-    });
-  }
-
   function _renderPaymentMethods() {
     const container = document.getElementById('add-payment-methods');
-    const current = document.getElementById('add-payment-current');
-    const toggle = document.getElementById('add-payment-toggle');
     if (!container) return;
-
-    const selectedMethod = ExpenseData.PAYMENT_METHODS.find(pm => pm.value === _formState.paymentMethod);
-    if (current) current.textContent = selectedMethod ? selectedMethod.label : '可选';
-    if (toggle) toggle.classList.toggle('add-payment-toggle--selected', Boolean(selectedMethod));
 
     container.innerHTML = ExpenseData.PAYMENT_METHODS.map(pm => {
       const isActive = _formState.paymentMethod === pm.value;
@@ -378,7 +357,6 @@ const ExpenseApp = (() => {
         const val = chip.dataset.pm;
         _formState.paymentMethod = (_formState.paymentMethod === val) ? '' : val;
         _renderPaymentMethods();
-        _setPaymentPickerOpen(false);
       });
     });
   }
@@ -637,7 +615,6 @@ const ExpenseApp = (() => {
       dateQuick.innerHTML = `<span aria-hidden="true">日历</span><span id="add-date-label">今天</span><span id="add-time-label">${_formState.time}</span><span class="add-date-quick__chevron" aria-hidden="true">⌄</span>`;
       _updateDateLabels();
     }
-    _setPaymentPickerOpen(false);
   }
 
   function _refreshTimestampAfterSave() {
@@ -727,7 +704,6 @@ const ExpenseApp = (() => {
 
     // 支付方式回到“可选”状态，不让上一笔支付渠道造成误记。
     _renderPaymentMethods();
-    _setPaymentPickerOpen(false);
     _renderMerchantSuggestions();
   }
 
@@ -995,7 +971,10 @@ const ExpenseApp = (() => {
     // 记账页"⚙️ 管理"按钮 → 打开分类管理覆盖层（独立全屏页面）
     const manageBtn = document.getElementById('add-manage-categories');
     if (manageBtn) {
-      manageBtn.addEventListener('click', _openCategoryManager);
+      manageBtn.addEventListener('click', () => {
+        ExpenseCategories.closePicker();
+        _openCategoryManager();
+      });
     }
 
     // 分类管理覆盖层 — 右上角 ✕ 返回按钮：关闭覆盖层，切回记账页
