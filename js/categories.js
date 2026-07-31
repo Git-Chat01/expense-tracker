@@ -86,12 +86,28 @@ const ExpenseCategories = (() => {
 
   // 分类入口只绑定一次：完整网格放进抽屉，主页面高度始终稳定。
   let _pickerControlsBound = false;
+  let _pageScrollYBeforePicker = 0;
 
   function _setPickerOpen(isOpen) {
+    const wasOpen = _drawerOpen;
     _drawerOpen = Boolean(isOpen);
     const picker = document.getElementById('add-category-picker');
     if (picker) picker.setAttribute('aria-hidden', String(!_drawerOpen));
+
+    // 抽屉打开时锁住文档滚动；关闭后精确回到用户原本浏览的位置。
+    // 仅限制 main-view 不足以阻止移动端的滚动穿透，因为页面本身仍可滚动。
+    if (_drawerOpen && !wasOpen) {
+      _pageScrollYBeforePicker = window.scrollY || document.documentElement.scrollTop || 0;
+      document.body.style.top = `-${_pageScrollYBeforePicker}px`;
+    }
+
     document.body.classList.toggle('category-picker-open', _drawerOpen);
+    document.documentElement.classList.toggle('category-picker-open', _drawerOpen);
+
+    if (!_drawerOpen && wasOpen) {
+      document.body.style.top = '';
+      window.scrollTo(0, _pageScrollYBeforePicker);
+    }
 
     if (!_drawerOpen) _expandedParentId = null;
   }
