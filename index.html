@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=163">
-  <link rel="stylesheet" href="css/home.css?v=163">
-  <link rel="stylesheet" href="css/add.css?v=163">
-  <link rel="stylesheet" href="css/list.css?v=163">
-  <link rel="stylesheet" href="css/stats.css?v=163">
+  <link rel="stylesheet" href="css/common.css?v=164">
+  <link rel="stylesheet" href="css/home.css?v=164">
+  <link rel="stylesheet" href="css/add.css?v=164">
+  <link rel="stylesheet" href="css/list.css?v=164">
+  <link rel="stylesheet" href="css/stats.css?v=164">
 </head>
 <body>
 
@@ -171,7 +171,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260730-163 · 全站分类图标统一优化
+      v20260731-164 · 手机端记账交互优化
     </div>
   </main>
 
@@ -216,29 +216,25 @@
           <div>
             <h2 class="add-section__title" id="add-category-title">选择分类 <span class="add-required">必填</span></h2>
           </div>
-          <button class="add-category-manage" id="add-manage-categories" type="button" aria-label="管理消费分类">管理</button>
         </div>
-        <button class="add-category-summary" id="add-category-summary" type="button" style="display:none">
+        <button class="add-category-summary" id="add-category-summary" type="button" style="display:none" aria-haspopup="dialog" aria-controls="add-category-picker">
           <span class="add-category-summary__icon" id="add-category-summary-icon"></span>
           <span class="add-category-summary__text" id="add-category-summary-text"></span>
           <span class="add-category-summary__edit" id="add-category-summary-edit">更换</span>
         </button>
         <div class="add-category-quick" id="add-category-quick" aria-label="常用分类"></div>
-        <button class="add-category-all" id="add-category-all" type="button" aria-expanded="false" aria-controls="add-category-grid">
+        <button class="add-category-all" id="add-category-all" type="button" aria-haspopup="dialog" aria-controls="add-category-picker">
           <span>全部分类</span>
           <span class="add-category-all__chevron" aria-hidden="true">⌄</span>
         </button>
-        <div class="add-subcategories scroll-x" id="add-subcategories" style="display:none"></div>
-        <div class="add-category-grid" id="add-category-grid" style="display:none"></div>
       </section>
 
       <section class="add-payment-section" aria-labelledby="add-payment-title">
-        <button class="add-payment-toggle" id="add-payment-toggle" type="button" aria-expanded="false" aria-controls="add-payment-methods">
-          <span class="add-payment-toggle__label" id="add-payment-title">支付方式</span>
-          <span class="add-payment-toggle__value" id="add-payment-current">可选</span>
-          <span class="add-payment-toggle__chevron" aria-hidden="true">⌄</span>
-        </button>
-        <div class="add-payment-methods scroll-x" id="add-payment-methods" style="display:none"></div>
+        <div class="add-payment-section__header">
+          <span id="add-payment-title">支付方式</span>
+          <span>可选</span>
+        </div>
+        <div class="add-payment-methods" id="add-payment-methods"></div>
       </section>
 
       <details class="add-more-fields" id="add-more-fields">
@@ -284,6 +280,28 @@
       </div>
     </div>
   </main>
+
+  <!-- 手机端分类选择抽屉：完整分类不再撑开记账主页面 -->
+  <div class="category-picker" id="add-category-picker" aria-hidden="true">
+    <button class="category-picker__backdrop" id="add-category-picker-backdrop" type="button" tabindex="-1" aria-label="关闭分类选择"></button>
+    <section class="category-picker__sheet" role="dialog" aria-modal="true" aria-labelledby="add-category-picker-title">
+      <div class="category-picker__handle" aria-hidden="true"></div>
+      <header class="category-picker__header">
+        <div>
+          <p class="category-picker__eyebrow">全部分类</p>
+          <h2 id="add-category-picker-title">选择这笔支出属于哪里</h2>
+        </div>
+        <button class="category-picker__close" id="add-category-picker-close" type="button" aria-label="关闭分类选择">✕</button>
+      </header>
+      <div class="category-picker__body">
+        <div class="add-category-grid" id="add-category-picker-grid"></div>
+        <div class="add-subcategories scroll-x" id="add-category-picker-subcategories" style="display:none"></div>
+      </div>
+      <footer class="category-picker__footer">
+        <button class="add-category-manage" id="add-manage-categories" type="button">管理分类</button>
+      </footer>
+    </section>
+  </div>
 
   <!-- ==============================================================
        账单 View
@@ -555,11 +573,11 @@
      ================================================================ -->
 <script src="js/storage.js?v=150"></script>
 <script src="js/data.js?v=150"></script>
-<script src="js/home.js?v=163"></script>
-<script src="js/categories.js?v=163"></script>
-<script src="js/list.js?v=163"></script>
-<script src="js/stats.js?v=163"></script>
-<script src="js/app.js?v=163"></script>
+<script src="js/home.js?v=164"></script>
+<script src="js/categories.js?v=164"></script>
+<script src="js/list.js?v=164"></script>
+<script src="js/stats.js?v=164"></script>
+<script src="js/app.js?v=164"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
