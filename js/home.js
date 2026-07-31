@@ -13,9 +13,7 @@ const ExpenseHome = (() => {
   let _$date, _$today, _$todayAmount, _$todayCount, _$todayDiff;
   let _$monthAmount, _$monthCount, _$monthDiff, _$monthComparison, _$monthContextDot;
   let _$alerts, _$recent, _$viewAllBtn;
-  let _$budgetAlert, _$budgetAlertRing, _$budgetAlertStatus, _$budgetAlertPct;
-  let _$budgetAlertDaily, _$budgetAlertRemaining, _$budgetAlertPrediction;
-  let _$budgetSummary, _$budgetSummaryLabel, _$budgetSummaryValue;
+  let _$budgetSummary, _$budgetSummaryLabel;
   let _$budgetSummaryProgress, _$budgetActionLabel;
   let _$budgetSummarySpent, _$budgetSummaryLimit, _$budgetSummaryStatus;
   let _$budgetSummaryDecisionLabel, _$budgetSummaryDecisionValue;
@@ -39,16 +37,8 @@ const ExpenseHome = (() => {
     _$recent         = document.getElementById('home-recent');
     _$viewAllBtn     = document.getElementById('home-view-all');
     // 预算进度
-    _$budgetAlert    = document.getElementById('home-budget-alert');
-    _$budgetAlertRing= document.getElementById('home-budget-alert-ring');
-    _$budgetAlertStatus=document.getElementById('home-budget-alert-status');
-    _$budgetAlertPct = document.getElementById('home-budget-alert-pct');
-    _$budgetAlertDaily=document.getElementById('home-budget-alert-daily');
-    _$budgetAlertRemaining=document.getElementById('home-budget-alert-remaining');
-    _$budgetAlertPrediction=document.getElementById('home-budget-alert-prediction');
     _$budgetSummary = document.getElementById('home-budget-summary');
     _$budgetSummaryLabel = document.getElementById('home-budget-summary-label');
-    _$budgetSummaryValue = document.getElementById('home-budget-summary-value');
     _$budgetSummaryProgress = document.getElementById('home-budget-summary-progress');
     _$budgetActionLabel = document.getElementById('home-budget-action-label');
     _$budgetSummarySpent = document.getElementById('home-budget-summary-spent');
@@ -91,7 +81,7 @@ const ExpenseHome = (() => {
      今日消费 + 较昨日对比（涨红跌蓝）
      ----------------------------------------------------------------- */
   function _renderToday() {
-    const today = _todayStr();
+    const today = ExpenseDB.today();
     const yesterday = _yesterdayStr();
     const expenses = ExpenseDB.getExpenses();
     const todayExpenses = expenses.filter(e => e.date === today);
@@ -131,7 +121,7 @@ const ExpenseHome = (() => {
      本月消费 + 上月对比（归入辅助信息带）
      ----------------------------------------------------------------- */
   function _renderMonth() {
-    const currentYM = _yearMonthStr();
+    const currentYM = ExpenseDB.yearMonth();
     const expenses = ExpenseDB.getExpenses();
     const monthExpenses = expenses.filter(e => e.date.startsWith(currentYM));
     const monthTotal = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -246,169 +236,6 @@ const ExpenseHome = (() => {
     _$budgetSummaryForecast.textContent = '按当前节奏，月末预计超出 ¥' + projectedOver.toLocaleString() + '。';
   }
 
-  function _renderLegacyBudgetSummary(options) {
-    if (!_$budgetSummary || !_$budgetSummaryLabel || !_$budgetSummaryValue || !_$budgetSummaryProgress) return;
-
-    var state = options.state || 'safe';
-    _$budgetSummary.className = 'home-budget-brief card home-budget-brief--' + state;
-    _$budgetSummaryLabel.textContent = options.label;
-    _$budgetSummaryValue.textContent = options.value || '';
-    _$budgetSummaryProgress.style.width = Math.max(0, Math.min(100, options.progress || 0)) + '%';
-    if (_$budgetActionLabel) _$budgetActionLabel.textContent = options.action || '调整预算';
-  }
-
-  function _renderLegacyBudgetAlert() {
-    if (!_$budgetAlert) return;
-
-    var budget = ExpenseDB.getBudget();
-    var catBudgets = budget.categories || {};
-
-    // 找已用比例最高的分类预算
-    var closest = null;
-    for (var catId in catBudgets) {
-      if (!Object.prototype.hasOwnProperty.call(catBudgets, catId)) continue;
-      var catBudget = catBudgets[catId];
-      if (!catBudget || catBudget <= 0) continue;
-      var spent = ExpenseDB.getCategorySpent(catId);
-      var pct = Math.round((spent / catBudget) * 100);
-      if (!closest || pct > closest.pct) {
-        closest = { budget: catBudget, spent: spent, pct: pct, categoryId: catId };
-      }
-    }
-
-    // 无分类预算 → 月度总预算
-    if (!closest) {
-      var monthlyBudget = budget.monthlyTotal || 0;
-      if (monthlyBudget <= 0) {
-        _renderLegacyBudgetSummary({
-          label: '还没有设置本月预算',
-          value: '',
-          progress: 0,
-          state: 'setup',
-          action: '去设置',
-        });
-        _$budgetAlert.style.display = 'none';
-        return;
-      }
-      var currentYM = _yearMonthStr();
-      var expenses = ExpenseDB.getExpenses();
-      var monthTotal = expenses
-        .filter(function(e) { return e.date.startsWith(currentYM); })
-        .reduce(function(sum, e) { return sum + e.amount; }, 0);
-      closest = {
-        budget: monthlyBudget,
-        spent: monthTotal,
-        pct: Math.round((monthTotal / monthlyBudget) * 100),
-      };
-    }
-
-    // ---- 时间感知状态判定 ----
-    var now = new Date();
-    var dayOfMonth = now.getDate();
-    var daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    var timeProgress = dayOfMonth / daysInMonth;
-    var spentPct = closest.pct;
-    var remainingAmount = closest.budget - closest.spent;
-
-    // 颜色值（SVG 需要 hex，CSS 用 var）
-    var statusText, statusClass, ringHex;
-    var paceRatio = 0;
-    if (spentPct > 100) {
-      statusText = '超支';
-      statusClass = 'home-budget-alert__status--over';
-      ringHex = '#CC0000';
-    } else {
-      var effectiveTime = Math.max(timeProgress, 0.05);
-      paceRatio = (spentPct / 100) / effectiveTime;
-      if (paceRatio > 1.2) {
-        statusText = '偏快';
-        statusClass = 'home-budget-alert__status--fast';
-        ringHex = '#FF6B35';
-      } else {
-        statusText = '正常';
-        statusClass = 'home-budget-alert__status--normal';
-        ringHex = '#34C759';
-      }
-    }
-
-    var summaryScope = '本月预算';
-    if (closest.categoryId) {
-      var category = ExpenseDB.getCategory(closest.categoryId);
-      summaryScope = (category ? category.name : '分类') + '预算';
-    }
-    _renderLegacyBudgetSummary({
-      label: summaryScope + ' ¥' + closest.budget.toLocaleString(),
-      value: '已用 ' + spentPct + '%',
-      progress: spentPct,
-      state: spentPct > 100 ? 'over' : (paceRatio > 1.2 ? 'watch' : 'safe'),
-      action: '调整',
-    });
-
-    var needsAttention = spentPct >= 80 || paceRatio > 1.2;
-    if (!needsAttention) {
-      _$budgetAlert.style.display = 'none';
-      return;
-    }
-
-    _$budgetAlert.style.display = '';
-
-    // ---- SVG 圆环 ----
-    var ringR = 44;
-    var ringCircum = 2 * Math.PI * ringR;
-    var ringPct = spentPct > 100 ? 100 : spentPct; // 超支时圆环满格
-    var dashOffset = ringCircum * (1 - ringPct / 100);
-
-    _$budgetAlertRing.innerHTML =
-      '<svg width="108" height="108" viewBox="0 0 108 108" xmlns="http://www.w3.org/2000/svg">'
-      + '<circle cx="54" cy="54" r="' + ringR + '" fill="none" stroke="#E5E5EA" stroke-width="7"/>'
-      + '<circle cx="54" cy="54" r="' + ringR + '" fill="none" stroke="' + ringHex + '" stroke-width="7"'
-      + ' stroke-dasharray="' + ringCircum.toFixed(1) + ' ' + ringCircum.toFixed(1) + '"'
-      + ' stroke-dashoffset="' + dashOffset.toFixed(1) + '"'
-      + ' stroke-linecap="round" transform="rotate(-90 54 54)"/>'
-      + '<text x="54" y="56" text-anchor="middle" dominant-baseline="middle"'
-      + ' font-size="18" font-weight="700" font-family="Menlo,Consolas,monospace"'
-      + ' fill="' + ringHex + '">' + spentPct + '%</text>'
-      + '</svg>';
-
-    // ---- 状态标签（右上角） ----
-    _$budgetAlertStatus.textContent = statusText;
-    _$budgetAlertStatus.className = 'home-budget-alert__status ' + statusClass;
-
-    // ---- 本月已用百分比 ----
-    _$budgetAlertPct.innerHTML = '本月已用 <span class="home-budget-alert__pct-value" style="color:' + ringHex + '">' + spentPct + '%</span>';
-
-    // ---- 日均可花 ----
-    var daysLeft = _daysLeftInMonth();
-    var dailyAvg = (daysLeft > 0 && remainingAmount > 0)
-      ? Math.floor(remainingAmount / daysLeft)
-      : Math.max(0, remainingAmount);
-
-    _$budgetAlertDaily.textContent = '¥' + dailyAvg.toLocaleString();
-    _$budgetAlertDaily.style.color = ringHex;
-
-    // ---- 还可用（按健康度着色） ----
-    var remaining = Math.max(0, remainingAmount);
-    _$budgetAlertRemaining.textContent = '¥' + remaining.toLocaleString();
-    _$budgetAlertRemaining.style.color = ringHex;
-
-    // ---- 预测信息 ----
-    if (dayOfMonth >= 3 && spentPct <= 100) {
-      // 日均花费 = 已用金额 / 已过天数
-      var avgDailySpent = closest.spent / dayOfMonth;
-      var projectedTotal = closest.spent + avgDailySpent * daysLeft;
-      var projectedRemaining = closest.budget - projectedTotal;
-      if (projectedRemaining >= 0) {
-        _$budgetAlertPrediction.innerHTML = '按当前速度，预计月底剩余 <b>¥' + Math.round(projectedRemaining).toLocaleString() + '</b>';
-      } else {
-        _$budgetAlertPrediction.innerHTML = '按当前速度，预计月底剩余 <b style="color:#CC0000">-¥' + Math.round(-projectedRemaining).toLocaleString() + '</b>';
-      }
-    } else if (spentPct > 100) {
-      _$budgetAlertPrediction.innerHTML = '已超支 <b style="color:#CC0000">¥' + Math.round(-remainingAmount).toLocaleString() + '</b>';
-    } else {
-      _$budgetAlertPrediction.innerHTML = '月初数据较少，预测稍后更新';
-    }
-  }
-
   /** 本月剩余天数（含今天） */
   function _daysLeftInMonth() {
     var now = new Date();
@@ -446,7 +273,7 @@ const ExpenseHome = (() => {
       </div>
     `).join('');
 
-    const dismissedKey = `dismissed-alerts-${_todayStr()}`;
+    const dismissedKey = `dismissed-alerts-${ExpenseDB.today()}`;
     let dismissed = [];
     try {
       dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
@@ -511,7 +338,7 @@ const ExpenseHome = (() => {
     }
 
     const catBudgets = budget.categories || {};
-    const currentYM = _yearMonthStr();
+    const currentYM = ExpenseDB.yearMonth();
     for (const [catId, catBudget] of Object.entries(catBudgets)) {
       if (!catBudget || catBudget <= 0) continue;
       const spent = ExpenseDB.getCategorySpent(catId, currentYM);
@@ -574,7 +401,7 @@ const ExpenseHome = (() => {
       const icon = ExpenseCategories.getIconMarkup(cat);
       const name = cat ? cat.name : '未分类';
       const metaParts = [];
-      const today = _todayStr();
+      const today = ExpenseDB.today();
       if (e.date === today) {
         if (e.time) metaParts.push(`⏰${e.time}`);
       } else {
@@ -605,22 +432,14 @@ const ExpenseHome = (() => {
   /* -----------------------------------------------------------------
      工具函数
      ----------------------------------------------------------------- */
-  function _todayStr() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
-
+  /** 昨天日期 YYYY-MM-DD（仅 home.js 使用） */
   function _yesterdayStr() {
     const d = new Date();
     d.setDate(d.getDate() - 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return ExpenseDB.dateToYMD(d);
   }
 
-  function _yearMonthStr() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-  }
-
+  /** 上个月 YYYY-MM */
   function _prevYearMonth() {
     const d = new Date();
     d.setMonth(d.getMonth() - 1);

@@ -444,44 +444,6 @@ const ExpenseCategories = (() => {
     _collapsed = false;
   }
 
-  /* -----------------------------------------------------------------
-     分类管理覆盖层
-     ----------------------------------------------------------------- */
-  function renderManager() {
-    const body = document.getElementById('overlay-categories-body');
-    const parents = ExpenseDB.getParentCategories();
-
-    body.innerHTML = parents.map(p => {
-      const children = ExpenseDB.getChildCategories(p.id);
-      return `
-        <div style="margin-bottom:16px">
-          <div style="display:flex;align-items:center;gap:8px;padding:8px 0;font-weight:600">
-            ${_categoryIconMarkup(p)}
-            <span>${p.name}</span>
-            <span style="font-size:11px;color:var(--color-text-tertiary)">${p.isPreset ? '预设' : '自定义'}</span>
-          </div>
-          <div style="padding-left:24px">
-            ${children.map(c => `
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--color-divider)">
-                <span style="display:flex;align-items:center;gap:6px">${_categoryIconMarkup(c)} ${c.name}</span>
-                ${!c.isPreset ? `<button class="btn btn--ghost btn--small" data-del-cat="${c.id}" style="color:var(--color-danger)">删除</button>` : `<span style="font-size:11px;color:var(--color-text-tertiary)">预设</span>`}
-              </div>
-            `).join('')}
-          </div>
-        </div>`;
-    }).join('');
-
-    // 删除事件
-    body.querySelectorAll('[data-del-cat]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (confirm('确定删除此分类？')) {
-          ExpenseDB.deleteCategory(btn.dataset.delCat);
-          renderManager();
-        }
-      });
-    });
-  }
-
   /* =================================================================
      公开 API
      ================================================================= */
@@ -494,6 +456,5 @@ const ExpenseCategories = (() => {
     clearSelection,
     uncollapse,
     closePicker,
-    renderManager,
   };
 })();

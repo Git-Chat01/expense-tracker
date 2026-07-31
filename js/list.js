@@ -409,15 +409,21 @@ const ExpenseList = (() => {
       });
     }
 
-    // 点击外部关闭
+    // 点击外部关闭（用具名函数引用，确保下拉被外部移除时也能清理监听器）
+    function _closeOnOutsideClick(e) {
+      if (!dropdown.isConnected) {
+        // dropdown 已被其他操作移除（如切换下拉），清理监听器防止泄漏
+        document.removeEventListener('click', _closeOnOutsideClick);
+        return;
+      }
+      if (!dropdown.contains(e.target) && e.target !== btn) {
+        dropdown.remove();
+        _openDropdownBtn = null;
+        document.removeEventListener('click', _closeOnOutsideClick);
+      }
+    }
     setTimeout(() => {
-      document.addEventListener('click', function closeDropdown(e) {
-        if (!dropdown.contains(e.target) && e.target !== btn) {
-          dropdown.remove();
-          _openDropdownBtn = null;
-          document.removeEventListener('click', closeDropdown);
-        }
-      });
+      document.addEventListener('click', _closeOnOutsideClick);
     }, 0);
   }
 

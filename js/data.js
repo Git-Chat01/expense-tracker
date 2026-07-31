@@ -139,6 +139,17 @@ const ExpenseData = (() => {
   ];
 
   /* =================================================================
+     工具函数：hex 颜色转 rgb 字符串
+     供 app.js 和 stats.js 共用，避免重复定义
+     ================================================================= */
+  function hexToRgb(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `${r},${g},${b}`;
+  }
+
+  /* =================================================================
      初始化：写入预设分类 + 默认预算
      仅在首次使用时执行（检测 categories 是否为空）
      ================================================================= */
@@ -166,5 +177,6 @@ const ExpenseData = (() => {
     VALUE_RATINGS,
     EMOTIONS,
     initPresetData,
+    hexToRgb,
   };
 })();
