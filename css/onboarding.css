@@ -1,0 +1,142 @@
+/* ================================================================
+   消费轨迹系统 — onboarding.css
+   新手引导：全屏覆盖层 + 分步卡片（首次访问展示一次）
+   全部使用 common.css 已定义的 CSS 变量，不新增设计令牌
+   ================================================================ */
+
+/* -----------------------------------------------------------------
+   全屏覆盖层（品牌色半透明遮罩，z-index 高于所有应用 UI）
+   ----------------------------------------------------------------- */
+.onboarding-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15, 89, 102, 0.55);   /* 品牌主色半透明，与 --color-primary 同色值 */
+  z-index: 350;                          /* 高于 modal(300) / page-overlay(200)，低于 toast(1000) */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xxl);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+  touch-action: none;                    /* 引导打开期间禁止底层页面滚动/缩放 */
+}
+
+.onboarding-overlay--open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* -----------------------------------------------------------------
+   右上角"跳过"按钮 — 半透明白字，hover 微亮
+   ----------------------------------------------------------------- */
+.onboarding-skip {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + var(--space-lg));
+  right: var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  background: none;
+  font-size: var(--font-size-sm);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.onboarding-skip:hover,
+.onboarding-skip:active {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* -----------------------------------------------------------------
+   步骤卡片 — 白色圆角卡片，居中，入场微动效
+   ----------------------------------------------------------------- */
+.onboarding-card {
+  width: 100%;
+  max-width: 340px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-xxxl) var(--space-xxl) var(--space-xxl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  animation: onboardingIn 0.35s ease;
+}
+
+@keyframes onboardingIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* -----------------------------------------------------------------
+   滑动轨道（按钮切换 + 触摸滑动共用 translateX）
+   ----------------------------------------------------------------- */
+.onboarding-slides {
+  overflow: hidden;
+  min-height: 180px;  /* 固定最小高度，避免步骤间文案长短不一导致卡片跳动 */
+}
+
+.onboarding-track {
+  display: flex;
+  transition: transform var(--transition-normal);
+}
+
+.onboarding-slide {
+  flex: 0 0 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) 0;
+}
+
+/* 图标容器 — 品牌浅色底 + 大 emoji */
+.onboarding-slide__icon {
+  width: 88px;
+  height: 88px;
+  border-radius: var(--radius-round);
+  background: var(--color-primary-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  margin-bottom: var(--space-sm);
+}
+
+.onboarding-slide__title {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  line-height: 1.35;
+}
+
+.onboarding-slide__desc {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  max-width: 260px;
+}
+
+/* -----------------------------------------------------------------
+   步骤指示圆点（横向排列，激活点拉长为胶囊形）
+   ----------------------------------------------------------------- */
+.onboarding-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+}
+
+.onboarding-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-border);
+  transition: width var(--transition-normal), background var(--transition-normal);
+}
+
+.onboarding-dot--active {
+  width: 20px;
+  background: var(--color-primary);
+}

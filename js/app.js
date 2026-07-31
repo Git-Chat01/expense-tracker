@@ -87,6 +87,9 @@ const ExpenseApp = (() => {
     // 8. 渲染首页
     ExpenseHome.render();
     _renderMerchantSuggestions();
+
+    // 9. 新手引导（仅首次访问展示，关闭后写入 settings.onboardingSeen）
+    if (typeof ExpenseOnboarding !== 'undefined') ExpenseOnboarding.start();
   }
 
   /* -----------------------------------------------------------------

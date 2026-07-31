@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="css/add.css?v=175">
   <link rel="stylesheet" href="css/list.css?v=175">
   <link rel="stylesheet" href="css/stats.css?v=175">
+  <link rel="stylesheet" href="css/onboarding.css?v=176">
 </head>
 <body>
 
@@ -171,7 +172,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260801-175 · 账单增加分类识别图标
+      v20260801-176 · 新增新手引导
     </div>
   </main>
 
@@ -473,6 +474,20 @@
   </div>
 
   <!-- ==============================================================
+       新手引导（首次访问全屏分步介绍，仅展示一次）
+       ============================================================== -->
+  <div class="onboarding-overlay" id="onboarding-overlay" role="dialog" aria-modal="true" aria-label="欢迎使用消费轨迹">
+    <button class="onboarding-skip" id="onboarding-skip" type="button">跳过</button>
+    <div class="onboarding-card">
+      <div class="onboarding-slides">
+        <div class="onboarding-track" id="onboarding-track"></div>
+      </div>
+      <div class="onboarding-dots" id="onboarding-dots"></div>
+      <button class="btn btn--primary btn--block" id="onboarding-next" type="button">下一步</button>
+    </div>
+  </div>
+
+  <!-- ==============================================================
        底部 Tab Bar
        ============================================================== -->
   <nav class="tab-bar" aria-label="主导航">
@@ -582,6 +597,7 @@
 <script src="js/categories.js?v=175"></script>
 <script src="js/list.js?v=175"></script>
 <script src="js/stats.js?v=175"></script>
+<script src="js/onboarding.js?v=176"></script>
 <script src="js/app.js?v=175"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
