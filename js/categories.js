@@ -311,7 +311,7 @@ const ExpenseCategories = (() => {
     } else {
       if (summary) summary.style.display = 'none';
       if (quickGrid) {
-        quickGrid.style.display = 'grid';
+        quickGrid.style.display = 'flex';
         _renderQuickCategories(containerId, subContainerId);
       }
     }
