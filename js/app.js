@@ -22,6 +22,7 @@ const ExpenseApp = (() => {
   };
   const _LARGE_AMOUNT_THRESHOLD = 10000;
   let _confirmedLargeAmountRaw = null;
+  let _paymentOptionsExpanded = false;
 
   let _currentView = 'home';
   let _editingExpenseId = null;  // 当前正在编辑的记录 ID（用于删除按钮）
@@ -65,6 +66,7 @@ const ExpenseApp = (() => {
     _bindTabBar();
     _bindNumpad();
     _bindAddForm();
+    _bindPaymentSummary();
     _bindDateToggle();
     _bindDateShortcuts();
     _bindOverlays();
@@ -338,9 +340,37 @@ const ExpenseApp = (() => {
     return `${r},${g},${b}`;
   }
 
+  function _bindPaymentSummary() {
+    const summary = document.getElementById('add-payment-summary');
+    if (!summary) return;
+    summary.addEventListener('click', () => {
+      _paymentOptionsExpanded = true;
+      _renderPaymentMethods();
+    });
+  }
+
   function _renderPaymentMethods() {
     const container = document.getElementById('add-payment-methods');
+    const header = document.getElementById('add-payment-header');
+    const summary = document.getElementById('add-payment-summary');
+    const summaryText = document.getElementById('add-payment-summary-text');
+    const summaryDot = document.getElementById('add-payment-summary-dot');
+    const section = document.querySelector('.add-payment-section');
     if (!container) return;
+
+    const selectedMethod = ExpenseData.PAYMENT_METHODS.find(pm => pm.value === _formState.paymentMethod);
+    const showSummary = Boolean(selectedMethod) && !_paymentOptionsExpanded;
+    if (header) header.style.display = showSummary ? 'none' : 'flex';
+    if (summary) summary.style.display = showSummary ? 'grid' : 'none';
+    container.style.display = showSummary ? 'none' : 'grid';
+    if (section) section.classList.toggle('add-payment-section--selected', showSummary);
+
+    if (showSummary) {
+      if (summaryText) summaryText.textContent = `已选 ${selectedMethod.label}`;
+      if (summaryDot) summaryDot.style.background = selectedMethod.color;
+      if (summary) summary.setAttribute('aria-label', `已选择${selectedMethod.label}，点击更换支付方式`);
+      return;
+    }
 
     container.innerHTML = ExpenseData.PAYMENT_METHODS.map(pm => {
       const isActive = _formState.paymentMethod === pm.value;
@@ -356,6 +386,7 @@ const ExpenseApp = (() => {
       chip.addEventListener('click', () => {
         const val = chip.dataset.pm;
         _formState.paymentMethod = (_formState.paymentMethod === val) ? '' : val;
+        _paymentOptionsExpanded = false;
         _renderPaymentMethods();
       });
     });
@@ -583,6 +614,7 @@ const ExpenseApp = (() => {
     const now = new Date();
     _formState.amountRaw = '';
     _confirmedLargeAmountRaw = null;
+    _paymentOptionsExpanded = false;
     _formState.note = '';
     _formState.date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     _formState.time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -690,6 +722,7 @@ const ExpenseApp = (() => {
     _formState.note = '';
     _formState.location = '';
     _formState.paymentMethod = '';
+    _paymentOptionsExpanded = false;
     const noteInput = document.getElementById('add-note');
     const locInput = document.getElementById('add-location');
     const moreFields = document.getElementById('add-more-fields');

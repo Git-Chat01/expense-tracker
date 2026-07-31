@@ -630,6 +630,58 @@
   padding: 7px 4px;
   font-size: 12px;
 }
+.add-payment-section--selected {
+  gap: 0;
+  padding: 6px 0;
+}
+.add-payment-summary {
+  display: grid;
+  width: 100%;
+  min-height: 52px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border: 1px solid rgba(15, 89, 102, .22);
+  border-radius: 12px;
+  background: rgba(220, 237, 234, .62);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.add-payment-summary__label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+.add-payment-summary__value {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+.add-payment-summary__dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(15, 89, 102, .10);
+}
+.add-payment-summary__edit {
+  color: var(--color-primary);
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+}
+.add-payment-summary:active { transform: scale(.99); background: var(--color-primary-light); }
+.add-payment-summary:focus-visible {
+  outline: 3px solid rgba(15, 89, 102, .3);
+  outline-offset: 2px;
+}
 
 /* 键盘永远避开底部导航，滚动时仍在拇指区域可达。 */
 .add-numpad {
