@@ -64,13 +64,12 @@ const ExpenseDB = (() => {
    */
   function getExpenses() {
     const list = _read(KEYS.expenses) || [];
-    // 降序排列：最新的在前
-    list.sort((a, b) => {
+    // 降序排列：最新的在前（浅拷贝后排序，避免副作用）
+    return [...list].sort((a, b) => {
       const dateCmp = b.date.localeCompare(a.date);
       if (dateCmp !== 0) return dateCmp;
       return (b.time || '').localeCompare(a.time || '');
     });
-    return list;
   }
 
   /**
@@ -113,8 +112,8 @@ const ExpenseDB = (() => {
       id:           _generateId(),
       amount:       Number(expense.amount) || 0,
       categoryId:   expense.categoryId || '',
-      date:         expense.date || _today(),
-      time:         expense.time || _now(),
+      date:         expense.date || today(),
+      time:         expense.time || now(),
       location:     expense.location || '',
       paymentMethod:expense.paymentMethod || '',
       note:         expense.note || '',
@@ -323,7 +322,7 @@ const ExpenseDB = (() => {
    * @returns {number}
    */
   function getCategorySpent(categoryId, yearMonth) {
-    const ym = yearMonth || _yearMonth();
+    const ym = yearMonth || yearMonth();
     const expenses = _read(KEYS.expenses) || [];
 
     // 收集该分类 ID 及所有子分类 ID
@@ -341,7 +340,7 @@ const ExpenseDB = (() => {
    * @returns {number}
    */
   function getMonthTotal(yearMonth) {
-    const ym = yearMonth || _yearMonth();
+    const ym = yearMonth || yearMonth();
     const expenses = _read(KEYS.expenses) || [];
     return expenses
       .filter(e => e.date.startsWith(ym))
@@ -392,7 +391,7 @@ const ExpenseDB = (() => {
    */
   function exportAll() {
     return {
-      version:    1,                       // 数据格式版本，用于未来兼容
+      version:    2,                       // 数据格式版本，用于未来兼容
       expenses:   _read(KEYS.expenses) || [],
       categories: _read(KEYS.categories) || [],
       budget:     _read(KEYS.budget) || { monthlyTotal: 0, categories: {} },
@@ -420,8 +419,9 @@ const ExpenseDB = (() => {
     }
 
     // 校验每条 expense 必填字段
+    // 注意：amount 可以为 0（虽然实际不应出现），用 null/undefined 判断而非 falsy
     for (const e of data.expenses) {
-      if (!e.id || !e.amount || !e.categoryId || !e.date) {
+      if (!e.id || e.amount == null || !e.categoryId || !e.date) {
         return { success: false, message: '无效的备份文件：消费记录字段缺失', counts: null };
       }
     }
@@ -483,25 +483,30 @@ const ExpenseDB = (() => {
   }
 
   /* =================================================================
-     内部工具函数
+     日期工具函数（公开，供其他模块复用，避免重复定义）
      ================================================================= */
 
   /** 返回今天的日期字符串 YYYY-MM-DD */
-  function _today() {
+  function today() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
   /** 返回当前时间字符串 HH:MM */
-  function _now() {
+  function now() {
     const d = new Date();
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   }
 
   /** 返回当前月份字符串 YYYY-MM */
-  function _yearMonth() {
+  function yearMonth() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  /** 将 Date 对象转为 YYYY-MM-DD 字符串 */
+  function dateToYMD(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
 
   /* =================================================================
@@ -544,5 +549,11 @@ const ExpenseDB = (() => {
     getLastBackupTime,
     recordBackupTime,
     clearAll,
+
+    // Date utilities
+    today,
+    now,
+    yearMonth,
+    dateToYMD,
   };
 })();

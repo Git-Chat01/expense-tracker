@@ -335,14 +335,6 @@ const ExpenseApp = (() => {
   /* -----------------------------------------------------------------
      支付方式渲染
      ----------------------------------------------------------------- */
-  /* 将 hex 颜色转为 rgb 字符串，用于 rgba 半透明 */
-  function _hexToRgb(hex) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `${r},${g},${b}`;
-  }
-
   function _bindPaymentSummary() {
     const summary = document.getElementById('add-payment-summary');
     if (!summary) return;
@@ -391,7 +383,7 @@ const ExpenseApp = (() => {
 
     container.innerHTML = ExpenseData.PAYMENT_METHODS.map(pm => {
       const isActive = _formState.paymentMethod === pm.value;
-      const rgb = _hexToRgb(pm.color);
+      const rgb = ExpenseData.hexToRgb(pm.color);
       // 未选中：淡品牌色底 + 品牌色字；选中：实心品牌色 + 白字
       const bg   = isActive ? pm.color : `rgba(${rgb},0.1)`;
       const bd   = isActive ? pm.color : `rgba(${rgb},0.3)`;
@@ -550,7 +542,7 @@ const ExpenseApp = (() => {
   }
 
   function _dateValue(date) {
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    return ExpenseDB.dateToYMD(date);
   }
 
   function _timeValue(date) {
@@ -628,13 +620,12 @@ const ExpenseApp = (() => {
      ----------------------------------------------------------------- */
   function _resetFormDefaults(options = {}) {
     const { clearTransient = true } = options;
-    const now = new Date();
     _formState.amountRaw = '';
     _confirmedLargeAmountRaw = null;
     _paymentOptionsExpanded = false;
     _formState.note = '';
-    _formState.date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    _formState.time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    _formState.date = ExpenseDB.today();
+    _formState.time = ExpenseDB.now();
     _formState.dateTimeManuallyEdited = false;
 
     if (clearTransient) {
@@ -670,9 +661,8 @@ const ExpenseApp = (() => {
     // 用户手动回填过时间时绝不覆盖；普通连续记账则把下一笔更新为现在。
     if (_formState.dateTimeManuallyEdited) return;
 
-    const now = new Date();
-    _formState.date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    _formState.time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    _formState.date = ExpenseDB.today();
+    _formState.time = ExpenseDB.now();
 
     const dateInput = document.getElementById('add-date');
     const timeInput = document.getElementById('add-time');
@@ -1264,7 +1254,7 @@ const ExpenseApp = (() => {
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             ${ExpenseData.PAYMENT_METHODS.map(pm => {
               const isActive = expense.paymentMethod === pm.value;
-              const rgb = _hexToRgb(pm.color);
+              const rgb = ExpenseData.hexToRgb(pm.color);
               const bg   = isActive ? pm.color : `rgba(${rgb},0.1)`;
               const bd   = isActive ? pm.color : `rgba(${rgb},0.3)`;
               const text = isActive ? '#fff' : pm.color;

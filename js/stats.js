@@ -170,7 +170,7 @@ const ExpenseStats = (() => {
     }
 
     _renderCategoryChart(expenses);
-    _renderTrendChart(from, to);
+    _renderTrendChart(from, to, expenses);
     _renderPaymentChart(expenses);
   }
 
@@ -322,7 +322,7 @@ const ExpenseStats = (() => {
   /* -----------------------------------------------------------------
      3. 月度趋势（折线图）
      ----------------------------------------------------------------- */
-  function _renderTrendChart(from, to) {
+  function _renderTrendChart(from, to, periodExpenses) {
     const [fy, fm, fd] = from.split('-').map(Number);
     const [ty, tm, td] = to.split('-').map(Number);
     const fromDate = new Date(fy, fm - 1, fd);
@@ -373,9 +373,8 @@ const ExpenseStats = (() => {
       }
     }
 
-    // 聚合数据
-    const allExpenses = ExpenseDB.getExpenses();
-    allExpenses.forEach(e => {
+    // 聚合数据（使用已过滤的 expenses，避免重复读取全量数据）
+    periodExpenses.forEach(e => {
       let matchKey;
       if (_period === 'day') {
         // 当天记录按小时匹配
@@ -697,12 +696,9 @@ const ExpenseStats = (() => {
     }, { passive: true });
   }
 
-  /** hex 颜色转 rgba，用于控制透明度 */
+  /** hex 颜色转 rgba，复用 ExpenseData.hexToRgb 避免重复实现 */
   function _hexToRgba(hex, alpha) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r},${g},${b},${alpha})`;
+    return `rgba(${ExpenseData.hexToRgb(hex)},${alpha})`;
   }
 
   /** 将选中/取消效果应用到环形图上（选中扇区外扩 + 其余微微变淡） */
@@ -711,13 +707,15 @@ const ExpenseStats = (() => {
     const selIdx = _selectedArc[canvasId];
     const offsets = new Array(dataLen).fill(0);
 
+    // 颜色取模：dataLen 超过 COLORS 长度时循环使用，避免取到 undefined
     if (selIdx !== null && selIdx !== undefined) {
       offsets[selIdx] = 15;
-      ds.backgroundColor = COLORS.slice(0, dataLen).map((c, i) =>
-        i === selIdx ? c : _hexToRgba(c, 0.4)
-      );
+      ds.backgroundColor = Array.from({ length: dataLen }, (_, i) => {
+        const c = COLORS[i % COLORS.length];
+        return i === selIdx ? c : _hexToRgba(c, 0.4);
+      });
     } else {
-      ds.backgroundColor = COLORS.slice(0, dataLen);
+      ds.backgroundColor = Array.from({ length: dataLen }, (_, i) => COLORS[i % COLORS.length]);
     }
 
     ds.borderColor = dataLen > 0 ? new Array(dataLen).fill('#fff') : [];
