@@ -710,6 +710,27 @@
   font-weight: 650;
 }
 
+/* 快捷分类：露出下一项并支持原生横向滑动，避免把更多常用入口挤进第二行。 */
+.add-category-quick {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 28px 3px 0;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.add-category-quick::-webkit-scrollbar { display: none; }
+.add-quick-category {
+  flex: 0 0 74px;
+  width: 74px;
+  min-height: 66px;
+  scroll-snap-align: start;
+}
+
 /* 支付方式默认只是一个结果/入口行；只有主动点开时才占用选择网格。 */
 .add-payment-section {
   gap: 0;

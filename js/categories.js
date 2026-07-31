@@ -23,6 +23,12 @@ const ExpenseCategories = (() => {
     'cat-food-deliver',
     'cat-transport',
     'cat-shopping-daily',
+    'cat-entertain',
+    'cat-housing',
+    'cat-utilities',
+    'cat-phone',
+    'cat-medical',
+    'cat-other',
   ];
   const _MAX_PINNED_QUICK_CATEGORIES = 4;
 
@@ -171,7 +177,8 @@ const ExpenseCategories = (() => {
       .forEach(([categoryId]) => addCategory(categoryId));
     _FALLBACK_QUICK_IDS.forEach(addCategory);
 
-    return ids.slice(0, 4).map((id) => {
+    // 横向快捷带可展示更多常用分类，首屏仍只露出约四项，向左滑动即可继续查看。
+    return ids.slice(0, 10).map((id) => {
       const category = ExpenseDB.getCategory(id);
       return category ? { ...category, isQuickPinned: pinnedIds.includes(id) } : null;
     }).filter(Boolean);
