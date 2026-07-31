@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=172">
-  <link rel="stylesheet" href="css/home.css?v=172">
-  <link rel="stylesheet" href="css/add.css?v=172">
-  <link rel="stylesheet" href="css/list.css?v=172">
-  <link rel="stylesheet" href="css/stats.css?v=172">
+  <link rel="stylesheet" href="css/common.css?v=173">
+  <link rel="stylesheet" href="css/home.css?v=173">
+  <link rel="stylesheet" href="css/add.css?v=173">
+  <link rel="stylesheet" href="css/list.css?v=173">
+  <link rel="stylesheet" href="css/stats.css?v=173">
 </head>
 <body>
 
@@ -171,7 +171,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260731-172 · 优化子分类选择
+      v20260731-173 · 精简账单流水排版
     </div>
   </main>
 
@@ -311,9 +311,10 @@
        账单 View
        ============================================================== -->
   <main id="view-list" class="main-view">
-    <!-- 搜索栏（默认折叠，点击图标展开） -->
+    <!-- 账单工具栏：标题常驻，搜索按需展开 -->
     <div class="list-search" id="list-search">
-      <button class="list-search__toggle" id="list-search-toggle" aria-label="搜索">🔍</button>
+      <h1 class="list-search__title">账单</h1>
+      <button class="list-search__toggle" id="list-search-toggle" aria-label="搜索账单">搜索</button>
       <div class="list-search__input-wrap" id="list-search-input-wrap">
         <input type="text" class="input input--search" id="list-search-input" placeholder="搜索备注关键词...">
       </div>
@@ -322,11 +323,11 @@
 
     <!-- 筛选栏（每个 chip 独立定位容器，下拉不偏移） -->
     <div class="list-filters scroll-x" id="list-filter-bar">
-      <div class="list-filter-group"><button class="chip" data-filter="date">📅 日期</button></div>
-      <div class="list-filter-group"><button class="chip" data-filter="category">🏷 分类</button></div>
-      <div class="list-filter-group"><button class="chip" data-filter="location">📍 地点</button></div>
-      <div class="list-filter-group"><button class="chip" data-filter="payment">💳 支付</button></div>
-      <div class="list-filter-group"><button class="chip chip--active" data-filter="sort">🔤 金额↓</button></div>
+      <div class="list-filter-group"><button class="chip" data-filter="date">日期</button></div>
+      <div class="list-filter-group"><button class="chip" data-filter="category">分类</button></div>
+      <div class="list-filter-group"><button class="chip" data-filter="location">地点</button></div>
+      <div class="list-filter-group"><button class="chip" data-filter="payment">支付方式</button></div>
+      <div class="list-filter-group"><button class="chip chip--active" data-filter="sort">金额↓</button></div>
     </div>
 
     <!-- 已选筛选条件 -->
@@ -577,11 +578,11 @@
      ================================================================ -->
 <script src="js/storage.js?v=150"></script>
 <script src="js/data.js?v=150"></script>
-<script src="js/home.js?v=172"></script>
-<script src="js/categories.js?v=172"></script>
-<script src="js/list.js?v=172"></script>
-<script src="js/stats.js?v=172"></script>
-<script src="js/app.js?v=172"></script>
+<script src="js/home.js?v=173"></script>
+<script src="js/categories.js?v=173"></script>
+<script src="js/list.js?v=173"></script>
+<script src="js/stats.js?v=173"></script>
+<script src="js/app.js?v=173"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
