@@ -649,6 +649,7 @@
   justify-content: center;
   pointer-events: none;
   visibility: hidden;
+  touch-action: none;
   transition: visibility 0s linear .24s;
 }
 .category-picker[aria-hidden="false"] {
@@ -675,6 +676,8 @@
   border-radius: 22px 22px 0 0;
   background: var(--color-surface);
   box-shadow: 0 -16px 38px rgba(20, 34, 35, .18);
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   transform: translateY(104%);
   transition: transform var(--transition-normal);
 }
@@ -722,11 +725,14 @@
 }
 .category-picker__body {
   display: grid;
+  flex: 1 1 auto;
   min-height: 0;
   gap: 12px;
   overflow-y: auto;
   padding: 14px var(--space-lg) 18px;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 .category-picker__body .add-category-grid { gap: 9px; }
 .category-picker__body .add-subcategories {
@@ -747,7 +753,26 @@
   font-weight: 650;
   text-align: center;
 }
-body.category-picker-open .main-view--active { overflow: hidden; }
+/* 只有抽屉内容可接收纵向手势，背景页既不能滚动也不会发生橡皮筋穿透。 */
+html.category-picker-open,
+body.category-picker-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+body.category-picker-open {
+  position: fixed;
+  width: 100%;
+  left: 0;
+  right: 0;
+}
+body.category-picker-open .app-container {
+  height: 100dvh;
+  overflow: hidden;
+}
+body.category-picker-open .main-view--active {
+  overflow: hidden;
+  touch-action: none;
+}
 .category-picker__close:focus-visible,
 .category-picker__footer .add-category-manage:focus-visible {
   outline: 3px solid rgba(15, 89, 102, .3);
