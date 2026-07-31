@@ -147,18 +147,6 @@
   background: var(--color-border);
 }
 
-.list-item__icon {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-md);
-  background: var(--color-divider);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
 .list-item__body {
   flex: 1;
   min-width: 0;
@@ -284,9 +272,105 @@
   flex-shrink: 0;
 }
 
-/* v163 · 账单列表、分类筛选与首页保持同一套图形比例。 */
-.list-item__icon { background: transparent; }
-.list-item__icon .category-icon { width: 36px; height: 36px; border-radius: 12px; }
-.list-item__icon .category-icon svg { width: 19px; height: 19px; }
+/* v163 · 分类筛选与首页保持同一套图形比例。 */
 .list-dropdown__item .category-icon { width: 25px; height: 25px; border-radius: 8px; flex: 0 0 auto; }
 .list-dropdown__item .category-icon svg { width: 14px; height: 14px; }
+
+/* =================================================================
+   v173 · 账单回归“可扫读的流水”，移除旧式图标堆叠
+   ================================================================= */
+.list-search {
+  min-height: 52px;
+  padding: 8px var(--space-lg) 6px;
+  gap: 10px;
+}
+.list-search__title {
+  flex: 1;
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 20px;
+  font-weight: 720;
+  letter-spacing: -.03em;
+}
+.list-search__toggle {
+  width: auto;
+  min-width: 48px;
+  height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 650;
+}
+.list-search__toggle:hover { border-color: rgba(15, 89, 102, .35); background: var(--color-primary-light); }
+.list-search--open .list-search__title { display: none; }
+.list-search--open .list-search__input-wrap { display: block; }
+.list-search__input-wrap .input--search { min-height: 38px; }
+
+.list-filters {
+  gap: 7px;
+  padding-bottom: 10px;
+}
+.list-filters .chip {
+  min-height: 34px;
+  padding: 6px 11px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* 单据不再是堆叠的小卡片，而是更紧凑的流水行。 */
+.list-content { padding: 0 var(--space-lg); }
+.list-group-header { padding: 13px 0 6px; }
+.list-item {
+  min-height: 58px;
+  margin: 0;
+  padding: 10px 2px;
+  gap: 12px;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+  box-shadow: none;
+}
+.list-item:hover { background: transparent; }
+.list-item:active { background: var(--color-primary-light); }
+.list-item__body { min-width: 0; }
+.list-item__header { min-width: 0; margin: 0; }
+.list-item__name {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-item__name mark {
+  color: inherit;
+  background: rgba(56, 180, 124, 0.18);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.list-item__meta {
+  gap: 0;
+  margin-top: 3px;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.list-item__amount {
+  color: var(--color-text-primary);
+  font-size: 15px;
+  font-weight: 700;
+}
+.list-item__amount--large { color: var(--color-text-primary); }
+.list-summary {
+  min-height: 48px;
+  padding: 10px var(--space-lg);
+  justify-content: space-between;
+  font-size: 12px;
+}
+.list-summary strong { color: var(--color-text-primary); font-size: var(--font-size-md); }

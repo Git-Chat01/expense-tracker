@@ -157,42 +157,37 @@ const ExpenseList = (() => {
   /** 渲染单条记录 */
   function _renderItem(expense) {
     const cat = ExpenseDB.getCategory(expense.categoryId);
-    const icon = ExpenseCategories.getIconMarkup(cat);
     const name = cat ? cat.name : '未分类';
 
-    // 备注关键词高亮
-    let noteHtml = '';
+    // 备注优先承担“这笔是什么”的角色；没有备注时才以分类作为标题。
+    let titleHtml = name;
     if (expense.note && _filters.noteKeyword) {
       const kw = _filters.noteKeyword;
       const re = new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-      noteHtml = `<span class="list-item__note">📝 ${expense.note.replace(re, m => `<mark>${m}</mark>`)}</span>`;
+      titleHtml = expense.note.replace(re, m => `<mark>${m}</mark>`);
     } else if (expense.note) {
-      noteHtml = `<span class="list-item__note">📝 ${expense.note}</span>`;
+      titleHtml = expense.note;
     }
 
-    // 元数据行
+    // 元数据只保留能帮助回忆这笔记录的信息，不再堆叠装饰性 Emoji。
     const metaParts = [];
-    if (expense.time) metaParts.push(`⏰${expense.time}`);
-    if (expense.location) metaParts.push(`📍${expense.location}`);
+    if (expense.note) metaParts.push(name);
+    if (expense.time) metaParts.push(expense.time);
+    if (expense.location) metaParts.push(expense.location);
     if (expense.paymentMethod) {
       const pm = ExpenseData.PAYMENT_METHODS.find(p => p.value === expense.paymentMethod);
       metaParts.push(pm ? pm.label : expense.paymentMethod);
     }
 
-    const isLarge = expense.amount >= 500;
-    const amountClass = isLarge ? 'list-item__amount list-item__amount--large' : 'list-item__amount';
-
     return `
       <div class="list-item" data-id="${expense.id}">
-        <div class="list-item__icon">${icon}</div>
         <div class="list-item__body">
           <div class="list-item__header">
-            <span class="list-item__name">${name}</span>
+            <span class="list-item__name">${titleHtml}</span>
           </div>
           ${metaParts.length ? `<div class="list-item__meta">${metaParts.join(' · ')}</div>` : ''}
-          ${noteHtml}
         </div>
-        <span class="${amountClass}">-¥${expense.amount.toFixed(2)}</span>
+        <span class="list-item__amount">-¥${expense.amount.toFixed(2)}</span>
       </div>`;
   }
 
@@ -301,7 +296,7 @@ const ExpenseList = (() => {
     const cfg = configs[_sortState];
     _filters.sortBy = cfg.sortBy;
     _filters.sortOrder = cfg.sortOrder;
-    btn.textContent = '🔤 ' + cfg.label;
+    btn.textContent = cfg.label;
     render();
   }
 
@@ -332,7 +327,7 @@ const ExpenseList = (() => {
       ExpenseDB.getExpenses().forEach(e => { if (e.location) locations.add(e.location); });
       dropdown.innerHTML = Array.from(locations).slice(0, 20).map(loc => `
         <div class="list-dropdown__item ${_filters.locationIds.includes(loc) ? 'list-dropdown__item--active' : ''}" data-val="${loc}">
-          📍 ${loc}
+          ${loc}
         </div>`).join('');
       if (locations.size === 0) {
         dropdown.innerHTML = '<div style="padding:12px;text-align:center;color:var(--color-text-tertiary)">暂无地点数据</div>';
@@ -346,11 +341,11 @@ const ExpenseList = (() => {
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
       dropdown.innerHTML = `
-        <div class="list-dropdown__item" data-pick="today">📅 今天</div>
-        <div class="list-dropdown__item" data-pick="week">📅 本周</div>
-        <div class="list-dropdown__item" data-pick="month">📅 本月</div>
+        <div class="list-dropdown__item" data-pick="today">今天</div>
+        <div class="list-dropdown__item" data-pick="week">本周</div>
+        <div class="list-dropdown__item" data-pick="month">本月</div>
         <div style="border-top:1px solid var(--color-border);margin:6px 0 0;padding:8px 4px 0">
-          <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:6px;padding:0 8px">📆 自定义日期</div>
+          <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:6px;padding:0 8px">自定义日期</div>
           <div style="display:flex;gap:4px;align-items:center;padding:0 4px">
             <input type="date" class="list-dropdown__date-from" value="${_filters.dateFrom || todayStr}" style="flex:1;font-size:11px;padding:4px 6px;border:1px solid var(--color-border);border-radius:4px;min-width:0">
             <span style="font-size:11px;color:var(--color-text-tertiary);flex-shrink:0">至</span>
@@ -457,14 +452,14 @@ const ExpenseList = (() => {
     const chips = [];
 
     // 关键词搜索也展示为 chip，用户关闭搜索栏后仍能看到筛选生效
-    if (_filters.noteKeyword) chips.push({ label: `🔍 ${_filters.noteKeyword}`, key: 'keyword' });
-    if (_filters.dateFrom) chips.push({ label: `📅 ${_filters.dateFrom}~${_filters.dateTo || '今天'}`, key: 'date' });
+    if (_filters.noteKeyword) chips.push({ label: _filters.noteKeyword, key: 'keyword' });
+    if (_filters.dateFrom) chips.push({ label: `${_filters.dateFrom}~${_filters.dateTo || '今天'}`, key: 'date' });
     _filters.categoryIds.forEach(cid => {
       const cat = ExpenseDB.getCategory(cid);
       chips.push({ label: cat ? cat.name : cid, iconMarkup: ExpenseCategories.getIconMarkup(cat), key: 'cat-' + cid });
     });
     _filters.locationIds.forEach(loc => {
-      chips.push({ label: `📍 ${loc}`, key: 'loc-' + loc });
+      chips.push({ label: loc, key: 'loc-' + loc });
     });
     _filters.paymentMethods.forEach(pm => {
       const p = ExpenseData.PAYMENT_METHODS.find(x => x.value === pm);
@@ -530,7 +525,7 @@ const ExpenseList = (() => {
         _filters.sortBy = 'amount';
         _filters.sortOrder = 'desc';
         const sortBtn = document.querySelector('#list-filter-bar .chip[data-filter="sort"]');
-        if (sortBtn) sortBtn.textContent = '🔤 金额↓';
+        if (sortBtn) sortBtn.textContent = '金额↓';
         _showFilterChipHighlight('date');
         _showFilterChipHighlight('category');
         _showFilterChipHighlight('location');
