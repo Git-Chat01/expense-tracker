@@ -321,21 +321,24 @@
   font-weight: 600;
 }
 
-/* 单据不再是堆叠的小卡片，而是更紧凑的流水行。 */
-.list-content { padding: 0 var(--space-lg); }
-.list-group-header { padding: 13px 0 6px; }
-.list-item {
-  min-height: 58px;
-  margin: 0;
-  padding: 10px 2px;
-  gap: 12px;
-  border-radius: 0;
-  border-bottom: 1px solid var(--color-divider);
-  background: transparent;
-  box-shadow: none;
+/* v174 · 保留轻量信息层级，但用实体边界让长账单不黏连。 */
+.list-content { padding: 0 var(--space-lg) var(--space-md); }
+.list-group-header {
+  padding: 16px 2px 8px;
+  border-bottom: 2px solid #D5DDD7;
 }
-.list-item:hover { background: transparent; }
-.list-item:active { background: var(--color-primary-light); }
+.list-item {
+  min-height: 62px;
+  margin: 7px 0 0;
+  padding: 11px 12px;
+  gap: 12px;
+  border: 1px solid #D5DDD7;
+  border-radius: 10px;
+  background: var(--color-surface);
+  box-shadow: 0 1px 0 rgba(28, 41, 43, 0.03);
+}
+.list-item:hover { border-color: #C8D2CB; background: var(--color-surface); }
+.list-item:active { border-color: rgba(56, 180, 124, 0.4); background: var(--color-primary-light); }
 .list-item__body { min-width: 0; }
 .list-item__header { min-width: 0; margin: 0; }
 .list-item__name {
