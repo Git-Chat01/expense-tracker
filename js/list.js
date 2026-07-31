@@ -158,6 +158,7 @@ const ExpenseList = (() => {
   function _renderItem(expense) {
     const cat = ExpenseDB.getCategory(expense.categoryId);
     const name = cat ? cat.name : '未分类';
+    const icon = ExpenseCategories.getIconMarkup(cat);
 
     // 备注优先承担“这笔是什么”的角色；没有备注时才以分类作为标题。
     let titleHtml = name;
@@ -181,6 +182,7 @@ const ExpenseList = (() => {
 
     return `
       <div class="list-item" data-id="${expense.id}">
+        <span class="list-item__category-icon">${icon}</span>
         <div class="list-item__body">
           <div class="list-item__header">
             <span class="list-item__name">${titleHtml}</span>
