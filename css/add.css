@@ -617,7 +617,7 @@
   font-weight: 500;
 }
 .add-payment-methods {
-  display: grid !important;
+  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 7px;
   overflow: visible;
