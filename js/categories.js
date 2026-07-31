@@ -309,12 +309,10 @@ const ExpenseCategories = (() => {
       }
     }
 
-    // 无论是否已选，都保留“全部分类”入口；选中后不再让页面内容突然消失。
+    // 已选分类时，摘要行本身就是“更换分类”入口，隐藏重复按钮以保持主流程紧凑。
     if (allToggle) {
-      allToggle.style.display = 'inline-flex';
-      allToggle.innerHTML = _selectedCategoryId
-        ? '<span>浏览全部分类</span><span class="add-category-all__chevron" aria-hidden="true">⌄</span>'
-        : '<span>全部分类</span><span class="add-category-all__chevron" aria-hidden="true">⌄</span>';
+      allToggle.style.display = _selectedCategoryId ? 'none' : 'inline-flex';
+      allToggle.innerHTML = '<span>全部分类</span><span class="add-category-all__chevron" aria-hidden="true">⌄</span>';
     }
 
     grid.style.display = _drawerOpen ? 'grid' : 'none';
