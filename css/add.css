@@ -698,6 +698,18 @@
   padding: 4px 2px;
 }
 
+/* 分类的完整入口与标题同一行，默认状态不再单独占用一行。 */
+.add-category-area .add-section__header { min-height: 40px; }
+.add-category-area .add-category-all {
+  width: auto;
+  min-height: 40px;
+  padding: 6px 0 6px 10px;
+  border-top: 0;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 650;
+}
+
 /* 支付方式默认只是一个结果/入口行；只有主动点开时才占用选择网格。 */
 .add-payment-section {
   gap: 0;
