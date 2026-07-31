@@ -344,33 +344,47 @@ const ExpenseApp = (() => {
     const summary = document.getElementById('add-payment-summary');
     if (!summary) return;
     summary.addEventListener('click', () => {
-      _paymentOptionsExpanded = true;
+      _paymentOptionsExpanded = !_paymentOptionsExpanded;
       _renderPaymentMethods();
     });
   }
 
   function _renderPaymentMethods() {
     const container = document.getElementById('add-payment-methods');
-    const header = document.getElementById('add-payment-header');
     const summary = document.getElementById('add-payment-summary');
     const summaryText = document.getElementById('add-payment-summary-text');
     const summaryDot = document.getElementById('add-payment-summary-dot');
+    const summaryAction = document.getElementById('add-payment-summary-action');
     const section = document.querySelector('.add-payment-section');
     if (!container) return;
 
     const selectedMethod = ExpenseData.PAYMENT_METHODS.find(pm => pm.value === _formState.paymentMethod);
-    const showSummary = Boolean(selectedMethod) && !_paymentOptionsExpanded;
-    if (header) header.style.display = showSummary ? 'none' : 'flex';
-    if (summary) summary.style.display = showSummary ? 'grid' : 'none';
-    container.style.display = showSummary ? 'none' : 'grid';
-    if (section) section.classList.toggle('add-payment-section--selected', showSummary);
-
-    if (showSummary) {
-      if (summaryText) summaryText.textContent = `已选 ${selectedMethod.label}`;
-      if (summaryDot) summaryDot.style.background = selectedMethod.color;
-      if (summary) summary.setAttribute('aria-label', `已选择${selectedMethod.label}，点击更换支付方式`);
-      return;
+    const pickerOpen = _paymentOptionsExpanded;
+    if (summary) {
+      summary.style.display = 'grid';
+      summary.setAttribute('aria-expanded', String(pickerOpen));
+      summary.setAttribute('aria-label', selectedMethod
+        ? `已选择${selectedMethod.label}，${pickerOpen ? '点击收起支付方式' : '点击更换支付方式'}`
+        : `${pickerOpen ? '正在选择支付方式，点击收起' : '选择支付方式'}`);
     }
+    container.style.display = pickerOpen ? 'grid' : 'none';
+    if (section) {
+      section.classList.toggle('add-payment-section--selected', Boolean(selectedMethod));
+      section.classList.toggle('add-payment-section--expanded', pickerOpen);
+    }
+
+    if (summaryText) summaryText.textContent = selectedMethod
+      ? `已选 ${selectedMethod.label}`
+      : (pickerOpen ? '选择支付方式' : '可选');
+    if (summaryAction) summaryAction.textContent = pickerOpen
+      ? '收起'
+      : (selectedMethod ? '更换' : '选择');
+    if (summaryDot) {
+      summaryDot.style.display = selectedMethod ? 'inline-block' : 'none';
+      if (selectedMethod) summaryDot.style.background = selectedMethod.color;
+    }
+
+    if (!pickerOpen) return;
 
     container.innerHTML = ExpenseData.PAYMENT_METHODS.map(pm => {
       const isActive = _formState.paymentMethod === pm.value;

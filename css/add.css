@@ -683,6 +683,35 @@
   outline-offset: 2px;
 }
 
+/* =================================================================
+   v168 · 把默认记账路径收为金额 → 分类 → 可选信息 → 键盘
+   ================================================================= */
+.add-container {
+  gap: 12px;
+  padding-top: 10px;
+}
+.add-header { padding: 2px 0 8px; }
+.add-category-area { gap: 8px; }
+.add-category-summary { min-height: 56px; }
+.add-category-all {
+  min-height: 40px;
+  padding: 4px 2px;
+}
+
+/* 支付方式默认只是一个结果/入口行；只有主动点开时才占用选择网格。 */
+.add-payment-section {
+  gap: 0;
+  padding: 6px 0;
+}
+.add-payment-section--expanded {
+  gap: 9px;
+  padding: 10px 0 12px;
+}
+.add-payment-section--expanded .add-payment-methods { padding: 0; }
+
+/* 低频补充信息与支付行共用紧凑的 44px 触控节奏。 */
+.add-more-fields summary { min-height: 44px; }
+
 /* 键盘永远避开底部导航，滚动时仍在拇指区域可达。 */
 .add-numpad {
   bottom: calc(var(--tab-bar-height) + var(--safe-area-bottom));
