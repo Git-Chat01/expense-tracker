@@ -339,6 +339,20 @@
 }
 .list-item:hover { border-color: #C8D2CB; background: var(--color-surface); }
 .list-item:active { border-color: rgba(56, 180, 124, 0.4); background: var(--color-primary-light); }
+.list-item__category-icon {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
+  display: inline-grid;
+  place-items: center;
+}
+.list-item__category-icon .category-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: transparent;
+}
+.list-item__category-icon .category-icon svg { width: 17px; height: 17px; }
 .list-item__body { min-width: 0; }
 .list-item__header { min-width: 0; margin: 0; }
 .list-item__name {
