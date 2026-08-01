@@ -267,8 +267,8 @@ const ExpenseHome = (() => {
 
     _$alerts.innerHTML = sorted.map((a, i) => `
       <div class="home-alert home-alert--${a.level}">
-        <span class="home-alert__icon">${a.icon}</span>
-        <span class="home-alert__text">${a.text}</span>
+        <span class="home-alert__icon">${ExpenseData.escapeHtml(a.icon)}</span>
+        <span class="home-alert__text">${ExpenseData.escapeHtml(a.text)}</span>
         <button class="home-alert__close" data-alert-idx="${i}" title="忽略">✕</button>
       </div>
     `).join('');
@@ -288,8 +288,8 @@ const ExpenseHome = (() => {
 
     _$alerts.innerHTML = activeAlerts.map((a, idx) => `
       <div class="home-alert home-alert--${a.level}" data-alert-idx="${idx}">
-        <span class="home-alert__icon">${a.icon}</span>
-        <span class="home-alert__text">${a.text}</span>
+        <span class="home-alert__icon">${ExpenseData.escapeHtml(a.icon)}</span>
+        <span class="home-alert__text">${ExpenseData.escapeHtml(a.text)}</span>
         <button class="home-alert__close" data-alert-idx="${idx}" title="忽略">✕</button>
       </div>
     `).join('');
@@ -403,23 +403,23 @@ const ExpenseHome = (() => {
       const metaParts = [];
       const today = ExpenseDB.today();
       if (e.date === today) {
-        if (e.time) metaParts.push(`⏰${e.time}`);
+        if (e.time) metaParts.push(`⏰${ExpenseData.escapeHtml(e.time)}`);
       } else {
         const parts = e.date.split('-');
         if (parts.length === 3) metaParts.push(`${parseInt(parts[1])}月${parseInt(parts[2])}日`);
       }
-      if (e.location) metaParts.push(`📍${e.location}`);
+      if (e.location) metaParts.push(`📍${ExpenseData.escapeHtml(e.location)}`);
       if (e.paymentMethod) {
         const pm = ExpenseData.PAYMENT_METHODS.find(p => p.value === e.paymentMethod);
-        metaParts.push(pm ? pm.label : e.paymentMethod);
+        metaParts.push(ExpenseData.escapeHtml(pm ? pm.label : e.paymentMethod));
       }
-      if (e.note) metaParts.push(`📝${e.note}`);
+      if (e.note) metaParts.push(`📝${ExpenseData.escapeHtml(e.note)}`);
 
       return `
-        <div class="home-recent__item" data-id="${e.id}">
+        <div class="home-recent__item" data-id="${ExpenseData.escapeHtml(e.id)}">
           <div class="home-recent__icon">${icon}</div>
           <div class="home-recent__info">
-            <div class="home-recent__name">${name}</div>
+            <div class="home-recent__name">${ExpenseData.escapeHtml(name)}</div>
             ${metaParts.length ? `<div class="home-recent__meta">${metaParts.join(' · ')}</div>` : ''}
           </div>
           <span class="home-recent__amount">-${_moneyMarkup(e.amount.toFixed(2))}</span>

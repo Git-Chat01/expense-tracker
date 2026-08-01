@@ -109,7 +109,12 @@ const ExpenseOnboarding = (() => {
    * saveSettings 是浅合并，只更新 onboardingSeen 字段，不会覆盖其他设置。
    */
   function _finish() {
-    ExpenseDB.saveSettings({ onboardingSeen: true });
+    if (!ExpenseDB.saveSettings({ onboardingSeen: true })) {
+      if (typeof ExpenseApp !== 'undefined') {
+        ExpenseApp.showToast('设置保存失败，请检查浏览器存储空间', 'warning');
+      }
+      return;
+    }
     _overlay.classList.remove('onboarding-overlay--open');
   }
 

@@ -154,6 +154,21 @@ const ExpenseList = (() => {
     });
   }
 
+  function _highlightEscaped(value, keyword) {
+    const text = String(value ?? '');
+    if (!keyword) return ExpenseData.escapeHtml(text);
+    const re = new RegExp(keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+    let html = '';
+    let lastIndex = 0;
+    text.replace(re, (match, offset) => {
+      html += ExpenseData.escapeHtml(text.slice(lastIndex, offset));
+      html += `<mark>${ExpenseData.escapeHtml(match)}</mark>`;
+      lastIndex = offset + match.length;
+      return match;
+    });
+    return html + ExpenseData.escapeHtml(text.slice(lastIndex));
+  }
+
   /** 渲染单条记录 */
   function _renderItem(expense) {
     const cat = ExpenseDB.getCategory(expense.categoryId);
@@ -161,27 +176,25 @@ const ExpenseList = (() => {
     const icon = ExpenseCategories.getIconMarkup(cat);
 
     // 备注优先承担“这笔是什么”的角色；没有备注时才以分类作为标题。
-    let titleHtml = name;
+    let titleHtml = ExpenseData.escapeHtml(name);
     if (expense.note && _filters.noteKeyword) {
-      const kw = _filters.noteKeyword;
-      const re = new RegExp(kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-      titleHtml = expense.note.replace(re, m => `<mark>${m}</mark>`);
+      titleHtml = _highlightEscaped(expense.note, _filters.noteKeyword);
     } else if (expense.note) {
-      titleHtml = expense.note;
+      titleHtml = ExpenseData.escapeHtml(expense.note);
     }
 
     // 元数据只保留能帮助回忆这笔记录的信息，不再堆叠装饰性 Emoji。
     const metaParts = [];
-    if (expense.note) metaParts.push(name);
-    if (expense.time) metaParts.push(expense.time);
-    if (expense.location) metaParts.push(expense.location);
+    if (expense.note) metaParts.push(ExpenseData.escapeHtml(name));
+    if (expense.time) metaParts.push(ExpenseData.escapeHtml(expense.time));
+    if (expense.location) metaParts.push(ExpenseData.escapeHtml(expense.location));
     if (expense.paymentMethod) {
       const pm = ExpenseData.PAYMENT_METHODS.find(p => p.value === expense.paymentMethod);
-      metaParts.push(pm ? pm.label : expense.paymentMethod);
+      metaParts.push(ExpenseData.escapeHtml(pm ? pm.label : expense.paymentMethod));
     }
 
     return `
-      <div class="list-item" data-id="${expense.id}">
+      <div class="list-item" data-id="${ExpenseData.escapeHtml(expense.id)}">
         <span class="list-item__category-icon">${icon}</span>
         <div class="list-item__body">
           <div class="list-item__header">
@@ -328,16 +341,16 @@ const ExpenseList = (() => {
       const locations = new Set();
       ExpenseDB.getExpenses().forEach(e => { if (e.location) locations.add(e.location); });
       dropdown.innerHTML = Array.from(locations).slice(0, 20).map(loc => `
-        <div class="list-dropdown__item ${_filters.locationIds.includes(loc) ? 'list-dropdown__item--active' : ''}" data-val="${loc}">
-          ${loc}
+        <div class="list-dropdown__item ${_filters.locationIds.includes(loc) ? 'list-dropdown__item--active' : ''}" data-val="${ExpenseData.escapeHtml(loc)}">
+          ${ExpenseData.escapeHtml(loc)}
         </div>`).join('');
       if (locations.size === 0) {
         dropdown.innerHTML = '<div style="padding:12px;text-align:center;color:var(--color-text-tertiary)">暂无地点数据</div>';
       }
     } else if (filterType === 'category') {
       dropdown.innerHTML = ExpenseDB.getParentCategories().map(cat => `
-        <div class="list-dropdown__item ${_filters.categoryIds.includes(cat.id) ? 'list-dropdown__item--active' : ''}" data-val="${cat.id}">
-          ${ExpenseCategories.getIconMarkup(cat)} ${cat.name}
+        <div class="list-dropdown__item ${_filters.categoryIds.includes(cat.id) ? 'list-dropdown__item--active' : ''}" data-val="${ExpenseData.escapeHtml(cat.id)}">
+          ${ExpenseCategories.getIconMarkup(cat)} ${ExpenseData.escapeHtml(cat.name)}
         </div>`).join('');
     } else if (filterType === 'date') {
       const today = new Date();
@@ -349,9 +362,9 @@ const ExpenseList = (() => {
         <div style="border-top:1px solid var(--color-border);margin:6px 0 0;padding:8px 4px 0">
           <div style="font-size:11px;color:var(--color-text-tertiary);margin-bottom:6px;padding:0 8px">自定义日期</div>
           <div style="display:flex;gap:4px;align-items:center;padding:0 4px">
-            <input type="date" class="list-dropdown__date-from" value="${_filters.dateFrom || todayStr}" style="flex:1;font-size:11px;padding:4px 6px;border:1px solid var(--color-border);border-radius:4px;min-width:0">
+            <input type="date" class="list-dropdown__date-from" value="${ExpenseData.escapeHtml(_filters.dateFrom || todayStr)}" style="flex:1;font-size:11px;padding:4px 6px;border:1px solid var(--color-border);border-radius:4px;min-width:0">
             <span style="font-size:11px;color:var(--color-text-tertiary);flex-shrink:0">至</span>
-            <input type="date" class="list-dropdown__date-to" value="${_filters.dateTo || todayStr}" style="flex:1;font-size:11px;padding:4px 6px;border:1px solid var(--color-border);border-radius:4px;min-width:0">
+            <input type="date" class="list-dropdown__date-to" value="${ExpenseData.escapeHtml(_filters.dateTo || todayStr)}" style="flex:1;font-size:11px;padding:4px 6px;border:1px solid var(--color-border);border-radius:4px;min-width:0">
             <button class="list-dropdown__date-confirm" style="flex-shrink:0;padding:4px 10px;font-size:11px;background:var(--color-primary);color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap">确定</button>
           </div>
         </div>`;
@@ -481,8 +494,8 @@ const ExpenseList = (() => {
 
     container.innerHTML = chips.map(c => `
       <span class="filter-chip">
-        ${c.iconMarkup || ''}${c.label}
-        <span class="filter-chip__remove" data-clear="${c.key}">×</span>
+        ${c.iconMarkup || ''}${ExpenseData.escapeHtml(c.label)}
+        <span class="filter-chip__remove" data-clear="${ExpenseData.escapeHtml(c.key)}">×</span>
       </span>
     `).join('') + `
       <button class="filter-chip__clear-all" id="list-clear-all">清除筛选</button>

@@ -102,7 +102,7 @@ const ExpenseDB = (() => {
    * 添加消费记录
    * 自动生成 id 和 createdAt，对缺失字段补默认值
    * @param {Object} expense - 消费数据（不含 id 和 createdAt）
-   * @returns {Object} 保存后的完整记录
+   * @returns {Object|null} 保存后的完整记录，写入失败返回 null
    */
   function addExpense(expense) {
     const list = _read(KEYS.expenses) || [];
@@ -121,8 +121,7 @@ const ExpenseDB = (() => {
     };
 
     list.push(record);
-    _write(KEYS.expenses, list);
-    return record;
+    return _write(KEYS.expenses, list) ? record : null;
   }
 
   /**
@@ -139,8 +138,7 @@ const ExpenseDB = (() => {
     // 合并更新，但保护 id 和 createdAt 不被覆盖
     const { id: _id, createdAt: _createdAt, ...safeUpdates } = updates;
     list[idx] = { ...list[idx], ...safeUpdates };
-    _write(KEYS.expenses, list);
-    return list[idx];
+    return _write(KEYS.expenses, list) ? list[idx] : null;
   }
 
   /**
@@ -152,8 +150,7 @@ const ExpenseDB = (() => {
     const list = _read(KEYS.expenses) || [];
     const filtered = list.filter(e => e.id !== id);
     if (filtered.length === list.length) return false;
-    _write(KEYS.expenses, filtered);
-    return true;
+    return _write(KEYS.expenses, filtered);
   }
 
   /**
@@ -215,7 +212,7 @@ const ExpenseDB = (() => {
   /**
    * 添加自定义分类
    * @param {Object} category
-   * @returns {Object}
+   * @returns {Object|null} 写入失败返回 null
    */
   function addCategory(category) {
     const list = _read(KEYS.categories) || [];
@@ -228,8 +225,7 @@ const ExpenseDB = (() => {
       order:    list.length,
     };
     list.push(record);
-    _write(KEYS.categories, list);
-    return record;
+    return _write(KEYS.categories, list) ? record : null;
   }
 
   /**
@@ -241,8 +237,7 @@ const ExpenseDB = (() => {
     const list = _read(KEYS.categories) || [];
     const target = list.find(c => c.id === id);
     if (!target || target.isPreset) return false;
-    _write(KEYS.categories, list.filter(c => c.id !== id));
-    return true;
+    return _write(KEYS.categories, list.filter(c => c.id !== id));
   }
 
   /**
@@ -250,8 +245,8 @@ const ExpenseDB = (() => {
    */
   function initCategories(presets) {
     const existing = _read(KEYS.categories);
-    if (existing && existing.length > 0) return;
-    _write(KEYS.categories, presets);
+    if (existing && existing.length > 0) return true;
+    return _write(KEYS.categories, presets);
   }
 
   /**
@@ -263,8 +258,7 @@ const ExpenseDB = (() => {
     const existing = _read(KEYS.categories) || [];
     if (existing.length === 0) {
       // 无数据 → 直接写入全部预设
-      _write(KEYS.categories, presets);
-      return;
+      return _write(KEYS.categories, presets);
     }
 
     // 以预设数据为准，合并更新
@@ -291,8 +285,9 @@ const ExpenseDB = (() => {
 
     if (changed) {
       existing.sort((a, b) => (a.order || 0) - (b.order || 0));
-      _write(KEYS.categories, existing);
+      return _write(KEYS.categories, existing);
     }
+    return true;
   }
 
   /* =================================================================
@@ -312,7 +307,7 @@ const ExpenseDB = (() => {
    * @param {Object} budget
    */
   function saveBudget(budget) {
-    _write(KEYS.budget, budget);
+    return _write(KEYS.budget, budget);
   }
 
   /**
@@ -378,7 +373,7 @@ const ExpenseDB = (() => {
    */
   function saveSettings(settings) {
     const current = getSettings();
-    _write(KEYS.settings, { ...current, ...settings });
+    return _write(KEYS.settings, { ...current, ...settings });
   }
 
   /* =================================================================
@@ -400,6 +395,199 @@ const ExpenseDB = (() => {
     };
   }
 
+  const _IMPORT_VERSION = 2;
+  const _UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+
+  function _importError(message) {
+    return { success: false, message: `无效的备份文件：${message}`, counts: null };
+  }
+
+  function _isPlainObject(value) {
+    if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === Object.prototype || prototype === null;
+  }
+
+  function _isNonEmptyString(value) {
+    return typeof value === 'string' && value.trim().length > 0;
+  }
+
+  function _isValidDate(value) {
+    if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const [year, month, day] = value.split('-').map(Number);
+    const parsed = new Date(year, month - 1, day);
+    return parsed.getFullYear() === year
+      && parsed.getMonth() === month - 1
+      && parsed.getDate() === day;
+  }
+
+  function _isValidTime(value) {
+    return value === '' || (typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value));
+  }
+
+  function _isValidIsoTimestamp(value) {
+    if (typeof value !== 'string') return false;
+    const timestamp = Date.parse(value);
+    return Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value;
+  }
+
+  function _cloneSafeJson(value) {
+    if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+    if (Array.isArray(value)) {
+      const items = [];
+      for (const item of value) {
+        const cloned = _cloneSafeJson(item);
+        if (cloned === undefined) return undefined;
+        items.push(cloned);
+      }
+      return items;
+    }
+    if (_isPlainObject(value)) {
+      const result = {};
+      for (const [key, item] of Object.entries(value)) {
+        if (_UNSAFE_OBJECT_KEYS.has(key)) continue;
+        const cloned = _cloneSafeJson(item);
+        if (cloned === undefined) return undefined;
+        result[key] = cloned;
+      }
+      return result;
+    }
+    return undefined;
+  }
+
+  function _validateImport(data) {
+    if (!_isPlainObject(data)) return _importError('数据格式错误');
+    if (data.version != null
+        && (!Number.isInteger(data.version) || data.version < 1 || data.version > _IMPORT_VERSION)) {
+      return _importError(data.version > _IMPORT_VERSION ? '备份版本过新，请先更新应用' : '版本号错误');
+    }
+    if (data.exportedAt != null && !_isValidIsoTimestamp(data.exportedAt)) {
+      return _importError('导出时间格式错误');
+    }
+    if (!Array.isArray(data.expenses)) return _importError('缺少消费记录');
+    if (!Array.isArray(data.categories) || data.categories.length === 0) return _importError('缺少分类数据');
+
+    const categoryIds = new Set();
+    const categories = [];
+    for (const category of data.categories) {
+      if (!_isPlainObject(category)
+          || !_isNonEmptyString(category.id)
+          || !_isNonEmptyString(category.name)
+          || _UNSAFE_OBJECT_KEYS.has(category.id)
+          || (category.icon != null && typeof category.icon !== 'string')
+          || (category.parentId != null && !_isNonEmptyString(category.parentId))
+          || (category.isPreset != null && typeof category.isPreset !== 'boolean')
+          || (category.order != null && !Number.isFinite(category.order))) {
+        return _importError('分类数据格式错误');
+      }
+      if (categoryIds.has(category.id)) return _importError('存在重复的分类 ID');
+      categoryIds.add(category.id);
+      categories.push({
+        id: category.id,
+        name: category.name,
+        icon: category.icon || '📌',
+        parentId: category.parentId || null,
+        isPreset: category.isPreset === true,
+        order: Number.isFinite(category.order) ? category.order : categories.length,
+      });
+    }
+
+    const categoryMap = new Map(categories.map(category => [category.id, category]));
+    for (const category of categories) {
+      if (!category.parentId) continue;
+      const parent = categoryMap.get(category.parentId);
+      if (!parent || parent.parentId) return _importError('分类层级引用无效');
+    }
+
+    const expenseIds = new Set();
+    const expenses = [];
+    for (const expense of data.expenses) {
+      if (!_isPlainObject(expense)
+          || !_isNonEmptyString(expense.id)
+          || _UNSAFE_OBJECT_KEYS.has(expense.id)
+          || !Number.isFinite(expense.amount)
+          || expense.amount <= 0
+          || !_isNonEmptyString(expense.categoryId)
+          || !categoryIds.has(expense.categoryId)
+          || !_isValidDate(expense.date)
+          || (expense.time != null && !_isValidTime(expense.time))
+          || (expense.location != null && typeof expense.location !== 'string')
+          || (expense.paymentMethod != null && typeof expense.paymentMethod !== 'string')
+          || (expense.note != null && typeof expense.note !== 'string')
+          || (expense.createdAt != null && !_isValidIsoTimestamp(expense.createdAt))) {
+        return _importError('消费记录格式或分类引用错误');
+      }
+      if (expenseIds.has(expense.id)) return _importError('存在重复的消费记录 ID');
+      expenseIds.add(expense.id);
+      expenses.push({
+        id: expense.id,
+        amount: expense.amount,
+        categoryId: expense.categoryId,
+        date: expense.date,
+        time: expense.time || '',
+        location: expense.location || '',
+        paymentMethod: expense.paymentMethod || '',
+        note: expense.note || '',
+        createdAt: expense.createdAt || new Date().toISOString(),
+      });
+    }
+
+    const sourceBudget = data.budget == null ? { monthlyTotal: 0, categories: {} } : data.budget;
+    if (!_isPlainObject(sourceBudget)
+        || !Number.isFinite(Number(sourceBudget.monthlyTotal || 0))
+        || Number(sourceBudget.monthlyTotal || 0) < 0
+        || (sourceBudget.categories != null && !_isPlainObject(sourceBudget.categories))) {
+      return _importError('预算数据格式错误');
+    }
+    const categoryBudgets = {};
+    for (const [categoryId, amount] of Object.entries(sourceBudget.categories || {})) {
+      if (_UNSAFE_OBJECT_KEYS.has(categoryId)
+          || !categoryIds.has(categoryId)
+          || !Number.isFinite(amount)
+          || amount < 0) {
+        return _importError('分类预算格式或引用错误');
+      }
+      categoryBudgets[categoryId] = amount;
+    }
+
+    const sourceSettings = data.settings == null ? {} : data.settings;
+    if (!_isPlainObject(sourceSettings)) return _importError('设置数据格式错误');
+    if ((sourceSettings.onboardingSeen != null && typeof sourceSettings.onboardingSeen !== 'boolean')
+        || (sourceSettings.currency != null && typeof sourceSettings.currency !== 'string')
+        || (sourceSettings.theme != null && typeof sourceSettings.theme !== 'string')
+        || (sourceSettings.pinnedQuickCategoryIds != null
+          && (!Array.isArray(sourceSettings.pinnedQuickCategoryIds)
+            || sourceSettings.pinnedQuickCategoryIds.some(id => typeof id !== 'string')))) {
+      return _importError('设置字段类型错误');
+    }
+    const settings = _cloneSafeJson(sourceSettings);
+    if (settings === undefined) return _importError('设置数据包含不支持的值');
+    if (Array.isArray(settings.pinnedQuickCategoryIds)) {
+      settings.pinnedQuickCategoryIds = [...new Set(settings.pinnedQuickCategoryIds)]
+        .filter(id => typeof id === 'string' && categoryIds.has(id))
+        .slice(0, 4);
+    }
+
+    return {
+      success: true,
+      data: {
+        expenses,
+        categories,
+        budget: { monthlyTotal: Number(sourceBudget.monthlyTotal || 0), categories: categoryBudgets },
+        settings,
+      },
+    };
+  }
+
+  function _restoreImportSnapshot(snapshot, writtenKeys) {
+    let restored = true;
+    for (const key of writtenKeys) {
+      if (!_write(KEYS[key], snapshot[key])) restored = false;
+    }
+    return restored;
+  }
+
   /**
    * 从备份文件导入数据
    * 执行前需确认：会完全替换当前数据，不可撤销
@@ -407,46 +595,55 @@ const ExpenseDB = (() => {
    * @returns {{ success: boolean, message: string, counts: object }}
    */
   function importAll(data) {
-    // 校验数据结构完整性
-    if (!data || typeof data !== 'object') {
-      return { success: false, message: '无效的备份文件：数据格式错误', counts: null };
-    }
-    if (!Array.isArray(data.expenses)) {
-      return { success: false, message: '无效的备份文件：缺少消费记录', counts: null };
-    }
-    if (!Array.isArray(data.categories) || data.categories.length === 0) {
-      return { success: false, message: '无效的备份文件：缺少分类数据', counts: null };
-    }
+    const validation = _validateImport(data);
+    if (!validation.success) return validation;
+    const normalized = validation.data;
 
-    // 校验每条 expense 必填字段
-    // 注意：amount 可以为 0（虽然实际不应出现），用 null/undefined 判断而非 falsy
-    for (const e of data.expenses) {
-      if (!e.id || e.amount == null || !e.categoryId || !e.date) {
-        return { success: false, message: '无效的备份文件：消费记录字段缺失', counts: null };
-      }
-    }
-
-    // 写入前先备份当前数据（防止误操作，可手动恢复）
-    const currentBackup = exportAll();
+    // 同时保留内存快照和持久备份：持久备份无法创建时不冒险覆盖原数据。
+    const snapshot = {
+      expenses: _read(KEYS.expenses) || [],
+      categories: _read(KEYS.categories) || [],
+      budget: _read(KEYS.budget) || { monthlyTotal: 0, categories: {} },
+      settings: _read(KEYS.settings) || {},
+    };
     try {
-      localStorage.setItem('expense_tracker_pre_import_backup', JSON.stringify(currentBackup));
-    } catch (_) { /* 兜底备份写入失败不阻塞导入 */ }
+      localStorage.setItem('expense_tracker_pre_import_backup', JSON.stringify(exportAll()));
+    } catch (error) {
+      console.error('[ExpenseDB] 创建导入前备份失败:', error);
+      return { success: false, message: '导入失败：无法创建恢复前备份，请检查浏览器存储空间', counts: null };
+    }
 
-    // 执行导入
-    _write(KEYS.expenses, data.expenses);
-    _write(KEYS.categories, data.categories);
-    _write(KEYS.budget, data.budget || { monthlyTotal: 0, categories: {} });
-    _write(KEYS.settings, data.settings || {});
+    const writes = [
+      ['expenses', normalized.expenses],
+      ['categories', normalized.categories],
+      ['budget', normalized.budget],
+      ['settings', normalized.settings],
+    ];
+    const writtenKeys = [];
+    for (const [key, value] of writes) {
+      if (_write(KEYS[key], value)) {
+        writtenKeys.push(key);
+        continue;
+      }
+      const restored = _restoreImportSnapshot(snapshot, writtenKeys);
+      return {
+        success: false,
+        message: restored
+          ? '导入失败：写入未完成，原数据已恢复'
+          : '导入失败且自动恢复不完整，请保留页面并使用导入前备份恢复',
+        counts: null,
+      };
+    }
 
     // 记录备份时间
     _recordBackup();
 
     return {
       success: true,
-      message: `导入成功！${data.expenses.length} 条记录，${data.categories.length} 个分类`,
+      message: `导入成功！${normalized.expenses.length} 条记录，${normalized.categories.length} 个分类`,
       counts: {
-        expenses: data.expenses.length,
-        categories: data.categories.length,
+        expenses: normalized.expenses.length,
+        categories: normalized.categories.length,
       },
     };
   }
@@ -457,7 +654,10 @@ const ExpenseDB = (() => {
   function _recordBackup() {
     try {
       localStorage.setItem('expense_tracker_last_backup', new Date().toISOString());
-    } catch (_) { /* 静默 */ }
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   /**
@@ -472,7 +672,7 @@ const ExpenseDB = (() => {
    * 记录最近一次备份时间（导出/导入成功时由调用方触发）
    */
   function recordBackupTime() {
-    _recordBackup();
+    return _recordBackup();
   }
 
   /**

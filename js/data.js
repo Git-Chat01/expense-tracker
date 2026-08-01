@@ -149,6 +149,13 @@ const ExpenseData = (() => {
     return `${r},${g},${b}`;
   }
 
+  /** 将动态文本安全地放进 innerHTML 或双引号属性。 */
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, character => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+    })[character]);
+  }
+
   /* =================================================================
      初始化：写入预设分类 + 默认预算
      仅在首次使用时执行（检测 categories 是否为空）
@@ -178,5 +185,6 @@ const ExpenseData = (() => {
     EMOTIONS,
     initPresetData,
     hexToRgb,
+    escapeHtml,
   };
 })();
