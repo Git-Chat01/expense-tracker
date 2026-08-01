@@ -169,7 +169,7 @@ const ExpenseApp = (() => {
         } catch (e) {
           console.error('[App] ExpenseList.render 异常:', e);
           var lc = document.getElementById('list-content');
-          if (lc) lc.innerHTML = '<div class="empty-state"><div class="empty-state__icon">⚠️</div><p class="empty-state__text">渲染出错</p><p class="empty-state__hint">' + e.message + '</p></div>';
+          if (lc) lc.innerHTML = '<div class="empty-state"><div class="empty-state__icon">⚠️</div><p class="empty-state__text">渲染出错</p><p class="empty-state__hint">' + ExpenseData.escapeHtml(e.message) + '</p></div>';
         }
       } else {
         console.error('[App] ExpenseList 未定义，list.js 可能加载失败');
@@ -579,13 +579,13 @@ const ExpenseApp = (() => {
       if (isOpen) {
         inputs.style.display = 'none';
         toggleBtn.setAttribute('aria-expanded', 'false');
-        toggleBtn.innerHTML = `<span aria-hidden="true">日历</span><span id="add-date-label">今天</span><span id="add-time-label">${_formState.time}</span><span class="add-date-quick__chevron" aria-hidden="true">⌄</span>`;
+        toggleBtn.innerHTML = `<span aria-hidden="true">日历</span><span id="add-date-label">今天</span><span id="add-time-label">${ExpenseData.escapeHtml(_formState.time)}</span><span class="add-date-quick__chevron" aria-hidden="true">⌄</span>`;
         // 重新获取 label 引用（innerHTML 替换后需要）
         _updateDateLabels();
       } else {
         inputs.style.display = 'flex';
         toggleBtn.setAttribute('aria-expanded', 'true');
-        toggleBtn.innerHTML = `<span aria-hidden="true">日历</span><span id="add-date-label">今天</span><span id="add-time-label">${_formState.time}</span><span class="add-date-quick__chevron" aria-hidden="true">⌃</span>`;
+        toggleBtn.innerHTML = `<span aria-hidden="true">日历</span><span id="add-date-label">今天</span><span id="add-time-label">${ExpenseData.escapeHtml(_formState.time)}</span><span class="add-date-quick__chevron" aria-hidden="true">⌃</span>`;
         _updateDateLabels();
       }
     });
@@ -652,7 +652,7 @@ const ExpenseApp = (() => {
     const dateQuick = document.getElementById('add-date-quick');
     if (dateQuick) {
       dateQuick.setAttribute('aria-expanded', 'false');
-      dateQuick.innerHTML = `<span aria-hidden="true">日历</span><span id="add-date-label">今天</span><span id="add-time-label">${_formState.time}</span><span class="add-date-quick__chevron" aria-hidden="true">⌄</span>`;
+      dateQuick.innerHTML = `<span aria-hidden="true">日历</span><span id="add-date-label">今天</span><span id="add-time-label">${ExpenseData.escapeHtml(_formState.time)}</span><span class="add-date-quick__chevron" aria-hidden="true">⌄</span>`;
       _updateDateLabels();
     }
   }
@@ -710,11 +710,19 @@ const ExpenseApp = (() => {
       note:          _formState.note,
     });
 
+    if (!record) {
+      _toast('保存失败，请检查浏览器存储空间后重试', 'warning');
+      return;
+    }
+
     _toast(`已记录 ¥${amount.toFixed(2)}`, 'success', {
       actionLabel: '撤销',
       duration: 5000,
       onAction: () => {
-        ExpenseDB.deleteExpense(record.id);
+        if (!ExpenseDB.deleteExpense(record.id)) {
+          _toast('撤销失败，这笔记录仍然保留', 'warning');
+          return;
+        }
         _toast('已撤销本次记录', 'success');
         ExpenseHome.render();
         if (typeof ExpenseList !== 'undefined') ExpenseList.render();
@@ -823,11 +831,11 @@ const ExpenseApp = (() => {
             return `
               <div style="display:flex;align-items:center;gap:8px">
                 <span style="width:32px;display:inline-flex;align-items:center;justify-content:center">${ExpenseCategories.getIconMarkup(cat)}</span>
-                <span style="flex:1;font-size:14px">${cat.name}</span>
+                <span style="flex:1;font-size:14px">${ExpenseData.escapeHtml(cat.name)}</span>
                 <div style="display:flex;align-items:center;gap:4px">
                   <span style="font-size:14px">¥</span>
-                  <input type="number" class="input cat-budget-input" data-cat-id="${cat.id}"
-                         value="${catBudget}" placeholder="不限" min="0" step="100"
+                  <input type="number" class="input cat-budget-input" data-cat-id="${ExpenseData.escapeHtml(cat.id)}"
+                         value="${ExpenseData.escapeHtml(catBudget)}" placeholder="不限" min="0" step="100"
                          style="width:100px;text-align:right">
                 </div>
                 ${catBudget > 0 ? `<span style="font-size:11px;color:var(--color-text-tertiary);width:60px;text-align:right">${spent > catBudget ? '⚠️超支' : Math.round(spent/catBudget*100)+'%'}</span>` : '<span style="width:60px"></span>'}
@@ -850,7 +858,10 @@ const ExpenseApp = (() => {
         const val = parseFloat(input.value);
         if (val > 0) newBudget.categories[input.dataset.catId] = val;
       });
-      ExpenseDB.saveBudget(newBudget);
+      if (!ExpenseDB.saveBudget(newBudget)) {
+        _toast('预算保存失败，请检查浏览器存储空间', 'warning');
+        return;
+      }
       _toast('预算已保存', 'success');
       overlay.classList.remove('page-overlay--open');
       ExpenseHome.render();
@@ -859,7 +870,10 @@ const ExpenseApp = (() => {
     // 重置
     document.getElementById('budget-btn-reset').addEventListener('click', () => {
       if (confirm('确定清空全部预算设置？')) {
-        ExpenseDB.saveBudget(ExpenseData.DEFAULT_BUDGET);
+        if (!ExpenseDB.saveBudget(ExpenseData.DEFAULT_BUDGET)) {
+          _toast('预算重置失败，请检查浏览器存储空间', 'warning');
+          return;
+        }
         _toast('预算已重置', 'success');
         overlay.classList.remove('page-overlay--open');
         ExpenseHome.render();
@@ -898,19 +912,19 @@ const ExpenseApp = (() => {
         <div style="margin-bottom:20px">
           <div style="display:flex;align-items:center;gap:6px;padding:6px 0;font-weight:600;font-size:15px">
             ${ExpenseCategories.getIconMarkup(p)}
-            <span>${p.name}</span>
+            <span>${ExpenseData.escapeHtml(p.name)}</span>
             <span style="font-size:11px;color:var(--color-text-tertiary);font-weight:400">${p.isPreset ? '预设' : '自定义'}</span>
-            ${!p.isPreset ? `<button class="btn btn--ghost btn--small" data-del-cat="${p.id}" style="color:var(--color-danger);font-size:11px;margin-left:auto">删除</button>` : ''}
+            ${!p.isPreset ? `<button class="btn btn--ghost btn--small" data-del-cat="${ExpenseData.escapeHtml(p.id)}" style="color:var(--color-danger);font-size:11px;margin-left:auto">删除</button>` : ''}
           </div>
           <div style="padding-left:24px">
             ${children.map(c => `
               <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--color-divider)">
                 <span style="display:flex;align-items:center;gap:4px;font-size:14px">
                   ${ExpenseCategories.getIconMarkup(c)}
-                  <span>${c.name}</span>
+                  <span>${ExpenseData.escapeHtml(c.name)}</span>
                   <span style="font-size:11px;color:var(--color-text-tertiary)">${c.isPreset ? '预设' : '自定义'}</span>
                 </span>
-                ${!c.isPreset ? `<button class="btn btn--ghost btn--small" data-del-cat="${c.id}" style="color:var(--color-danger);font-size:11px">删除</button>` : ''}
+                ${!c.isPreset ? `<button class="btn btn--ghost btn--small" data-del-cat="${ExpenseData.escapeHtml(c.id)}" style="color:var(--color-danger);font-size:11px">删除</button>` : ''}
               </div>
             `).join('')}
             ${children.length === 0 ? '<div style="padding:6px 0;font-size:12px;color:var(--color-text-tertiary)">暂无子分类</div>' : ''}
@@ -925,7 +939,10 @@ const ExpenseApp = (() => {
         const cat = ExpenseDB.getCategory(catId);
         if (!cat) return;
         if (confirm(`确定删除分类「${cat.name}」？`)) {
-          ExpenseDB.deleteCategory(catId);
+          if (!ExpenseDB.deleteCategory(catId)) {
+            _toast('分类删除失败，请检查浏览器存储空间', 'warning');
+            return;
+          }
           if (_formState.categoryId === catId) _formState.categoryId = '';
           _renderCategoryManagerOverlay();
           _renderAddCategories();
@@ -947,7 +964,7 @@ const ExpenseApp = (() => {
           <label style="font-weight:600;display:block;margin-bottom:6px">所属一级分类</label>
           <select class="input" id="new-cat-parent">
             <option value="">-- 新建一级分类 --</option>
-            ${parents.map(p => `<option value="${p.id}">${p.icon} ${p.name}</option>`).join('')}
+            ${parents.map(p => `<option value="${ExpenseData.escapeHtml(p.id)}">${ExpenseData.escapeHtml(p.icon)} ${ExpenseData.escapeHtml(p.name)}</option>`).join('')}
           </select>
         </div>
         <div>
@@ -971,7 +988,10 @@ const ExpenseApp = (() => {
       const icon = document.getElementById('new-cat-icon').value.trim() || '📌';
       const parentId = document.getElementById('new-cat-parent').value || null;
 
-      ExpenseDB.addCategory({ name, icon, parentId });
+      if (!ExpenseDB.addCategory({ name, icon, parentId })) {
+        _toast('分类添加失败，请检查浏览器存储空间', 'warning');
+        return;
+      }
       _toast(`已添加分类「${name}」`, 'success');
       _renderCategoryManagerOverlay();
       _renderAddCategories();
@@ -998,7 +1018,10 @@ const ExpenseApp = (() => {
     document.getElementById('overlay-edit-delete').addEventListener('click', () => {
       if (!_editingExpenseId) return;
       if (confirm('确定删除这条记录？此操作不可恢复。')) {
-        ExpenseDB.deleteExpense(_editingExpenseId);
+        if (!ExpenseDB.deleteExpense(_editingExpenseId)) {
+          _toast('删除失败，这笔记录仍然保留', 'warning');
+          return;
+        }
         _toast('已删除', 'success');
         _closeEditSheet();
         _editingExpenseId = null;
@@ -1148,7 +1171,7 @@ const ExpenseApp = (() => {
           _toast('内容格式错误，不是有效的 JSON', 'warning');
           return;
         }
-        if (!data.expenses || !data.categories) {
+        if (!Array.isArray(data.expenses) || !Array.isArray(data.categories)) {
           _toast('无效的备份文件：缺少数据字段', 'warning');
           return;
         }
@@ -1237,7 +1260,7 @@ const ExpenseApp = (() => {
       <div style="display:flex;flex-direction:column;gap:16px">
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">金额 ¥</label>
-          <input type="number" class="input" id="edit-amount" value="${expense.amount}" step="0.01" min="0.01">
+          <input type="number" class="input" id="edit-amount" value="${ExpenseData.escapeHtml(expense.amount)}" step="0.01" min="0.01">
         </div>
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">分类</label>
@@ -1247,7 +1270,7 @@ const ExpenseApp = (() => {
         </div>
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">📍 地点</label>
-          <input type="text" class="input" id="edit-location" value="${expense.location || ''}" maxlength="50">
+          <input type="text" class="input" id="edit-location" value="${ExpenseData.escapeHtml(expense.location || '')}" maxlength="50">
         </div>
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">支付方式</label>
@@ -1264,16 +1287,16 @@ const ExpenseApp = (() => {
         </div>
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">📝 备注</label>
-          <input type="text" class="input" id="edit-note" value="${expense.note || ''}" maxlength="100">
+          <input type="text" class="input" id="edit-note" value="${ExpenseData.escapeHtml(expense.note || '')}" maxlength="100">
         </div>
         <div style="display:flex;gap:12px">
           <div style="flex:1">
             <label style="font-weight:600;display:block;margin-bottom:6px">📅 日期</label>
-            <input type="date" class="input" id="edit-date" value="${expense.date || ''}">
+            <input type="date" class="input" id="edit-date" value="${ExpenseData.escapeHtml(expense.date || '')}">
           </div>
           <div style="flex:1">
             <label style="font-weight:600;display:block;margin-bottom:6px">⏰ 时间</label>
-            <input type="time" class="input" id="edit-time" value="${expense.time || ''}">
+            <input type="time" class="input" id="edit-time" value="${ExpenseData.escapeHtml(expense.time || '')}">
           </div>
         </div>
         <button class="btn btn--primary btn--block" id="edit-btn-save">保存修改</button>
@@ -1302,7 +1325,7 @@ const ExpenseApp = (() => {
 
       const pmBtn = body.querySelector('[data-edit-pm].chip--active');
 
-      ExpenseDB.updateExpense(expenseId, {
+      const updated = ExpenseDB.updateExpense(expenseId, {
         amount:        amountVal,
         categoryId:    document.getElementById('edit-category').value,
         location:      document.getElementById('edit-location').value,
@@ -1311,6 +1334,11 @@ const ExpenseApp = (() => {
         date:          document.getElementById('edit-date').value,
         time:          document.getElementById('edit-time').value,
       });
+
+      if (!updated) {
+        _toast('修改保存失败，请检查浏览器存储空间', 'warning');
+        return;
+      }
 
       _toast('已更新', 'success');
       _closeEditSheet();
@@ -1328,10 +1356,10 @@ const ExpenseApp = (() => {
     const parents = ExpenseDB.getParentCategories();
     let html = '<option value="">-- 请选择 --</option>';
     parents.forEach(p => {
-      html += `<option value="${p.id}" ${p.id === selectedId ? 'selected' : ''}>${p.icon} ${p.name}</option>`;
+      html += `<option value="${ExpenseData.escapeHtml(p.id)}" ${p.id === selectedId ? 'selected' : ''}>${ExpenseData.escapeHtml(p.icon)} ${ExpenseData.escapeHtml(p.name)}</option>`;
       const children = ExpenseDB.getChildCategories(p.id);
       children.forEach(c => {
-        html += `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>&nbsp;&nbsp;└ ${c.icon} ${c.name}</option>`;
+        html += `<option value="${ExpenseData.escapeHtml(c.id)}" ${c.id === selectedId ? 'selected' : ''}>&nbsp;&nbsp;└ ${ExpenseData.escapeHtml(c.icon)} ${ExpenseData.escapeHtml(c.name)}</option>`;
       });
     });
     return html;

@@ -76,13 +76,13 @@ const ExpenseCategories = (() => {
   };
 
   function _escapeHtml(value) {
-    return String(value || '').replace(/[&<>'"]/g, (character) => ({
-      '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
-    })[character]);
+    return ExpenseData.escapeHtml(value);
   }
 
   function _categoryIconMarkup(category) {
-    const iconData = category && _CATEGORY_ICON_DATA[category.id];
+    const iconData = category && Object.prototype.hasOwnProperty.call(_CATEGORY_ICON_DATA, category.id)
+      ? _CATEGORY_ICON_DATA[category.id]
+      : null;
     if (!iconData) {
       return `<span class="category-icon category-icon--emoji" aria-hidden="true">${_escapeHtml(category && category.icon ? category.icon : '•')}</span>`;
     }
@@ -204,7 +204,10 @@ const ExpenseCategories = (() => {
       return;
     }
 
-    ExpenseDB.saveSettings({ pinnedQuickCategoryIds: pinnedIds });
+    if (!ExpenseDB.saveSettings({ pinnedQuickCategoryIds: pinnedIds })) {
+      if (typeof ExpenseApp !== 'undefined') ExpenseApp.showToast('固定分类失败，请检查浏览器存储空间', 'warning');
+      return;
+    }
     renderGrid(containerId, subContainerId, _onSelectStored);
   }
 
@@ -264,9 +267,9 @@ const ExpenseCategories = (() => {
 
     const categories = _getQuickCategories();
     quickGrid.innerHTML = categories.map(category => `
-      <button class="add-quick-category${category.isQuickPinned ? ' add-quick-category--pinned' : ''}" data-quick-cat-id="${category.id}" type="button" aria-label="${category.name}${category.isQuickPinned ? '，已固定，长按取消固定' : '，长按固定'}">
+      <button class="add-quick-category${category.isQuickPinned ? ' add-quick-category--pinned' : ''}" data-quick-cat-id="${_escapeHtml(category.id)}" type="button" aria-label="${_escapeHtml(category.name)}${category.isQuickPinned ? '，已固定，长按取消固定' : '，长按固定'}">
         <span class="add-quick-category__icon">${_categoryIconMarkup(category)}</span>
-        <span class="add-quick-category__name">${category.name}</span>
+        <span class="add-quick-category__name">${_escapeHtml(category.name)}</span>
         ${category.isQuickPinned ? '<span class="add-quick-category__pin" aria-hidden="true">⌖</span>' : ''}
       </button>
     `).join('');
@@ -346,16 +349,16 @@ const ExpenseCategories = (() => {
               </button>
               <div class="category-subcategory-panel__context">
                 ${_categoryIconMarkup(parent)}
-                <span><strong>${parent.name}</strong><small>选择细分分类</small></span>
+                <span><strong>${_escapeHtml(parent.name)}</strong><small>选择细分分类</small></span>
               </div>
             </div>
-            <div class="category-subcategory-grid" role="group" aria-label="${parent.name}的子分类">
+            <div class="category-subcategory-grid" role="group" aria-label="${_escapeHtml(parent.name)}的子分类">
               ${children.map(cat => {
                 const isSelected = _selectedCategoryId === cat.id;
                 return `
-                  <button class="cat-chip ${isSelected ? 'cat-chip--selected' : ''}" data-cat-id="${cat.id}" type="button">
+                  <button class="cat-chip ${isSelected ? 'cat-chip--selected' : ''}" data-cat-id="${_escapeHtml(cat.id)}" type="button">
                     <span class="cat-chip__icon">${_categoryIconMarkup(cat)}</span>
-                    <span class="cat-chip__name">${cat.name}</span>
+                    <span class="cat-chip__name">${_escapeHtml(cat.name)}</span>
                   </button>`;
               }).join('')}
             </div>
@@ -383,10 +386,10 @@ const ExpenseCategories = (() => {
         || (selectedCat && selectedCat.parentId === cat.id);
       return `
         <button class="cat-btn ${isSelected ? 'cat-btn--selected' : ''}"
-                data-cat-id="${cat.id}"
+                data-cat-id="${_escapeHtml(cat.id)}"
                 data-has-children="${ExpenseDB.getChildCategories(cat.id).length > 0}">
           <span class="cat-btn__icon">${_categoryIconMarkup(cat)}</span>
-          <span class="cat-btn__name">${cat.name}</span>
+          <span class="cat-btn__name">${_escapeHtml(cat.name)}</span>
         </button>`;
     }).join('');
 

@@ -504,7 +504,7 @@ const ExpenseStats = (() => {
 
     // 构建 HTML
     var html = '';
-    html += '<div class="stats-tooltip__title" style="color:' + seg.color + '">' + ExpenseCategories.getIconMarkup(seg.category) + '<span>' + seg.name + '</span></div>';
+    html += '<div class="stats-tooltip__title" style="color:' + seg.color + '">' + ExpenseCategories.getIconMarkup(seg.category) + '<span>' + ExpenseData.escapeHtml(seg.name) + '</span></div>';
     html += '<div class="stats-tooltip__amount" style="color:' + seg.color + '"><span class="stats-tooltip__currency">¥</span>' + seg.amount.toLocaleString() + '</div>';
     html += '<div class="stats-tooltip__pct">占比 ' + seg.pct + '%</div>';
     if (seg.isHighest) {
@@ -816,7 +816,7 @@ const ExpenseStats = (() => {
       var amountStr = '¥' + amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
       return '<div class="stats-chart-legend__item" data-idx="' + i + '">'
         + '<span class="stats-chart-legend__dot" style="background:' + color + '"></span>'
-        + '<span class="stats-chart-legend__name">' + label + '</span>'
+        + '<span class="stats-chart-legend__name">' + ExpenseData.escapeHtml(label) + '</span>'
         + '<span class="stats-chart-legend__pct">' + pct + '%</span>'
         + '<span class="stats-chart-legend__amount">' + amountStr + '</span>'
         + '</div>';
@@ -1028,7 +1028,7 @@ const ExpenseStats = (() => {
         const pct = total > 0 ? Math.round(v / total * 100) : 0;
         return `
           <div class="stats-fallback__bar">
-            <span class="stats-fallback__label">${labels[i]}</span>
+            <span class="stats-fallback__label">${ExpenseData.escapeHtml(labels[i])}</span>
             <div class="stats-fallback__track">
               <div class="stats-fallback__fill stats-fallback__fill--c${i % 8}" style="width:${Math.max(pct, 2)}%">${pct}%</div>
             </div>
@@ -1040,7 +1040,7 @@ const ExpenseStats = (() => {
         const pct = Math.round(v / max * 100);
         return `
           <div class="stats-fallback__bar">
-            <span class="stats-fallback__label">${labels[i]}</span>
+            <span class="stats-fallback__label">${ExpenseData.escapeHtml(labels[i])}</span>
             <div class="stats-fallback__track">
               <div class="stats-fallback__fill stats-fallback__fill--c0" style="width:${Math.max(pct, 2)}%">¥${v}</div>
             </div>
