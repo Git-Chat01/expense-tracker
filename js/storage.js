@@ -116,6 +116,7 @@ const ExpenseDB = (() => {
       time:         expense.time || now(),
       location:     expense.location || '',
       paymentMethod:expense.paymentMethod || '',
+      necessity:    expense.necessity || '',   // 价值评定：need/want/impulse，空串=未评估
       note:         expense.note || '',
       createdAt:    new Date().toISOString(),
     };

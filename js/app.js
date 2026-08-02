@@ -15,6 +15,7 @@ const ExpenseApp = (() => {
     categoryId: '',
     location: '',
     paymentMethod: '',
+    necessity: '',        // 价值评定：need/want/impulse，空串=未评估（可选填）
     note: '',
     date: '',
     time: '',
@@ -58,8 +59,9 @@ const ExpenseApp = (() => {
     // 3. 渲染分类网格
     _renderAddCategories();
 
-    // 4. 渲染支付方式
+    // 4. 渲染支付方式 + 价值评定三键
     _renderPaymentMethods();
+    _renderNecessityOptions();
     _updateAmountDisplay();
 
     // 5. 绑定事件
@@ -160,6 +162,7 @@ const ExpenseApp = (() => {
       }
       _renderAddCategories();
       _renderPaymentMethods();
+      _renderNecessityOptions();
       _renderMerchantSuggestions();
       _updateAmountDisplay();
     } else if (viewId === 'list') {
@@ -402,6 +405,34 @@ const ExpenseApp = (() => {
   }
 
   /* -----------------------------------------------------------------
+     价值评定三键（必需/可选/冲动）
+     内联常驻一行，点选即生效；再点已选项 = 取消（回到未评估）
+     ----------------------------------------------------------------- */
+  function _renderNecessityOptions() {
+    const container = document.getElementById('add-necessity-options');
+    if (!container) return;
+
+    container.innerHTML = ExpenseData.NECESSITY_OPTIONS.map(opt => {
+      const isActive = _formState.necessity === opt.value;
+      const rgb = ExpenseData.hexToRgb(opt.color);
+      // 未选中：淡语义色底 + 语义色字；选中：实心语义色 + 白字（与支付方式 chip 同构）
+      const bg   = isActive ? opt.color : `rgba(${rgb},0.1)`;
+      const bd   = isActive ? opt.color : `rgba(${rgb},0.3)`;
+      const text = isActive ? '#fff' : opt.color;
+      return `<button class="chip chip--necessity ${isActive ? 'chip--active' : ''}" data-necessity="${opt.value}" type="button" style="background:${bg};border-color:${bd};color:${text}">${opt.icon} ${opt.label}</button>`;
+    }).join('');
+
+    container.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const val = chip.dataset.necessity;
+        // 再点已选项 = 取消（未评估），点其他项 = 切换
+        _formState.necessity = (_formState.necessity === val) ? '' : val;
+        _renderNecessityOptions();
+      });
+    });
+  }
+
+  /* -----------------------------------------------------------------
      记账表单绑定
      ----------------------------------------------------------------- */
   function _bindAddForm() {
@@ -631,9 +662,10 @@ const ExpenseApp = (() => {
     if (clearTransient) {
       _formState.location = '';
       _formState.paymentMethod = '';
+      _formState.necessity = '';
     }
 
-    // 分类会保留为可见摘要，地点和支付方式不会默默带入新的一笔。
+    // 分类会保留为可见摘要，地点、支付方式和价值评定不会默默带入新的一笔。
     const dateInput = document.getElementById('add-date');
     const timeInput = document.getElementById('add-time');
     const locInput = document.getElementById('add-location');
@@ -707,6 +739,7 @@ const ExpenseApp = (() => {
       time:          _formState.time,
       location:      _formState.location,
       paymentMethod: _formState.paymentMethod,
+      necessity:     _formState.necessity,   // 价值评定：need/want/impulse，未选则为空串
       note:          _formState.note,
     });
 
@@ -731,12 +764,13 @@ const ExpenseApp = (() => {
       },
     });
 
-    // 连续记账只保留可见的分类摘要，避免地点和支付方式悄悄误带。
+    // 连续记账只保留可见的分类摘要，避免地点、支付方式和价值评定悄悄误带。
     _formState.amountRaw = '';
     _confirmedLargeAmountRaw = null;
     _formState.note = '';
     _formState.location = '';
     _formState.paymentMethod = '';
+    _formState.necessity = '';
     _paymentOptionsExpanded = false;
     const noteInput = document.getElementById('add-note');
     const locInput = document.getElementById('add-location');
@@ -752,6 +786,8 @@ const ExpenseApp = (() => {
 
     // 支付方式回到“可选”状态，不让上一笔支付渠道造成误记。
     _renderPaymentMethods();
+    // 价值评定回到未评估状态（下一笔重新判断，不默带）
+    _renderNecessityOptions();
     _renderMerchantSuggestions();
   }
 
@@ -1286,6 +1322,19 @@ const ExpenseApp = (() => {
           </div>
         </div>
         <div>
+          <label style="font-weight:600;display:block;margin-bottom:6px">💰 价值评定</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${ExpenseData.NECESSITY_OPTIONS.map(opt => {
+              const isActive = expense.necessity === opt.value;
+              const rgb = ExpenseData.hexToRgb(opt.color);
+              const bg   = isActive ? opt.color : `rgba(${rgb},0.1)`;
+              const bd   = isActive ? opt.color : `rgba(${rgb},0.3)`;
+              const text = isActive ? '#fff' : opt.color;
+              return `<button class="chip chip--payment ${isActive ? 'chip--active' : ''}" data-edit-necessity="${opt.value}" style="background:${bg};border-color:${bd};color:${text}">${opt.icon} ${opt.label}</button>`;
+            }).join('')}
+          </div>
+        </div>
+        <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">📝 备注</label>
           <input type="text" class="input" id="edit-note" value="${ExpenseData.escapeHtml(expense.note || '')}" maxlength="100">
         </div>
@@ -1315,6 +1364,18 @@ const ExpenseApp = (() => {
       });
     });
 
+    // 价值评定切换（与支付方式同规则：互斥选中，再点已选项取消 = 回到未评估）
+    body.querySelectorAll('[data-edit-necessity]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (btn.classList.contains('chip--active')) {
+          btn.classList.remove('chip--active');
+        } else {
+          body.querySelector('[data-edit-necessity].chip--active')?.classList.remove('chip--active');
+          btn.classList.add('chip--active');
+        }
+      });
+    });
+
     // 保存按钮（每次打开覆盖层时重新创建，无需担心事件泄漏）
     document.getElementById('edit-btn-save').addEventListener('click', () => {
       const amountVal = parseFloat(document.getElementById('edit-amount').value);
@@ -1324,12 +1385,14 @@ const ExpenseApp = (() => {
       }
 
       const pmBtn = body.querySelector('[data-edit-pm].chip--active');
+      const necessityBtn = body.querySelector('[data-edit-necessity].chip--active');
 
       const updated = ExpenseDB.updateExpense(expenseId, {
         amount:        amountVal,
         categoryId:    document.getElementById('edit-category').value,
         location:      document.getElementById('edit-location').value,
         paymentMethod: pmBtn ? pmBtn.dataset.editPm : '',
+        necessity:     necessityBtn ? necessityBtn.dataset.editNecessity : '',
         note:          document.getElementById('edit-note').value,
         date:          document.getElementById('edit-date').value,
         time:          document.getElementById('edit-time').value,

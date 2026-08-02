@@ -185,6 +185,11 @@ const ExpenseList = (() => {
 
     // 元数据只保留能帮助回忆这笔记录的信息，不再堆叠装饰性 Emoji。
     const metaParts = [];
+    // 价值评定标记放最前（emoji 自带语义色，一眼识别这笔花得值不值）
+    if (expense.necessity) {
+      const opt = ExpenseData.NECESSITY_OPTIONS.find(o => o.value === expense.necessity);
+      if (opt) metaParts.push(`${opt.icon}${opt.label}`);
+    }
     if (expense.note) metaParts.push(ExpenseData.escapeHtml(name));
     if (expense.time) metaParts.push(ExpenseData.escapeHtml(expense.time));
     if (expense.location) metaParts.push(ExpenseData.escapeHtml(expense.location));
