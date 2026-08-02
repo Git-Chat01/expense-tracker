@@ -385,6 +385,16 @@
 .chip--payment { min-height: 38px; padding: 7px 12px; border: 1px solid var(--color-border); font-size: var(--font-size-sm); font-weight: 600; line-height: 1; transition: transform var(--transition-fast), box-shadow var(--transition-fast); }
 .chip--payment:active { transform: scale(.96); }
 .chip--payment.chip--active { box-shadow: 0 4px 10px rgba(28, 41, 43, .14); }
+/* 价值评定（v181）：内联三键常驻，语义色由 JS 内联生成，CSS 只负责布局 */
+.add-necessity-section { padding: 10px 0 12px; border-bottom: 1px solid var(--color-divider); }
+.add-necessity-section__header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.add-necessity-section__hint { color: var(--color-text-tertiary); font-size: var(--font-size-xs); font-weight: 500; }
+.add-necessity-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.chip--necessity { min-height: 44px; justify-content: center; font-weight: 600; line-height: 1; transition: transform var(--transition-fast), box-shadow var(--transition-fast); }
+.chip--necessity:active { transform: scale(.96); }
+.chip--necessity.chip--active { box-shadow: 0 4px 10px rgba(28, 41, 43, .14); }
+/* 价值评定插在支付方式之后，原支付方式与折叠区的双线消除规则需延续到新区块 */
+.add-necessity-section + .add-more-fields { border-top: 0; }
 .add-more-fields { border-top: 1px solid var(--color-divider); border-bottom: 1px solid var(--color-divider); }
 .add-more-fields summary { display: flex; min-height: 44px; align-items: center; color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: 600; cursor: pointer; list-style: none; }
 .add-more-fields summary::-webkit-details-marker { display: none; }

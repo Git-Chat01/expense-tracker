@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=178">
+  <link rel="stylesheet" href="css/common.css?v=181">
   <link rel="stylesheet" href="css/home.css?v=175">
-  <link rel="stylesheet" href="css/add.css?v=175">
+  <link rel="stylesheet" href="css/add.css?v=181">
   <link rel="stylesheet" href="css/list.css?v=175">
-  <link rel="stylesheet" href="css/stats.css?v=175">
+  <link rel="stylesheet" href="css/stats.css?v=181">
   <link rel="stylesheet" href="css/onboarding.css?v=176">
 </head>
 <body>
@@ -159,12 +159,21 @@
         <!-- SW 更新提示（低存在感，仅新版本可用时显示） -->
         <section class="home-section home-section--support">
           <div id="sw-update-bar" class="sw-update-bar">
-            <span class="sw-update-bar__icon">↻</span>
-            <div class="sw-update-bar__body">
-              <span class="sw-update-bar__title">发现新版本</span>
-              <span class="sw-update-bar__sub">体验优化，建议更新</span>
+            <div class="sw-update-bar__head" id="sw-update-bar-head">
+              <span class="sw-update-bar__icon">↻</span>
+              <div class="sw-update-bar__body">
+                <span class="sw-update-bar__title">发现新版本</span>
+                <span class="sw-update-bar__sub">体验优化，建议更新</span>
+              </div>
+              <span class="sw-update-bar__toggle" id="sw-update-bar-toggle" aria-hidden="true">▾</span>
             </div>
-            <span class="sw-update-bar__btn">更新</span>
+            <div class="sw-update-bar__detail" id="sw-update-bar-detail" hidden>
+              <ul class="sw-update-bar__list" id="sw-update-bar-list"></ul>
+              <div class="sw-update-bar__actions">
+                <button type="button" class="sw-update-bar__later" id="sw-update-btn-later">稍后再说</button>
+                <button type="button" class="sw-update-bar__btn" id="sw-update-btn-now">立即更新</button>
+              </div>
+            </div>
           </div>
         </section>
       </aside>
@@ -172,7 +181,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260802-179 · 修复数据可靠性与输入安全
+      v20260803-181 · 更新说明
     </div>
   </main>
 
@@ -240,6 +249,15 @@
           <span class="add-payment-summary__edit" id="add-payment-summary-action">选择</span>
         </button>
         <div class="add-payment-methods" id="add-payment-methods"></div>
+      </section>
+
+      <!-- 价值评定：三键可选填，不选也能保存（保持快速记录流畅） -->
+      <section class="add-necessity-section" aria-labelledby="add-necessity-title">
+        <div class="add-necessity-section__header">
+          <h2 class="add-section__title" id="add-necessity-title">价值评定</h2>
+          <span class="add-necessity-section__hint">可选</span>
+        </div>
+        <div class="add-necessity-options" id="add-necessity-options"></div>
       </section>
 
       <details class="add-more-fields" id="add-more-fields">
@@ -416,6 +434,15 @@
             <div id="stats-payment-fallback" class="stats-fallback" style="display:none"></div>
           </div>
         </section>
+
+        <!-- 价值分析：必需/可选/冲动堆叠条 + 冲动消费 Top 分类（纯 CSS 实现不依赖 Chart.js；缺 stats-necessity-bar 时 stats.js 触发首次重建） -->
+        <section class="stats-chart-section">
+          <h2 class="stats-chart-section__title">价值分析</h2>
+          <div class="stats-necessity-bar" id="stats-necessity-bar" role="img" aria-label="必需、可选、冲动消费占比"></div>
+          <ul class="stats-necessity-legend" id="stats-necessity-legend"></ul>
+          <p class="stats-necessity-hint" id="stats-necessity-hint" hidden></p>
+          <div class="stats-ranking-list" id="stats-impulse-ranking"></div>
+        </section>
       </div>
     </div>
   </main>
@@ -520,17 +547,51 @@
   if (!('serviceWorker' in navigator)) return;
 
   var bar = document.getElementById('sw-update-bar');
+  var detail = document.getElementById('sw-update-bar-detail');
+  var listEl = document.getElementById('sw-update-bar-list');
+  if (!bar || !detail || !listEl) return;
+
+  // 更新内容：updates.json 最新条目；拉取失败（如 file:// 打开）时降级为通用文案
+  var changelogItems = null;
+
+  function renderChangelog() {
+    var items = changelogItems || ['本次更新优化了体验与稳定性'];
+    listEl.innerHTML = items.map(function(t) { return '<li>' + t + '</li>'; }).join('');
+  }
+
+  function fillChangelog() {
+    if (changelogItems) { renderChangelog(); return; }
+    // 时间戳参数绕过 HTTP 缓存；SW 网络优先策略下能拿到服务器最新内容
+    fetch('updates.json?v=' + Date.now())
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(data) {
+        if (data && data.versions && data.versions.length) {
+          changelogItems = data.versions[0].items; // versions 按时间倒序，取最新一条
+          // 副标题改显目标版本号（新 SW 对应的版本，而非当前页面版本）
+          var subEl = bar.querySelector('.sw-update-bar__sub');
+          if (subEl && data.latest) subEl.textContent = 'v' + data.latest + ' 可用，建议更新';
+        }
+      })
+      .catch(function() { /* file:// 等环境 fetch 失败，走降级文案 */ })
+      .then(renderChangelog);
+  }
+
+  function setExpanded(expanded) {
+    bar.classList.toggle('sw-update-bar--open', expanded);
+    detail.hidden = !expanded;
+  }
 
   function showBar() {
     if (!bar) return;
     // 从页面底部版本信息提取版本号，显示在更新条副标题里
     var versionEl = document.getElementById('app-version');
     if (versionEl) {
-      var versionText = versionEl.textContent.trim().split(' · ')[0]; // "v20260708-135"
+      var versionText = versionEl.textContent.trim().split(' · ')[0]; // "v20260803-181"
       var subEl = bar.querySelector('.sw-update-bar__sub');
       if (subEl) subEl.textContent = versionText + ' 可用，建议更新';
     }
     bar.classList.add('sw-update-bar--visible');
+    fillChangelog();
   }
 
   navigator.serviceWorker.ready.then(function(reg) {
@@ -558,8 +619,26 @@
     });
   });
 
-  // 仅"更新"按钮触发 SW 激活，点横幅其他区域不响应
-  var updateBtn = document.querySelector('.sw-update-bar__btn');
+  // 点击条头部：展开/收起更新内容
+  var head = document.getElementById('sw-update-bar-head');
+  if (head) {
+    head.addEventListener('click', function() {
+      fillChangelog(); // 首次展开时顺带拉取内容
+      setExpanded(detail.hidden);
+    });
+  }
+
+  // "稍后再说"：收起内容，条保留（低存在感），下次打开页面仍会提醒
+  var laterBtn = document.getElementById('sw-update-btn-later');
+  if (laterBtn) {
+    laterBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      setExpanded(false);
+    });
+  }
+
+  // "立即更新"：通知 SW 激活新版本，刷新页面（点此按钮才真正更新）
+  var updateBtn = document.getElementById('sw-update-btn-now');
   if (updateBtn) {
     updateBtn.addEventListener('click', function(e) {
       e.stopPropagation();
@@ -567,7 +646,7 @@
         if (reg.waiting) {
           sessionStorage.setItem('sw-just-updated', String(Date.now()));
           reg.waiting.postMessage('skipWaiting');
-          bar.classList.remove('sw-update-bar--visible');
+          setExpanded(false);
           // 禁用浏览器滚动还原 + 立即滚回顶部
           if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -591,14 +670,14 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=179"></script>
-<script src="js/data.js?v=179"></script>
-<script src="js/home.js?v=179"></script>
-<script src="js/categories.js?v=179"></script>
-<script src="js/list.js?v=179"></script>
-<script src="js/stats.js?v=179"></script>
-<script src="js/onboarding.js?v=179"></script>
-<script src="js/app.js?v=179"></script>
+<script src="js/storage.js?v=181"></script>
+<script src="js/data.js?v=181"></script>
+<script src="js/home.js?v=181"></script>
+<script src="js/categories.js?v=181"></script>
+<script src="js/list.js?v=181"></script>
+<script src="js/stats.js?v=181"></script>
+<script src="js/onboarding.js?v=181"></script>
+<script src="js/app.js?v=181"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">

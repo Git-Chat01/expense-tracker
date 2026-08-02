@@ -108,11 +108,13 @@ const ExpenseData = (() => {
 
   /* =================================================================
      必要性选项（增强版）
+     color 与 common.css 的 --color-need/want/impulse 令牌一致，
+     作为记账页/编辑弹层/统计图的唯一颜色来源
      ================================================================= */
   const NECESSITY_OPTIONS = [
-    { value: 'need',    label: '必需', icon: '🟢' },
-    { value: 'want',    label: '可选', icon: '🟡' },
-    { value: 'impulse', label: '冲动', icon: '🔴' },
+    { value: 'need',    label: '必需', icon: '🟢', color: '#34C759' },
+    { value: 'want',    label: '可选', icon: '🟡', color: '#FF9500' },
+    { value: 'impulse', label: '冲动', icon: '🔴', color: '#FF3B30' },
   ];
 
   /* =================================================================

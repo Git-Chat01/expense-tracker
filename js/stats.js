@@ -34,6 +34,10 @@ const ExpenseStats = (() => {
     '#FC8452', '#9A60B4', '#EA7CCC', '#48B3A3', '#DD6B55',
   ];
 
+  // 每张图的调色板（canvasId → 颜色数组）；语义色图（如价值分析）传自定义色，
+  // 其余图默认用 COLORS。图例/选中态/降级条都要从这里取色，保证全局一致
+  const _chartColors = {};
+
   /* -----------------------------------------------------------------
      时段范围计算
      ----------------------------------------------------------------- */
@@ -172,6 +176,7 @@ const ExpenseStats = (() => {
     _renderCategoryChart(expenses);
     _renderTrendChart(from, to, expenses);
     _renderPaymentChart(expenses);
+    _renderNecessityChart(expenses);
   }
 
   /* -----------------------------------------------------------------
@@ -183,7 +188,9 @@ const ExpenseStats = (() => {
     if (!dyn) return;
 
     // 结构和包裹层都齐全才跳过重建（旧版 DOM 缺 .stats-chart-canvas-wrap，必须重建）
-    if (document.getElementById('stats-category-chart') && document.querySelector('.stats-chart-canvas-wrap')) return;
+    if (document.getElementById('stats-category-chart')
+        && document.getElementById('stats-necessity-bar')
+        && document.querySelector('.stats-chart-canvas-wrap')) return;
 
     // 重建完整的图表区域结构
     dyn.innerHTML = `
@@ -211,6 +218,13 @@ const ExpenseStats = (() => {
           </div>
           <div id="stats-payment-fallback" class="stats-fallback" style="display:none"></div>
         </div>
+      </section>
+      <section class="stats-chart-section">
+        <h2 class="stats-chart-section__title">价值分析</h2>
+        <div class="stats-necessity-bar" id="stats-necessity-bar" role="img" aria-label="必需、可选、冲动消费占比"></div>
+        <ul class="stats-necessity-legend" id="stats-necessity-legend"></ul>
+        <p class="stats-necessity-hint" id="stats-necessity-hint" hidden></p>
+        <div class="stats-ranking-list" id="stats-impulse-ranking"></div>
       </section>`;
   }
 
@@ -272,24 +286,31 @@ const ExpenseStats = (() => {
   /* -----------------------------------------------------------------
      2. 分类占比（环形图）
      ----------------------------------------------------------------- */
+  /** 解析一条消费记录的一级分类（父级或自己），返回 { parentId, name, category } */
+  function _resolveParentCategory(expense) {
+    const cat = ExpenseDB.getCategory(expense.categoryId);
+    // 找到一级分类（父级或自己）
+    let parentId;
+    if (cat && cat.parentId) {
+      parentId = cat.parentId;
+    } else if (cat) {
+      parentId = cat.id;
+    } else {
+      parentId = 'unknown';
+    }
+    const parentCat = parentId !== 'unknown' ? ExpenseDB.getCategory(parentId) : null;
+    return {
+      parentId,
+      name: parentCat ? parentCat.name : '未分类',
+      category: parentCat,
+    };
+  }
+
   function _renderCategoryChart(expenses) {
     // 按一级分类聚合
     const catMap = new Map();
     expenses.forEach(e => {
-      let cat = ExpenseDB.getCategory(e.categoryId);
-      // 找到一级分类（父级或自己）
-      let parentId;
-      if (cat && cat.parentId) {
-        parentId = cat.parentId;
-      } else if (cat) {
-        parentId = cat.id;
-      } else {
-        parentId = 'unknown';
-      }
-      const parentCat = parentId !== 'unknown' ? ExpenseDB.getCategory(parentId) : null;
-      const name = parentCat ? parentCat.name : '未分类';
-      const category = parentCat;
-
+      const { parentId, name, category } = _resolveParentCategory(e);
       if (!catMap.has(parentId)) catMap.set(parentId, { name, category, total: 0 });
       catMap.get(parentId).total += e.amount;
     });
@@ -429,6 +450,100 @@ const ExpenseStats = (() => {
   }
 
   /* -----------------------------------------------------------------
+     6. 价值分析（必需/可选/冲动堆叠条 + 未评估提示 + 冲动消费 Top 排行）
+     纯 CSS 实现：只有 3 类占比时，长度对比比环形图的角度对比更直观
+     （Cleveland 图形感知：人对长度的判断精度高于角度），且天然不依赖 Chart.js
+     ----------------------------------------------------------------- */
+  function _renderNecessityChart(expenses) {
+    // 只认 need/want/impulse 三档；其余值（含旧数据无字段）计为未评估笔数，
+    // 不猜测、不参与占比——数据保护铁律：老数据不补默认值，只提醒可补标
+    const byValue = new Map();
+    let unevaluated = 0;
+    expenses.forEach(e => {
+      const v = e.necessity || '';
+      if (!ExpenseData.NECESSITY_OPTIONS.some(o => o.value === v)) { unevaluated++; return; }
+      byValue.set(v, (byValue.get(v) || 0) + e.amount);
+    });
+
+    // 未评估提示（N>0 才显示，hidden 控制）
+    const hint = document.getElementById('stats-necessity-hint');
+    if (hint) {
+      hint.hidden = unevaluated === 0;
+      if (unevaluated > 0) hint.textContent = `未评估 ${unevaluated} 笔 · 可去账单补标`;
+    }
+
+    // 固定顺序（必需/可选/冲动）取三档金额
+    const values = ExpenseData.NECESSITY_OPTIONS.map(opt => byValue.get(opt.value) || 0);
+    const total = values.reduce((a, b) => a + b, 0);
+
+    const bar = document.getElementById('stats-necessity-bar');
+    const legend = document.getElementById('stats-necessity-legend');
+    if (bar && legend) {
+      if (total <= 0) {
+        // 空态：整条灰底 + 占位文案，引导去记账页补标
+        bar.innerHTML = '';
+        bar.setAttribute('aria-label', '本时段暂无价值评定数据');
+        legend.innerHTML = '<li class="stats-necessity-legend__empty">本时段暂无价值评定数据 · 记账时可标记</li>';
+      } else {
+        // 堆叠条：每段宽度 = 金额占比（flex 定宽，不随内容收缩），语义色与记账三键一致
+        bar.innerHTML = ExpenseData.NECESSITY_OPTIONS.map(opt => {
+          const v = byValue.get(opt.value) || 0;
+          const pct = Math.round(v / total * 100);
+          return `<div class="stats-necessity-bar__seg" style="flex:0 0 ${v / total * 100}%;background:${opt.color}" title="${opt.label} ${pct}%"></div>`;
+        }).join('');
+        bar.setAttribute('aria-label',
+          ExpenseData.NECESSITY_OPTIONS.map(opt => {
+            const v = byValue.get(opt.value) || 0;
+            return `${opt.label} ${Math.round(v / total * 100)}%`;
+          }).join('，'));
+        // 三段明细：色点 + 图标标签 + 金额 + 占比（数字精确，长度直觉互补）
+        legend.innerHTML = ExpenseData.NECESSITY_OPTIONS.map(opt => {
+          const v = byValue.get(opt.value) || 0;
+          const pct = Math.round(v / total * 100);
+          return `<li class="stats-necessity-legend__item">
+            <span class="stats-necessity-legend__dot" style="background:${opt.color}"></span>
+            <span class="stats-necessity-legend__label">${opt.icon} ${opt.label}</span>
+            <span class="stats-necessity-legend__amount">¥${Math.round(v).toLocaleString()}</span>
+            <span class="stats-necessity-legend__pct">${pct}%</span>
+          </li>`;
+        }).join('');
+      }
+    }
+
+    // 冲动消费 Top 分类排行
+    _renderImpulseRanking(expenses);
+  }
+
+  /** 冲动消费 Top 分类排行：只统计标记为冲动的记录，按一级分类聚合金额降序，取前 5 */
+  function _renderImpulseRanking(expenses) {
+    const container = document.getElementById('stats-impulse-ranking');
+    if (!container) return;
+
+    const catMap = new Map();
+    expenses.forEach(e => {
+      if ((e.necessity || '') !== 'impulse') return;
+      const { parentId, name, category } = _resolveParentCategory(e);
+      if (!catMap.has(parentId)) catMap.set(parentId, { name, category, total: 0 });
+      catMap.get(parentId).total += e.amount;
+    });
+
+    const top = Array.from(catMap.values()).sort((a, b) => b.total - a.total).slice(0, 5);
+    if (top.length === 0) {
+      container.innerHTML = '<div class="stats-ranking-empty">本时段没有冲动消费，继续保持</div>';
+      return;
+    }
+
+    container.innerHTML = `<div class="stats-ranking-title">冲动消费 Top ${top.length}</div>` +
+      top.map((c, i) => `
+        <div class="stats-ranking-item">
+          <span class="stats-ranking-item__rank">${i + 1}</span>
+          <span class="stats-ranking-item__icon">${ExpenseCategories.getIconMarkup(c.category)}</span>
+          <span class="stats-ranking-item__name">${c.name}</span>
+          <span class="stats-ranking-item__amount">¥${Math.round(c.total).toLocaleString()}</span>
+        </div>`).join('');
+  }
+
+  /* -----------------------------------------------------------------
      图表绘制（Chart.js 优先，失败时 CSS 降级）
      ----------------------------------------------------------------- */
   function _destroyAllCharts() {
@@ -446,6 +561,8 @@ const ExpenseStats = (() => {
     document.querySelectorAll('.stats-chart-center').forEach(function(el) { el.remove(); });
     // 同时清理 HTML 手绘图例
     document.querySelectorAll('.stats-chart-legend').forEach(function(el) { el.remove(); });
+    // 清空每图调色板
+    Object.keys(_chartColors).forEach(k => { delete _chartColors[k]; });
   }
 
   /** 环形图点击：选中/取消选中扇区，同时保持 tooltip 显示 */
@@ -707,15 +824,16 @@ const ExpenseStats = (() => {
     const selIdx = _selectedArc[canvasId];
     const offsets = new Array(dataLen).fill(0);
 
-    // 颜色取模：dataLen 超过 COLORS 长度时循环使用，避免取到 undefined
+    // 颜色取模：dataLen 超过调色板长度时循环使用，避免取到 undefined
+    const palette = _chartColors[canvasId] || COLORS;
     if (selIdx !== null && selIdx !== undefined) {
       offsets[selIdx] = 15;
       ds.backgroundColor = Array.from({ length: dataLen }, (_, i) => {
-        const c = COLORS[i % COLORS.length];
+        const c = palette[i % palette.length];
         return i === selIdx ? c : _hexToRgba(c, 0.4);
       });
     } else {
-      ds.backgroundColor = Array.from({ length: dataLen }, (_, i) => COLORS[i % COLORS.length]);
+      ds.backgroundColor = Array.from({ length: dataLen }, (_, i) => palette[i % palette.length]);
     }
 
     ds.borderColor = dataLen > 0 ? new Array(dataLen).fill('#fff') : [];
@@ -811,7 +929,8 @@ const ExpenseStats = (() => {
     legendEl.innerHTML = labels.map(function(label, i) {
       var amount = Math.round(data[i] * 100) / 100;
       var pct = total > 0 ? Math.round(data[i] / total * 100) : 0;
-      var color = COLORS[i % COLORS.length];
+      var palette = _chartColors[canvasId] || COLORS;
+      var color = palette[i % palette.length];
       // 格式：¥1,200 — 带千分位
       var amountStr = '¥' + amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
       return '<div class="stats-chart-legend__item" data-idx="' + i + '">'
@@ -826,12 +945,16 @@ const ExpenseStats = (() => {
     _setupLegendScrollWatch(legendEl);
   }
 
-  function _drawOrFallback(canvasId, fallbackId, labels, data, type, meta) {
+  function _drawOrFallback(canvasId, fallbackId, labels, data, type, meta, colors) {
     // 先销毁该 ID 的旧图表
     if (_charts[canvasId]) {
       try { _charts[canvasId].destroy(); } catch (e) { /* ignore */ }
       _charts[canvasId] = null;
     }
+
+    // colors 为可选调色板（价值分析传语义色），默认用全局 COLORS
+    colors = colors || COLORS;
+    _chartColors[canvasId] = colors;
 
     const canvas = document.getElementById(canvasId);
     const fallback = document.getElementById(fallbackId);
@@ -848,7 +971,7 @@ const ExpenseStats = (() => {
 
     // Chart.js 不可用时降级
     if (typeof Chart === 'undefined') {
-      _renderFallback(fallback, canvas, labels, data, type);
+      _renderFallback(fallback, canvas, labels, data, type, colors);
       return;
     }
 
@@ -865,7 +988,7 @@ const ExpenseStats = (() => {
             labels: labels,
             datasets: [{
               data: data,
-              backgroundColor: COLORS.slice(0, data.length),
+              backgroundColor: colors.slice(0, data.length),
               borderWidth: data.map(() => 2),
               borderColor: data.map(() => '#fff'),
               offset: data.map(() => 0),
@@ -1013,14 +1136,16 @@ const ExpenseStats = (() => {
     } catch (e) {
       console.warn('Chart.js 渲染失败，使用 CSS 降级:', e);
       delete _charts[canvasId];
-      _renderFallback(fallback, canvas, labels, data, type);
+      _renderFallback(fallback, canvas, labels, data, type, colors);
     }
   }
 
   /** CSS 降级：环形图 → 横向进度条，折线图 → 柱状图 */
-  function _renderFallback(fallbackEl, canvasEl, labels, data, type) {
+  function _renderFallback(fallbackEl, canvasEl, labels, data, type, colors) {
     canvasEl.style.display = 'none';
     fallbackEl.style.display = 'block';
+
+    colors = colors || COLORS;
 
     if (type === 'doughnut') {
       const total = data.reduce((s, v) => s + v, 0);
@@ -1030,7 +1155,7 @@ const ExpenseStats = (() => {
           <div class="stats-fallback__bar">
             <span class="stats-fallback__label">${ExpenseData.escapeHtml(labels[i])}</span>
             <div class="stats-fallback__track">
-              <div class="stats-fallback__fill stats-fallback__fill--c${i % 8}" style="width:${Math.max(pct, 2)}%">${pct}%</div>
+              <div class="stats-fallback__fill" style="background:${colors[i % colors.length]};width:${Math.max(pct, 2)}%">${pct}%</div>
             </div>
           </div>`;
       }).join('');
