@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=191">
+  <link rel="stylesheet" href="css/common.css?v=192">
   <link rel="stylesheet" href="css/home.css?v=175">
-  <link rel="stylesheet" href="css/add.css?v=191">
+  <link rel="stylesheet" href="css/add.css?v=192">
   <link rel="stylesheet" href="css/list.css?v=175">
-  <link rel="stylesheet" href="css/stats.css?v=191">
+  <link rel="stylesheet" href="css/stats.css?v=192">
   <link rel="stylesheet" href="css/onboarding.css?v=176">
 </head>
 <body>
@@ -181,7 +181,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260804-191 · 地点备注移到键盘上方
+      v20260804-192 · 撤销地点备注改动
     </div>
   </main>
 
@@ -264,29 +264,26 @@
         <div class="add-necessity-options" id="add-necessity-options"></div>
       </section>
 
-      <!-- 地点/备注贴键盘固定：与数字键盘同在一个吸底容器，永不被遮挡；
-           页面中部不再有折叠区，记账流程更紧凑 -->
-      <div class="add-numpad-wrap">
-        <div class="add-merchant-suggestions" id="add-merchant-suggestions" hidden aria-label="常用商家"></div>
-        <!-- 备注入口：默认收起为一行小字，点开才展开输入；
-             弱化样式刻意传达「选填」，不占记账流程的注意力 -->
-        <button class="add-quick-toggle" id="add-quick-toggle" type="button" aria-expanded="false" aria-controls="add-quick-fields">
-          <span id="add-quick-toggle-text">＋ 备注一下</span>
-          <span class="add-quick-toggle__hint">选填</span>
-        </button>
-        <div class="add-quick-fields" id="add-quick-fields" hidden>
-          <label class="add-quick-field">
+      <details class="add-more-fields" id="add-more-fields">
+        <summary>
+          <span>地点或备注</span>
+          <span class="add-more-fields__hint">可选</span>
+        </summary>
+        <div class="add-more-fields__body">
+          <div class="add-merchant-suggestions" id="add-merchant-suggestions" hidden aria-label="常用商家"></div>
+          <label class="add-field">
             <span>地点</span>
             <input type="text" class="input" id="add-location" placeholder="例如：公司楼下" maxlength="50">
           </label>
-          <label class="add-quick-field">
+          <label class="add-field">
             <span>备注</span>
             <input type="text" class="input" id="add-note" placeholder="例如：和同事午餐" maxlength="100">
           </label>
         </div>
+      </details>
 
-        <!-- 数字键盘：右侧保存键保持在拇指易触达区域 -->
-        <div class="add-numpad numpad" id="add-numpad">
+      <!-- 数字键盘：右侧保存键保持在拇指易触达区域 -->
+      <div class="add-numpad numpad" id="add-numpad">
         <button class="numpad__key" data-key="1" type="button">1</button>
         <button class="numpad__key" data-key="2" type="button">2</button>
         <button class="numpad__key" data-key="3" type="button">3</button>
@@ -307,7 +304,6 @@
         <button class="numpad__key" data-key="0" type="button">0</button>
         <button class="numpad__key" data-key="." type="button">.</button>
         <button class="numpad__key numpad__key--fn" data-key="clear" type="button" aria-label="清空金额">C</button>
-        </div>
       </div>
     </div>
   </main>
@@ -678,14 +674,14 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=191"></script>
-<script src="js/data.js?v=191"></script>
-<script src="js/home.js?v=191"></script>
-<script src="js/categories.js?v=191"></script>
-<script src="js/list.js?v=191"></script>
-<script src="js/stats.js?v=191"></script>
-<script src="js/onboarding.js?v=191"></script>
-<script src="js/app.js?v=191"></script>
+<script src="js/storage.js?v=192"></script>
+<script src="js/data.js?v=192"></script>
+<script src="js/home.js?v=192"></script>
+<script src="js/categories.js?v=192"></script>
+<script src="js/list.js?v=192"></script>
+<script src="js/stats.js?v=192"></script>
+<script src="js/onboarding.js?v=192"></script>
+<script src="js/app.js?v=192"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
