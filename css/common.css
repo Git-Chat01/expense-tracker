@@ -139,7 +139,11 @@ ul, ol {
 .app-container {
   max-width: var(--app-max-width);
   margin: 0 auto;
-  min-height: 100vh;
+  /* 固定视口高度（dvh 兼容移动端地址栏收起），而非 min-height：
+     否则内容一多容器被撑高，滚动发生在 body 上，内部 sticky 全部失效，
+     键盘/备注区会随内容滚出视口（v191 备注区回归：让滚动回到视图容器内部） */
+  height: 100vh;
+  height: 100dvh;
   background: var(--color-bg);
   position: relative;
   display: flex;
@@ -153,6 +157,9 @@ ul, ol {
   display: none;
   flex-direction: column;
   flex: 1;
+  /* min-height: 0 是 flex 滚动的关键：允许视图收缩到容器剩余高度，
+     滚动发生在自身（overflow-y: auto），否则被内容撑开导致 sticky 失效 */
+  min-height: 0;
   padding-bottom: calc(var(--tab-bar-height) + var(--safe-area-bottom) + var(--space-md));
   overflow-y: auto;
 }
