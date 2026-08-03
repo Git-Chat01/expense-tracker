@@ -24,6 +24,9 @@ const ExpenseApp = (() => {
   const _LARGE_AMOUNT_THRESHOLD = 10000;
   let _confirmedLargeAmountRaw = null;
   let _paymentOptionsExpanded = false;
+  let _necessityOptionsExpanded = false;  // 价值评定选择器展开状态（v187 起与支付方式同款交互）
+  let _paymentHandTouched = false;   // 用户手动改过支付方式（切分类时不被习惯覆盖）
+  let _necessityHandTouched = false; // 用户手动改过价值评定（切分类时不被习惯覆盖）
 
   let _currentView = 'home';
   let _editingExpenseId = null;  // 当前正在编辑的记录 ID（用于删除按钮）
@@ -69,6 +72,7 @@ const ExpenseApp = (() => {
     _bindNumpad();
     _bindAddForm();
     _bindPaymentSummary();
+    _bindNecessitySummary();
     _bindDateToggle();
     _bindDateShortcuts();
     _bindOverlays();
@@ -159,6 +163,8 @@ const ExpenseApp = (() => {
         _resetFormDefaults({ clearTransient: true });
         _formState.categoryId = '';
         ExpenseCategories.clearSelection();
+        // v187：分类已清空 → 保持展开（有分类时按条件概率预填）
+        _applyHabitDefaults();
       }
       _renderAddCategories();
       _renderPaymentMethods();
@@ -216,6 +222,10 @@ const ExpenseApp = (() => {
       _formState.categoryId = catId;
       _setCategoryValidation(false);
       _updateSaveState();
+      // v187：选中分类后按条件概率预填支付方式与价值评定（无习惯则保持展开）
+      _applyHabitDefaults();
+      _renderPaymentMethods();
+      _renderNecessityOptions();
     });
   }
 
@@ -399,18 +409,58 @@ const ExpenseApp = (() => {
         const val = chip.dataset.pm;
         _formState.paymentMethod = (_formState.paymentMethod === val) ? '' : val;
         _paymentOptionsExpanded = false;
+        _paymentHandTouched = true;  // v187：手动选择过，切分类时不再被习惯覆盖
         _renderPaymentMethods();
       });
     });
   }
 
   /* -----------------------------------------------------------------
-     价值评定三键（必需/可选/冲动）
-     内联常驻一行，点选即生效；再点已选项 = 取消（回到未评估）
+     价值评定（必需/可选/冲动）
+     v187 起与支付方式同款交互：默认收起为一个文字行，点按展开三键，
+     选完自动收起（显示"已选 XX"），再点已选项 = 取消（回到未评估）
      ----------------------------------------------------------------- */
+  function _bindNecessitySummary() {
+    const summary = document.getElementById('add-necessity-summary');
+    if (!summary) return;
+    summary.addEventListener('click', () => {
+      _necessityOptionsExpanded = !_necessityOptionsExpanded;
+      _renderNecessityOptions();
+    });
+  }
+
   function _renderNecessityOptions() {
     const container = document.getElementById('add-necessity-options');
+    const summary = document.getElementById('add-necessity-summary');
+    const summaryText = document.getElementById('add-necessity-summary-text');
+    const summaryDot = document.getElementById('add-necessity-summary-dot');
+    const summaryAction = document.getElementById('add-necessity-summary-action');
+    const section = document.querySelector('.add-necessity-section');
     if (!container) return;
+
+    const selectedOpt = ExpenseData.NECESSITY_OPTIONS.find(o => o.value === _formState.necessity);
+    const pickerOpen = _necessityOptionsExpanded;
+    if (summary) {
+      summary.setAttribute('aria-expanded', String(pickerOpen));
+      summary.setAttribute('aria-label', selectedOpt
+        ? `已选择${selectedOpt.label}，${pickerOpen ? '点击收起价值评定' : '点击更换价值评定'}`
+        : `${pickerOpen ? '正在选择价值评定，点击收起' : '选择价值评定'}`);
+    }
+    container.style.display = pickerOpen ? 'grid' : 'none';
+    if (section) section.classList.toggle('add-necessity-section--expanded', pickerOpen);
+
+    if (summaryText) summaryText.textContent = selectedOpt
+      ? `已选 ${selectedOpt.label}`
+      : (pickerOpen ? '选择价值评定' : '可选');
+    if (summaryAction) summaryAction.textContent = pickerOpen
+      ? '收起'
+      : (selectedOpt ? '更换' : '选择');
+    if (summaryDot) {
+      summaryDot.style.display = selectedOpt ? 'inline-block' : 'none';
+      if (selectedOpt) summaryDot.style.background = selectedOpt.color;
+    }
+
+    if (!pickerOpen) return;
 
     container.innerHTML = ExpenseData.NECESSITY_OPTIONS.map(opt => {
       const isActive = _formState.necessity === opt.value;
@@ -425,8 +475,10 @@ const ExpenseApp = (() => {
     container.querySelectorAll('.chip').forEach(chip => {
       chip.addEventListener('click', () => {
         const val = chip.dataset.necessity;
-        // 再点已选项 = 取消（未评估），点其他项 = 切换
+        // 再点已选项 = 取消（未评估），点其他项 = 切换；选完自动收起
         _formState.necessity = (_formState.necessity === val) ? '' : val;
+        _necessityOptionsExpanded = false;
+        _necessityHandTouched = true;  // v187：手动选择过，切分类时不再被习惯覆盖
         _renderNecessityOptions();
       });
     });
@@ -539,6 +591,10 @@ const ExpenseApp = (() => {
       _renderAddCategories();
       _setCategoryValidation(false);
       _updateSaveState();
+      // v187：商家建议填充分类同样触发条件概率预填
+      _applyHabitDefaults();
+      _renderPaymentMethods();
+      _renderNecessityOptions();
     }
   }
 
@@ -647,6 +703,74 @@ const ExpenseApp = (() => {
   }
 
   /* -----------------------------------------------------------------
+     记账习惯预填（v187 · 条件概率版）
+     按"所选分类 → 父分类（含其全部子分类）→ 全局"回退链统计
+     用户行为习惯：P(支付方式|分类)、P(价值评定|分类)。
+     某一层样本 ≥5 笔且某项占比 ≥70% 时，预填该项并收起（显示"已选"）；
+     整条链都没有 → 不预填、展开选项让用户选。
+     用户手动改过的字段不覆盖。纯读取历史账单，零写入，符合数据安全红线。
+     ----------------------------------------------------------------- */
+  function _applyHabitDefaults() {
+    // 支付方式：按「分类 → 父分类 → 全局」条件概率预填（支付渠道有行为惯性，值得猜）
+    // 价值评定：每笔消费的价值判断独立，从不自动默认，始终展开让用户自选
+    if (_formState.categoryId) {
+      if (!_paymentHandTouched) {
+        _formState.paymentMethod = _guessHabitForCategory(
+          ExpenseData.PAYMENT_METHODS.map(p => p.value),
+          e => e.paymentMethod
+        );
+        _paymentOptionsExpanded = !_formState.paymentMethod;
+      }
+    } else {
+      // 未选分类：不预填，完全展示让用户选
+      _formState.paymentMethod = '';
+      _paymentOptionsExpanded = true;
+    }
+    // 价值评定：非手动状态一律展开（手动选过后保持收起，尊重用户本次选择）
+    if (!_necessityHandTouched) _necessityOptionsExpanded = true;
+  }
+
+  /** 按回退链逐层猜习惯：选中分类 → 父分类（含其所有子分类）→ 全局 → 空串（不猜） */
+  function _guessHabitForCategory(values, pick) {
+    const catId = _formState.categoryId;
+    if (catId) {
+      const cat = ExpenseDB.getCategory(catId);
+      // 第一层：选中的具体分类（如"外卖"）
+      const direct = _guessHabit(values, pick, new Set([catId]));
+      if (direct) return direct;
+      // 第二层：父分类及其全部子分类（如"餐饮"下所有账单，样本更足）
+      if (cat && cat.parentId) {
+        const parentIds = new Set([cat.parentId]);
+        ExpenseDB.getCategories().forEach(c => {
+          if (c.parentId === cat.parentId) parentIds.add(c.id);
+        });
+        const parentHit = _guessHabit(values, pick, parentIds);
+        if (parentHit) return parentHit;
+      }
+    }
+    // 第三层：全局习惯
+    return _guessHabit(values, pick, null);
+  }
+
+  /** 统计 pick(e) 在指定分类集合账单中的占比（null=全部）：样本 ≥5 且某项 ≥70% 时返回该项，否则空串 */
+  function _guessHabit(values, pick, catIds) {
+    const counts = {};
+    let total = 0;
+    ExpenseDB.getExpenses().forEach(e => {
+      if (catIds && !catIds.has(e.categoryId)) return;
+      const v = pick(e);
+      if (!v) return;
+      counts[v] = (counts[v] || 0) + 1;
+      total++;
+    });
+    if (total < 5) return '';
+    for (const v of values) {
+      if ((counts[v] || 0) / total >= 0.7) return v;
+    }
+    return '';
+  }
+
+  /* -----------------------------------------------------------------
      重置表单默认值（每次从其他页面进入记账页时调用）
      ----------------------------------------------------------------- */
   function _resetFormDefaults(options = {}) {
@@ -654,6 +778,7 @@ const ExpenseApp = (() => {
     _formState.amountRaw = '';
     _confirmedLargeAmountRaw = null;
     _paymentOptionsExpanded = false;
+    _necessityOptionsExpanded = false;
     _formState.note = '';
     _formState.date = ExpenseDB.today();
     _formState.time = ExpenseDB.now();
@@ -663,6 +788,11 @@ const ExpenseApp = (() => {
       _formState.location = '';
       _formState.paymentMethod = '';
       _formState.necessity = '';
+      // 重置手动标记：下一笔重新从习惯/选择开始（分类选择后由 _applyHabitDefaults 再算）
+      _paymentHandTouched = false;
+      _necessityHandTouched = false;
+      _paymentOptionsExpanded = true;    // 进页面未选分类：完全展示让用户选
+      _necessityOptionsExpanded = true;
     }
 
     // 分类会保留为可见摘要，地点、支付方式和价值评定不会默默带入新的一笔。
@@ -769,9 +899,12 @@ const ExpenseApp = (() => {
     _confirmedLargeAmountRaw = null;
     _formState.note = '';
     _formState.location = '';
+    _paymentHandTouched = false;
+    _necessityHandTouched = false;
     _formState.paymentMethod = '';
     _formState.necessity = '';
-    _paymentOptionsExpanded = false;
+    // v187：分类保留时按该分类的条件概率预填下一笔（无习惯则展开让用户选）
+    _applyHabitDefaults();
     const noteInput = document.getElementById('add-note');
     const locInput = document.getElementById('add-location');
     const moreFields = document.getElementById('add-more-fields');
@@ -979,7 +1112,13 @@ const ExpenseApp = (() => {
             _toast('分类删除失败，请检查浏览器存储空间', 'warning');
             return;
           }
-          if (_formState.categoryId === catId) _formState.categoryId = '';
+          if (_formState.categoryId === catId) {
+            _formState.categoryId = '';
+            // v187：当前分类被删 → 无分类，还原为展开让用户选
+            _applyHabitDefaults();
+            _renderPaymentMethods();
+            _renderNecessityOptions();
+          }
           _renderCategoryManagerOverlay();
           _renderAddCategories();
           _updateSaveState();
