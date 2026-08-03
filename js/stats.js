@@ -236,7 +236,7 @@ const ExpenseStats = (() => {
     if (!dyn) return;
     dyn.innerHTML = `
       <div class="stats-empty">
-        <div class="stats-empty__icon">📊</div>
+        <div class="stats-empty__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v16a2 2 0 0 0 2 2h16m-3-4V9m-5 8V5M8 17v-3"/></svg></div>
         <p class="stats-empty__text">${_periodLabel()}暂无消费数据</p>
         <p class="stats-empty__hint">去「记账」Tab 记录第一笔吧</p>
       </div>`;
@@ -626,7 +626,7 @@ const ExpenseStats = (() => {
     html += '<div class="stats-tooltip__pct">占比 ' + seg.pct + '%</div>';
     if (seg.isHighest) {
       html += '<div class="stats-tooltip__divider"></div>';
-      html += '<div class="stats-tooltip__badge">👑 最高支出</div>';
+      html += '<div class="stats-tooltip__badge"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294zM5 21h14"/></svg> 最高支出</div>';
     }
     el.innerHTML = html;
 

@@ -172,12 +172,12 @@ const ExpenseApp = (() => {
         } catch (e) {
           console.error('[App] ExpenseList.render 异常:', e);
           var lc = document.getElementById('list-content');
-          if (lc) lc.innerHTML = '<div class="empty-state"><div class="empty-state__icon">⚠️</div><p class="empty-state__text">渲染出错</p><p class="empty-state__hint">' + ExpenseData.escapeHtml(e.message) + '</p></div>';
+          if (lc) lc.innerHTML = '<div class="empty-state"><div class="empty-state__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4m0 4h.01"/></svg></div><p class="empty-state__text">渲染出错</p><p class="empty-state__hint">' + ExpenseData.escapeHtml(e.message) + '</p></div>';
         }
       } else {
         console.error('[App] ExpenseList 未定义，list.js 可能加载失败');
         var lc2 = document.getElementById('list-content');
-        if (lc2) lc2.innerHTML = '<div class="empty-state"><div class="empty-state__icon">⚠️</div><p class="empty-state__text">模块加载失败</p><p class="empty-state__hint">请刷新页面重试</p></div>';
+        if (lc2) lc2.innerHTML = '<div class="empty-state"><div class="empty-state__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4m0 4h.01"/></svg></div><p class="empty-state__text">模块加载失败</p><p class="empty-state__hint">请刷新页面重试</p></div>';
       }
     } else if (viewId === 'stats') {
       if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
@@ -874,7 +874,7 @@ const ExpenseApp = (() => {
                          value="${ExpenseData.escapeHtml(catBudget)}" placeholder="不限" min="0" step="100"
                          style="width:100px;text-align:right">
                 </div>
-                ${catBudget > 0 ? `<span style="font-size:11px;color:var(--color-text-tertiary);width:60px;text-align:right">${spent > catBudget ? '⚠️超支' : Math.round(spent/catBudget*100)+'%'}</span>` : '<span style="width:60px"></span>'}
+                ${catBudget > 0 ? `<span style="font-size:11px;color:var(--color-text-tertiary);width:60px;text-align:right">${spent > catBudget ? '<svg viewBox="0 0 24 24" class="inline-icon" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4m0 4h.01"/></svg>超支' : Math.round(spent/catBudget*100)+'%'}</span>` : '<span style="width:60px"></span>'}
               </div>`;
           }).join('')}
         </div>
@@ -1249,13 +1249,13 @@ const ExpenseApp = (() => {
     if (!badge) return;
     const last = ExpenseDB.getLastBackupTime();
     if (!last) {
-      badge.textContent = '⚠️ 尚未备份';
+      badge.innerHTML = '<svg viewBox="0 0 24 24" class="inline-icon" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4m0 4h.01"/></svg> 尚未备份';
       badge.style.color = 'var(--color-warning)';
       return;
     }
     const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
     if (days > 7) {
-      badge.textContent = `⚠️ ${days} 天前备份`;
+      badge.innerHTML = '<svg viewBox="0 0 24 24" class="inline-icon" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4m0 4h.01"/></svg> ' + days + ' 天前备份';
       badge.style.color = 'var(--color-warning)';
     } else {
       const d = new Date(last);
@@ -1305,7 +1305,7 @@ const ExpenseApp = (() => {
           </select>
         </div>
         <div>
-          <label style="font-weight:600;display:block;margin-bottom:6px">📍 地点</label>
+          <label style="font-weight:600;display:block;margin-bottom:6px"><svg viewBox="0 0 24 24" class="field-icon" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></g></svg> 地点</label>
           <input type="text" class="input" id="edit-location" value="${ExpenseData.escapeHtml(expense.location || '')}" maxlength="50">
         </div>
         <div>
@@ -1322,7 +1322,7 @@ const ExpenseApp = (() => {
           </div>
         </div>
         <div>
-          <label style="font-weight:600;display:block;margin-bottom:6px">💰 价值评定</label>
+          <label style="font-weight:600;display:block;margin-bottom:6px"><svg viewBox="0 0 24 24" class="field-icon" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M13.744 17.736a6 6 0 1 1-7.48-7.48M15 6h1v4"/><path d="m6.134 14.768l.866-.5l2 3.464"/><circle cx="16" cy="8" r="6"/></g></svg> 价值评定</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             ${ExpenseData.NECESSITY_OPTIONS.map(opt => {
               const isActive = expense.necessity === opt.value;
@@ -1335,16 +1335,16 @@ const ExpenseApp = (() => {
           </div>
         </div>
         <div>
-          <label style="font-weight:600;display:block;margin-bottom:6px">📝 备注</label>
+          <label style="font-weight:600;display:block;margin-bottom:6px"><svg viewBox="0 0 24 24" class="field-icon" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5M10 9H8m8 4H8m8 4H8"/></g></svg> 备注</label>
           <input type="text" class="input" id="edit-note" value="${ExpenseData.escapeHtml(expense.note || '')}" maxlength="100">
         </div>
         <div style="display:flex;gap:12px">
           <div style="flex:1">
-            <label style="font-weight:600;display:block;margin-bottom:6px">📅 日期</label>
+            <label style="font-weight:600;display:block;margin-bottom:6px"><svg viewBox="0 0 24 24" class="field-icon" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M8 2v3m8-3v3"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/></g></svg> 日期</label>
             <input type="date" class="input" id="edit-date" value="${ExpenseData.escapeHtml(expense.date || '')}">
           </div>
           <div style="flex:1">
-            <label style="font-weight:600;display:block;margin-bottom:6px">⏰ 时间</label>
+            <label style="font-weight:600;display:block;margin-bottom:6px"><svg viewBox="0 0 24 24" class="field-icon" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></g></svg> 时间</label>
             <input type="time" class="input" id="edit-time" value="${ExpenseData.escapeHtml(expense.time || '')}">
           </div>
         </div>

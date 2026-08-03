@@ -103,7 +103,7 @@ const ExpenseList = (() => {
       const hasAnyData = ExpenseDB.getExpenseCount() > 0;
       container.innerHTML = `
         <div class="empty-state">
-          <div class="empty-state__icon">🔍</div>
+          <div class="empty-state__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="m21 21l-4.34-4.34"/><circle cx="11" cy="11" r="8"/></g></svg></div>
           <p class="empty-state__text">${hasAnyData ? '没有找到匹配的记录' : '还没有消费记录'}</p>
           <p class="empty-state__hint">${hasAnyData ? '试试换个筛选条件' : '去「记账」Tab 添加第一笔吧'}</p>
         </div>`;

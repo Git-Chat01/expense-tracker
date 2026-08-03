@@ -13,11 +13,11 @@ const ExpenseOnboarding = (() => {
      按实际需求修改文案只需改这个数组，无需动 HTML 或 CSS
      ----------------------------------------------------------------- */
   const STEPS = [
-    { icon: '✍️', title: '让每一笔消费都有迹可循', desc: '3秒完成记录，不打扰你的生活节奏' },
-    { icon: '📊', title: '你的消费，看得见',       desc: '分类占比、月度趋势、地点排行，用图表读懂消费' },
-    { icon: '🎯', title: '预算在手，心里有数',     desc: '设置月度预算，超支自动提醒，告别月光' },
-    { icon: '🔒', title: '数据安全，始终在本地',   desc: '所有数据只存在你的浏览器中，可随时导出备份' },
-    { icon: '🚀', title: '从第一笔记账开始',       desc: '记录真实消费，让数据为你讲述消费故事' },
+    { icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 21h8m.174-14.188a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>', title: '让每一笔消费都有迹可循', desc: '3秒完成记录，不打扰你的生活节奏' },
+    { icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3v16a2 2 0 0 0 2 2h16m-3-4V9m-5 8V5M8 17v-3"/></svg>', title: '你的消费，看得见',       desc: '分类占比、月度趋势、地点排行，用图表读懂消费' },
+    { icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></g></svg>', title: '预算在手，心里有数',     desc: '设置月度预算，超支自动提醒，告别月光' },
+    { icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></g></svg>', title: '数据安全，始终在本地',   desc: '所有数据只存在你的浏览器中，可随时导出备份' },
+    { icon: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09"/><path d="M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 .05 5 .05"/></g></svg>', title: '从第一笔记账开始',       desc: '记录真实消费，让数据为你讲述消费故事' },
   ];
 
   const SWIPE_THRESHOLD = 50; // 滑动切换最小距离（px）

@@ -596,6 +596,22 @@ ul, ol {
 /* 价值评定图标（v183）：Lucide 线条图标，1em 随字号自适应；vertical-align 微调基线使图标与文字视觉居中 */
 .necessity-icon { width: 1em; height: 1em; vertical-align: -0.125em; flex-shrink: 0; }
 
+/* v185：UI emoji 全面升级 Lucide 线条图标
+   内联 SVG 统一按 1em 缩放，跟随所在元素字号（与 .necessity-icon 同法） */
+.alert-icon,
+.meta-icon,
+.field-icon,
+.inline-icon,
+.empty-state__icon svg,
+.stats-empty__icon svg,
+.onboarding-slide__icon svg,
+.stats-tooltip__badge svg {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.125em;
+}
+
 .chip--removable {
   padding-right: 6px;
 }

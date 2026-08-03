@@ -19,6 +19,18 @@ const ExpenseHome = (() => {
   let _$budgetSummaryDecisionLabel, _$budgetSummaryDecisionValue;
   let _$budgetSummaryRemaining, _$budgetSummaryDays, _$budgetSummaryForecast;
 
+  /* -----------------------------------------------------------------
+     内联 Lucide 线条图标（v185 起替代 UI emoji）
+     尺寸由 common.css 的 .alert-icon / .meta-icon 控制（1em 随字号）
+     ----------------------------------------------------------------- */
+  const _ICONS = {
+    danger:   '<svg viewBox="0 0 24 24" class="alert-icon" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></g></svg>',
+    warning:  '<svg viewBox="0 0 24 24" class="alert-icon" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4m0 4h.01"/></svg>',
+    success:  '<svg viewBox="0 0 24 24" class="alert-icon" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m9 12l2 2l4-4"/></g></svg>',
+    mapPin:   '<svg viewBox="0 0 24 24" class="meta-icon" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></g></svg>',
+    fileText: '<svg viewBox="0 0 24 24" class="meta-icon" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5M10 9H8m8 4H8m8 4H8"/></g></svg>',
+  };
+
   /**
    * 初始化 DOM 引用（在 render 前调用一次）
    */
@@ -267,7 +279,7 @@ const ExpenseHome = (() => {
 
     _$alerts.innerHTML = sorted.map((a, i) => `
       <div class="home-alert home-alert--${a.level}">
-        <span class="home-alert__icon">${ExpenseData.escapeHtml(a.icon)}</span>
+        <span class="home-alert__icon">${a.icon}</span>
         <span class="home-alert__text">${ExpenseData.escapeHtml(a.text)}</span>
         <button class="home-alert__close" data-alert-idx="${i}" title="忽略">✕</button>
       </div>
@@ -288,7 +300,7 @@ const ExpenseHome = (() => {
 
     _$alerts.innerHTML = activeAlerts.map((a, idx) => `
       <div class="home-alert home-alert--${a.level}" data-alert-idx="${idx}">
-        <span class="home-alert__icon">${ExpenseData.escapeHtml(a.icon)}</span>
+        <span class="home-alert__icon">${a.icon}</span>
         <span class="home-alert__text">${ExpenseData.escapeHtml(a.text)}</span>
         <button class="home-alert__close" data-alert-idx="${idx}" title="忽略">✕</button>
       </div>
@@ -325,14 +337,14 @@ const ExpenseHome = (() => {
       const pct = Math.round((monthTotal / monthlyBudget) * 100);
       const remaining = monthlyBudget - monthTotal;
       alerts.push({
-        level: 'danger', icon: '🔴',
+        level: 'danger', icon: _ICONS.danger,
         text: `本月已花掉预算的 ${pct}%，仅剩 ¥${Math.max(0, remaining).toFixed(0)}，建议控制`,
       });
     } else if (monthlyBudget > 0 && monthTotal > monthlyBudget * 0.8) {
       const pct = Math.round((monthTotal / monthlyBudget) * 100);
       const remaining = monthlyBudget - monthTotal;
       alerts.push({
-        level: 'warning', icon: '🟡',
+        level: 'warning', icon: _ICONS.warning,
         text: `本月已花 ¥${monthTotal.toFixed(0)}，占预算的 ${pct}%，剩余 ¥${remaining.toFixed(0)}`,
       });
     }
@@ -348,13 +360,13 @@ const ExpenseHome = (() => {
       if (spent > catBudget * 0.9) {
         const pct = Math.round((spent / catBudget) * 100);
         alerts.push({
-          level: 'danger', icon: '🔴',
+          level: 'danger', icon: _ICONS.danger,
           text: `「${catName}」预算已使用 ${pct}%（¥${spent.toFixed(0)}/¥${catBudget}），注意控制`,
         });
       } else if (spent > catBudget * 0.8) {
         const pct = Math.round((spent / catBudget) * 100);
         alerts.push({
-          level: 'warning', icon: '🟡',
+          level: 'warning', icon: _ICONS.warning,
           text: `「${catName}」已花 ¥${spent.toFixed(0)}，占预算的 ${pct}%`,
         });
       }
@@ -364,7 +376,7 @@ const ExpenseHome = (() => {
       if (prevSpent > 0 && spent < prevSpent * 0.8) {
         const dropPct = Math.round((1 - spent / prevSpent) * 100);
         alerts.push({
-          level: 'success', icon: '🟢',
+          level: 'success', icon: _ICONS.success,
           text: `「${catName}」比上月同期低 ${dropPct}%，继续保持`,
         });
       }
@@ -403,17 +415,17 @@ const ExpenseHome = (() => {
       const metaParts = [];
       const today = ExpenseDB.today();
       if (e.date === today) {
-        if (e.time) metaParts.push(`⏰${ExpenseData.escapeHtml(e.time)}`);
+        if (e.time) metaParts.push(ExpenseData.escapeHtml(e.time));
       } else {
         const parts = e.date.split('-');
         if (parts.length === 3) metaParts.push(`${parseInt(parts[1])}月${parseInt(parts[2])}日`);
       }
-      if (e.location) metaParts.push(`📍${ExpenseData.escapeHtml(e.location)}`);
+      if (e.location) metaParts.push(`${_ICONS.mapPin}${ExpenseData.escapeHtml(e.location)}`);
       if (e.paymentMethod) {
         const pm = ExpenseData.PAYMENT_METHODS.find(p => p.value === e.paymentMethod);
         metaParts.push(ExpenseData.escapeHtml(pm ? pm.label : e.paymentMethod));
       }
-      if (e.note) metaParts.push(`📝${ExpenseData.escapeHtml(e.note)}`);
+      if (e.note) metaParts.push(`${_ICONS.fileText}${ExpenseData.escapeHtml(e.note)}`);
 
       return `
         <div class="home-recent__item" data-id="${ExpenseData.escapeHtml(e.id)}">
