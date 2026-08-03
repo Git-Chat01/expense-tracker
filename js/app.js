@@ -262,7 +262,12 @@ const ExpenseApp = (() => {
       const parts = _formState.amountRaw.split('.');
       if (parts.length === 2 && parts[1].length >= 2) return;
       if (parts[0].length >= 8 && parts.length === 1) return;
-      _formState.amountRaw += k;
+      // v194：整数部分全为 0 且尚未输入小数点时直接替换（"00"+5 → "5"），不显示前导零
+      if (parts.length === 1 && /^0+$/.test(parts[0])) {
+        _formState.amountRaw = k;
+      } else {
+        _formState.amountRaw += k;
+      }
     }
 
     if (_formState.amountRaw === previousAmountRaw) return;
@@ -710,6 +715,48 @@ const ExpenseApp = (() => {
      整条链都没有 → 不预填、展开选项让用户选。
      用户手动改过的字段不覆盖。纯读取历史账单，零写入，符合数据安全红线。
      ----------------------------------------------------------------- */
+  let _habitStatsCache = null;   // { direct: {catId→层}, parent: {父分类Id→层}, global: 层 }
+                                 // 层 = { counts: {paymentMethod: 次数}, total: 总样本数 }
+
+  /** 数据变更后使习惯统计缓存失效（下次选分类时自动重建） */
+  function _invalidateHabitStatsCache() {
+    _habitStatsCache = null;
+  }
+
+  /** 一次遍历构建三层统计：direct=精确分类，parent=父分类（含其全部子分类账单），global=全局 */
+  function _buildHabitStats() {
+    // 分类关系：子分类 → 父分类映射 + 父分类集合（无 parentId 者视为父分类）
+    const parentOf = {};
+    const parentSet = new Set();
+    ExpenseDB.getCategories().forEach(c => {
+      if (c.parentId) parentOf[c.id] = c.parentId;
+      else parentSet.add(c.id);
+    });
+    const stats = { direct: {}, parent: {}, global: { counts: {}, total: 0 } };
+
+    ExpenseDB.getExpenses().forEach(e => {
+      const v = e.paymentMethod;
+      if (!v) return;
+      // 全局层
+      stats.global.counts[v] = (stats.global.counts[v] || 0) + 1;
+      stats.global.total++;
+      const catId = e.categoryId;
+      if (!catId) return;
+      // 精确分类层
+      if (!stats.direct[catId]) stats.direct[catId] = { counts: {}, total: 0 };
+      stats.direct[catId].counts[v] = (stats.direct[catId].counts[v] || 0) + 1;
+      stats.direct[catId].total++;
+      // 父级层：账单挂在父分类自己或任一子分类，都计入该父级
+      const pid = parentOf[catId] || (parentSet.has(catId) ? catId : null);
+      if (pid) {
+        if (!stats.parent[pid]) stats.parent[pid] = { counts: {}, total: 0 };
+        stats.parent[pid].counts[v] = (stats.parent[pid].counts[v] || 0) + 1;
+        stats.parent[pid].total++;
+      }
+    });
+    return stats;
+  }
+
   function _applyHabitDefaults() {
     // 支付方式：按「分类 → 父分类 → 全局」条件概率预填（支付渠道有行为惯性，值得猜）
     // 价值评定：每笔消费的价值判断独立，从不自动默认，始终展开让用户自选
@@ -732,40 +779,32 @@ const ExpenseApp = (() => {
 
   /** 按回退链逐层猜习惯：选中分类 → 父分类（含其所有子分类）→ 全局 → 空串（不猜） */
   function _guessHabitForCategory(values, pick) {
+    // 统计缓存：账单只在数据变更时重建，避免每次选分类都全量遍历
+    if (!_habitStatsCache) _habitStatsCache = _buildHabitStats();
+    const stats = _habitStatsCache;
     const catId = _formState.categoryId;
     if (catId) {
       const cat = ExpenseDB.getCategory(catId);
       // 第一层：选中的具体分类（如"外卖"）
-      const direct = _guessHabit(values, pick, new Set([catId]));
-      if (direct) return direct;
+      if (stats.direct[catId]) {
+        const direct = _pickHabitByThreshold(stats.direct[catId], values);
+        if (direct) return direct;
+      }
       // 第二层：父分类及其全部子分类（如"餐饮"下所有账单，样本更足）
-      if (cat && cat.parentId) {
-        const parentIds = new Set([cat.parentId]);
-        ExpenseDB.getCategories().forEach(c => {
-          if (c.parentId === cat.parentId) parentIds.add(c.id);
-        });
-        const parentHit = _guessHabit(values, pick, parentIds);
+      if (cat && cat.parentId && stats.parent[cat.parentId]) {
+        const parentHit = _pickHabitByThreshold(stats.parent[cat.parentId], values);
         if (parentHit) return parentHit;
       }
     }
     // 第三层：全局习惯
-    return _guessHabit(values, pick, null);
+    return _pickHabitByThreshold(stats.global, values);
   }
 
-  /** 统计 pick(e) 在指定分类集合账单中的占比（null=全部）：样本 ≥5 且某项 ≥70% 时返回该项，否则空串 */
-  function _guessHabit(values, pick, catIds) {
-    const counts = {};
-    let total = 0;
-    ExpenseDB.getExpenses().forEach(e => {
-      if (catIds && !catIds.has(e.categoryId)) return;
-      const v = pick(e);
-      if (!v) return;
-      counts[v] = (counts[v] || 0) + 1;
-      total++;
-    });
-    if (total < 5) return '';
+  /** 在某一层统计中找占比 ≥70% 且样本 ≥5 的项；没有则空串（与原 _guessHabit 判定完全一致） */
+  function _pickHabitByThreshold(layer, values) {
+    if (layer.total < 5) return '';
     for (const v of values) {
-      if ((counts[v] || 0) / total >= 0.7) return v;
+      if ((layer.counts[v] || 0) / layer.total >= 0.7) return v;
     }
     return '';
   }
@@ -858,10 +897,24 @@ const ExpenseApp = (() => {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
-      if (!window.confirm(`确认记录 ¥${amountText} 的支出？`)) return;
-      _confirmedLargeAmountRaw = _formState.amountRaw;
+      _confirmDialog({
+        title: '确认这笔大额支出？',
+        message: `将记录 ¥${amountText} 的支出。`,
+        confirmText: '确认记录',
+      }).then(ok => {
+        if (!ok) return;
+        _confirmedLargeAmountRaw = _formState.amountRaw;
+        _commitSave();
+      });
+      return;
     }
 
+    _commitSave();
+  }
+
+  /** 实际写入记录（大金额确认通过后调用；window.confirm 在 iOS 独立 PWA 被禁用，确认改为自绘弹窗） */
+  function _commitSave() {
+    const amount = parseFloat(_formState.amountRaw);
     const record = ExpenseDB.addExpense({
       amount:        amount,
       categoryId:    _formState.categoryId,
@@ -877,6 +930,7 @@ const ExpenseApp = (() => {
       _toast('保存失败，请检查浏览器存储空间后重试', 'warning');
       return;
     }
+    _invalidateHabitStatsCache();  // 数据已变更，习惯统计缓存作废
 
     _toast(`已记录 ¥${amount.toFixed(2)}`, 'success', {
       actionLabel: '撤销',
@@ -886,6 +940,7 @@ const ExpenseApp = (() => {
           _toast('撤销失败，这笔记录仍然保留', 'warning');
           return;
         }
+        _invalidateHabitStatsCache();
         _toast('已撤销本次记录', 'success');
         ExpenseHome.render();
         if (typeof ExpenseList !== 'undefined') ExpenseList.render();
@@ -971,6 +1026,65 @@ const ExpenseApp = (() => {
   }
 
   /* -----------------------------------------------------------------
+     应用内确认弹窗（替代 window.confirm / confirm）
+     背景：iOS 独立 PWA（添加到主屏幕）下 alert/confirm/prompt 被系统
+     禁用并静默返回 false——删除记录与大金额确认在这些设备上点击无反应。
+     自绘弹窗跨环境行为一致；单例 DOM 只创建一次，事件只绑定一次。
+     ----------------------------------------------------------------- */
+  let _confirmResolver = null;  // 当前弹窗的 resolve（同一时刻只允许一个确认弹窗）
+
+  function _confirmDialog(options) {
+    const { title = '请确认', message = '', confirmText = '确定', cancelText = '取消', danger = false } = options || {};
+
+    // 单例：首次调用创建 DOM 并绑定事件，后续只更新文案
+    let overlay = document.getElementById('confirm-dialog');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'confirm-dialog';
+      overlay.className = 'confirm-dialog';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.innerHTML = `
+        <div class="confirm-dialog__backdrop" data-confirm-cancel></div>
+        <div class="confirm-dialog__card">
+          <p class="confirm-dialog__title"></p>
+          <p class="confirm-dialog__message"></p>
+          <div class="confirm-dialog__actions">
+            <button type="button" class="btn confirm-dialog__cancel" data-confirm-cancel>取消</button>
+            <button type="button" class="btn confirm-dialog__ok" data-confirm-ok>确定</button>
+          </div>
+        </div>
+      `;
+      overlay.querySelector('[data-confirm-ok]').addEventListener('click', () => _resolveConfirm(true));
+      overlay.querySelectorAll('[data-confirm-cancel]').forEach(el => el.addEventListener('click', () => _resolveConfirm(false)));
+      document.body.appendChild(overlay);
+    }
+
+    overlay.querySelector('.confirm-dialog__title').textContent = title;
+    overlay.querySelector('.confirm-dialog__message').textContent = message;
+    overlay.querySelector('.confirm-dialog__cancel').textContent = cancelText;
+    const okBtn = overlay.querySelector('.confirm-dialog__ok');
+    okBtn.textContent = confirmText;
+    // 危险操作（如删除）用红色按钮，普通确认用主色按钮
+    okBtn.classList.toggle('btn--danger', danger);
+    okBtn.classList.toggle('btn--primary', !danger);
+
+    overlay.classList.add('confirm-dialog--open');
+    return new Promise(resolve => { _confirmResolver = resolve; });
+  }
+
+  /** 关闭确认弹窗并返回用户选择（true=确认，false=取消/点遮罩） */
+  function _resolveConfirm(result) {
+    const overlay = document.getElementById('confirm-dialog');
+    if (overlay) overlay.classList.remove('confirm-dialog--open');
+    if (_confirmResolver) {
+      const resolve = _confirmResolver;
+      _confirmResolver = null;
+      resolve(result);
+    }
+  }
+
+  /* -----------------------------------------------------------------
      预算设置覆盖层
      ----------------------------------------------------------------- */
   function _openBudgetOverlay() {
@@ -1038,7 +1152,13 @@ const ExpenseApp = (() => {
 
     // 重置
     document.getElementById('budget-btn-reset').addEventListener('click', () => {
-      if (confirm('确定清空全部预算设置？')) {
+      _confirmDialog({
+        title: '清空全部预算设置？',
+        message: '各分类预算将恢复为默认值。',
+        confirmText: '清空',
+        danger: true,
+      }).then(ok => {
+        if (!ok) return;
         if (!ExpenseDB.saveBudget(ExpenseData.DEFAULT_BUDGET)) {
           _toast('预算重置失败，请检查浏览器存储空间', 'warning');
           return;
@@ -1046,7 +1166,7 @@ const ExpenseApp = (() => {
         _toast('预算已重置', 'success');
         overlay.classList.remove('page-overlay--open');
         ExpenseHome.render();
-      }
+      });
     });
 
     overlay.classList.add('page-overlay--open');
@@ -1107,11 +1227,18 @@ const ExpenseApp = (() => {
         const catId = btn.dataset.delCat;
         const cat = ExpenseDB.getCategory(catId);
         if (!cat) return;
-        if (confirm(`确定删除分类「${cat.name}」？`)) {
+        _confirmDialog({
+          title: `删除分类「${cat.name}」？`,
+          message: '该分类下的历史账单会显示为「未分类」，不会被删除。',
+          confirmText: '删除',
+          danger: true,
+        }).then(ok => {
+          if (!ok) return;
           if (!ExpenseDB.deleteCategory(catId)) {
             _toast('分类删除失败，请检查浏览器存储空间', 'warning');
             return;
           }
+          _invalidateHabitStatsCache();  // 分类关系变了，父级统计可能受影响
           if (_formState.categoryId === catId) {
             _formState.categoryId = '';
             // v187：当前分类被删 → 无分类，还原为展开让用户选
@@ -1122,7 +1249,7 @@ const ExpenseApp = (() => {
           _renderCategoryManagerOverlay();
           _renderAddCategories();
           _updateSaveState();
-        }
+        });
       });
     });
   }
@@ -1190,20 +1317,28 @@ const ExpenseApp = (() => {
     });
 
     // 编辑覆盖层 — 删除按钮（只绑定一次，通过 _editingExpenseId 获取当前记录）
+    // 确认改用自绘弹窗：iOS 独立 PWA 下 window.confirm 被禁用、静默返回 false
     document.getElementById('overlay-edit-delete').addEventListener('click', () => {
       if (!_editingExpenseId) return;
-      if (confirm('确定删除这条记录？此操作不可恢复。')) {
+      _confirmDialog({
+        title: '删除这条记录？',
+        message: '此操作不可恢复。',
+        confirmText: '删除',
+        danger: true,
+      }).then(ok => {
+        if (!ok) return;
         if (!ExpenseDB.deleteExpense(_editingExpenseId)) {
           _toast('删除失败，这笔记录仍然保留', 'warning');
           return;
         }
+        _invalidateHabitStatsCache();
         _toast('已删除', 'success');
         _closeEditSheet();
         _editingExpenseId = null;
         if (typeof ExpenseList !== 'undefined') ExpenseList.render();
         ExpenseHome.render();
         if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
-      }
+      });
     });
 
     // 记账页"⚙️ 管理"按钮 → 打开分类管理覆盖层（独立全屏页面）
@@ -1350,20 +1485,28 @@ const ExpenseApp = (() => {
           _toast('无效的备份文件：缺少数据字段', 'warning');
           return;
         }
-        const msg = `即将恢复备份（${data.expenses.length} 条记录，${data.categories.length} 个分类）。\n\n当前数据将被覆盖，系统已自动留一份恢复前备份。\n\n确定继续？`;
-        if (!confirm(msg)) return;
-        const result = ExpenseDB.importAll(data);
-        if (result.success) {
-          _toast(result.message, 'success');
-          _updateBackupBadge();
-          importArea.style.display = 'none';
-          importTextarea.value = '';
-          ExpenseHome.render();
-          if (typeof ExpenseList !== 'undefined') ExpenseList.render();
-          if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
-        } else {
-          _toast(result.message, 'warning');
-        }
+        const msg = `即将恢复备份（${data.expenses.length} 条记录，${data.categories.length} 个分类）。当前数据将被覆盖，系统已自动留一份恢复前备份。`;
+        _confirmDialog({
+          title: '恢复备份？',
+          message: msg,
+          confirmText: '恢复',
+          danger: true,
+        }).then(ok => {
+          if (!ok) return;
+          const result = ExpenseDB.importAll(data);
+          if (result.success) {
+            _invalidateHabitStatsCache();  // 数据整体被替换，缓存作废
+            _toast(result.message, 'success');
+            _updateBackupBadge();
+            importArea.style.display = 'none';
+            importTextarea.value = '';
+            ExpenseHome.render();
+            if (typeof ExpenseList !== 'undefined') ExpenseList.render();
+            if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
+          } else {
+            _toast(result.message, 'warning');
+          }
+        });
       });
     }
 
@@ -1522,26 +1665,35 @@ const ExpenseApp = (() => {
         _toast('请输入有效金额', 'warning');
         return;
       }
+      // v194：与新增记账一致，分类必选——防止账单被误存为「未分类」
+      const categoryId = document.getElementById('edit-category').value;
+      if (!categoryId) {
+        _toast('请选择分类', 'warning');
+        return;
+      }
 
       const pmBtn = body.querySelector('[data-edit-pm].chip--active');
       const necessityBtn = body.querySelector('[data-edit-necessity].chip--active');
+      // v194：日期/时间被清空时补当前值，避免产生空日期账单
+      const dateVal = document.getElementById('edit-date').value || ExpenseDB.today();
+      const timeVal = document.getElementById('edit-time').value || ExpenseDB.now();
 
       const updated = ExpenseDB.updateExpense(expenseId, {
         amount:        amountVal,
-        categoryId:    document.getElementById('edit-category').value,
+        categoryId:    categoryId,
         location:      document.getElementById('edit-location').value,
         paymentMethod: pmBtn ? pmBtn.dataset.editPm : '',
         necessity:     necessityBtn ? necessityBtn.dataset.editNecessity : '',
         note:          document.getElementById('edit-note').value,
-        date:          document.getElementById('edit-date').value,
-        time:          document.getElementById('edit-time').value,
+        date:          dateVal,
+        time:          timeVal,
       });
 
       if (!updated) {
         _toast('修改保存失败，请检查浏览器存储空间', 'warning');
         return;
       }
-
+      _invalidateHabitStatsCache();
       _toast('已更新', 'success');
       _closeEditSheet();
       _editingExpenseId = null;

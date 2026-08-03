@@ -1125,3 +1125,50 @@ ul, ol {
 /* v163 · 账单页已选分类筛选条件。 */
 .filter-chip .category-icon { width: 20px; height: 20px; border-radius: 7px; flex: 0 0 auto; }
 .filter-chip .category-icon svg { width: 12px; height: 12px; }
+
+/* v193 · 应用内确认弹窗：替代 window.confirm（iOS 独立 PWA 下系统弹窗被禁用，静默返回 false）。 */
+.confirm-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.confirm-dialog--open { display: flex; }
+.confirm-dialog__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 41, 43, 0.45);
+}
+.confirm-dialog__card {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+  background: var(--color-surface);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 18px 40px rgba(28, 41, 43, 0.22);
+}
+.confirm-dialog__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.confirm-dialog__message {
+  margin: 8px 0 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  word-break: break-all;
+}
+.confirm-dialog__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.confirm-dialog__cancel {
+  background: transparent;
+  color: var(--color-text-secondary);
+}
