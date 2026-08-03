@@ -593,6 +593,9 @@ ul, ol {
   color: var(--color-text-inverse);
 }
 
+/* 价值评定图标（v183）：Lucide 线条图标，1em 随字号自适应；vertical-align 微调基线使图标与文字视觉居中 */
+.necessity-icon { width: 1em; height: 1em; vertical-align: -0.125em; flex-shrink: 0; }
+
 .chip--removable {
   padding-right: 6px;
 }
