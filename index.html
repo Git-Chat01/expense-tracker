@@ -12,11 +12,11 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=185">
+  <link rel="stylesheet" href="css/common.css?v=187">
   <link rel="stylesheet" href="css/home.css?v=175">
-  <link rel="stylesheet" href="css/add.css?v=185">
+  <link rel="stylesheet" href="css/add.css?v=187">
   <link rel="stylesheet" href="css/list.css?v=175">
-  <link rel="stylesheet" href="css/stats.css?v=185">
+  <link rel="stylesheet" href="css/stats.css?v=187">
   <link rel="stylesheet" href="css/onboarding.css?v=176">
 </head>
 <body>
@@ -181,7 +181,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260803-185 · 图标全面清理
+      v20260803-187 · 记账体验优化
     </div>
   </main>
 
@@ -251,12 +251,16 @@
         <div class="add-payment-methods" id="add-payment-methods"></div>
       </section>
 
-      <!-- 价值评定：三键可选填，不选也能保存（保持快速记录流畅） -->
+      <!-- 价值评定：与支付方式同款交互，选完收起为文字行，点按展开三键 -->
       <section class="add-necessity-section" aria-labelledby="add-necessity-title">
-        <div class="add-necessity-section__header">
-          <h2 class="add-section__title" id="add-necessity-title">价值评定</h2>
-          <span class="add-necessity-section__hint">可选</span>
-        </div>
+        <button class="add-payment-summary add-necessity-summary" id="add-necessity-summary" type="button" aria-label="选择价值评定" aria-expanded="false" aria-controls="add-necessity-options">
+          <span class="add-payment-summary__label" id="add-necessity-title">价值评定</span>
+          <span class="add-payment-summary__value">
+            <span class="add-payment-summary__dot" id="add-necessity-summary-dot" aria-hidden="true"></span>
+            <span id="add-necessity-summary-text">可选</span>
+          </span>
+          <span class="add-payment-summary__edit" id="add-necessity-summary-action">选择</span>
+        </button>
         <div class="add-necessity-options" id="add-necessity-options"></div>
       </section>
 
@@ -670,14 +674,14 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=185"></script>
-<script src="js/data.js?v=185"></script>
-<script src="js/home.js?v=185"></script>
-<script src="js/categories.js?v=185"></script>
-<script src="js/list.js?v=185"></script>
-<script src="js/stats.js?v=185"></script>
-<script src="js/onboarding.js?v=185"></script>
-<script src="js/app.js?v=185"></script>
+<script src="js/storage.js?v=187"></script>
+<script src="js/data.js?v=187"></script>
+<script src="js/home.js?v=187"></script>
+<script src="js/categories.js?v=187"></script>
+<script src="js/list.js?v=187"></script>
+<script src="js/stats.js?v=187"></script>
+<script src="js/onboarding.js?v=187"></script>
+<script src="js/app.js?v=187"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">

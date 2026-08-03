@@ -185,17 +185,19 @@ const ExpenseList = (() => {
 
     // 元数据只保留能帮助回忆这笔记录的信息，不再堆叠装饰性 Emoji。
     const metaParts = [];
-    // 价值评定标记放最前（emoji 自带语义色，一眼识别这笔花得值不值）
-    if (expense.necessity) {
-      const opt = ExpenseData.NECESSITY_OPTIONS.find(o => o.value === expense.necessity);
-      if (opt) metaParts.push(`${opt.icon}${opt.label}`);
-    }
-    if (expense.note) metaParts.push(ExpenseData.escapeHtml(name));
+    // 时间放最前：账单是时间线上的事件，与首页「最近消费」及主流记账 App 的阅读习惯一致
     if (expense.time) metaParts.push(ExpenseData.escapeHtml(expense.time));
     if (expense.location) metaParts.push(ExpenseData.escapeHtml(expense.location));
     if (expense.paymentMethod) {
       const pm = ExpenseData.PAYMENT_METHODS.find(p => p.value === expense.paymentMethod);
       metaParts.push(ExpenseData.escapeHtml(pm ? pm.label : expense.paymentMethod));
+    }
+    // 有备注时标题被备注占用，分类名补位到这里
+    if (expense.note) metaParts.push(ExpenseData.escapeHtml(name));
+    // 价值评定是彩色状态徽章，放末尾收尾：不打断灰色事实信息的连续阅读，又保留一眼可见的识别度
+    if (expense.necessity) {
+      const opt = ExpenseData.NECESSITY_OPTIONS.find(o => o.value === expense.necessity);
+      if (opt) metaParts.push(`${opt.icon}${opt.label}`);
     }
 
     return `
