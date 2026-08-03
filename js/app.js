@@ -73,7 +73,6 @@ const ExpenseApp = (() => {
     _bindAddForm();
     _bindPaymentSummary();
     _bindNecessitySummary();
-    _bindQuickToggle();
     _bindDateToggle();
     _bindDateShortcuts();
     _bindOverlays();
@@ -417,28 +416,6 @@ const ExpenseApp = (() => {
   }
 
   /* -----------------------------------------------------------------
-     地点/备注展开控制（v188）
-     默认收起为一行小入口（淡化「选填」），点开才显示输入行；
-     有内容或点商家建议时自动展开
-     ----------------------------------------------------------------- */
-  function _bindQuickToggle() {
-    const toggle = document.getElementById('add-quick-toggle');
-    if (!toggle) return;
-    toggle.addEventListener('click', () => {
-      _setQuickFieldsExpanded(toggle.getAttribute('aria-expanded') !== 'true');
-    });
-  }
-
-  function _setQuickFieldsExpanded(expanded) {
-    const toggle = document.getElementById('add-quick-toggle');
-    const fields = document.getElementById('add-quick-fields');
-    const text = document.getElementById('add-quick-toggle-text');
-    if (fields) fields.hidden = !expanded;
-    if (toggle) toggle.setAttribute('aria-expanded', String(expanded));
-    if (text) text.textContent = expanded ? '收起 备注' : '＋ 备注一下';
-  }
-
-  /* -----------------------------------------------------------------
      价值评定（必需/可选/冲动）
      v187 起与支付方式同款交互：默认收起为一个文字行，点按展开三键，
      选完自动收起（显示"已选 XX"），再点已选项 = 取消（回到未评估）
@@ -603,10 +580,10 @@ const ExpenseApp = (() => {
 
     const noteInput = document.getElementById('add-note');
     const locationInput = document.getElementById('add-location');
+    const moreFields = document.getElementById('add-more-fields');
     if (noteInput) noteInput.value = suggestion.note;
     if (locationInput) locationInput.value = suggestion.location;
-    // v188：点商家建议后自动展开字段，让填充结果可见
-    _setQuickFieldsExpanded(true);
+    if (moreFields) moreFields.open = true;
 
     if (ExpenseDB.getCategory(suggestion.categoryId)) {
       _formState.categoryId = suggestion.categoryId;
@@ -823,12 +800,12 @@ const ExpenseApp = (() => {
     const timeInput = document.getElementById('add-time');
     const locInput = document.getElementById('add-location');
     const noteInput = document.getElementById('add-note');
+    const moreFields = document.getElementById('add-more-fields');
     if (dateInput) dateInput.value = _formState.date;
     if (timeInput) timeInput.value = _formState.time;
     if (locInput) locInput.value = _formState.location;
     if (noteInput) noteInput.value = '';
-    // v188：地点/备注有内容时展开，无内容默认收起（减少记账投入感）
-    _setQuickFieldsExpanded(Boolean(_formState.location || _formState.note));
+    if (moreFields) moreFields.open = Boolean(_formState.location || _formState.note);
 
     // 更新日期标签显示 + 收起日期选择器
     _updateDateLabels();
@@ -930,10 +907,10 @@ const ExpenseApp = (() => {
     _applyHabitDefaults();
     const noteInput = document.getElementById('add-note');
     const locInput = document.getElementById('add-location');
+    const moreFields = document.getElementById('add-more-fields');
     if (noteInput) noteInput.value = '';
     if (locInput) locInput.value = '';
-    // v188：保存后地点/备注收起，下一笔从简洁状态开始
-    _setQuickFieldsExpanded(false);
+    if (moreFields) moreFields.open = false;
     _updateAmountDisplay();
     _refreshTimestampAfterSave();
 
