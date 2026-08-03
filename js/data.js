@@ -112,9 +112,11 @@ const ExpenseData = (() => {
      作为记账页/编辑弹层/统计图的唯一颜色来源
      ================================================================= */
   const NECESSITY_OPTIONS = [
-    { value: 'need',    label: '必需', icon: '🟢', color: '#34C759' },
-    { value: 'want',    label: '可选', icon: '🟡', color: '#FF9500' },
-    { value: 'impulse', label: '冲动', icon: '🔴', color: '#FF3B30' },
+    // 图标为 Lucide 官方线条图标（v183 起替换 emoji 圆点）：对勾=必需、星标=可选、闪电=冲动
+    // 尺寸由 common.css 的 .necessity-icon 控制（1em 随字号自适应）
+    { value: 'need',    label: '必需', icon: '<svg viewBox="0 0 24 24" class="necessity-icon" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11l3 3L22 4"/></g></svg>', color: '#34C759' },
+    { value: 'want',    label: '可选', icon: '<svg viewBox="0 0 24 24" class="necessity-icon" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z"/></svg>', color: '#FF9500' },
+    { value: 'impulse', label: '冲动', icon: '<svg viewBox="0 0 24 24" class="necessity-icon" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.914 4a1.5 1.5 0 0 0-2.474-1.561l-9 9A1.5 1.5 0 0 0 5.5 14h4.002a.5.5 0 0 1 .471.666L8.086 20a1.5 1.5 0 0 0 2.475 1.56l9-9A1.5 1.5 0 0 0 18.5 10h-3.997a.5.5 0 0 1-.472-.667z"/></svg>', color: '#FF3B30' },
   ];
 
   /* =================================================================
