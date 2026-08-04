@@ -40,6 +40,7 @@ const ExpenseApp = (() => {
     const backdrop = document.getElementById('overlay-edit-backdrop');
     if (sheet) sheet.classList.add('bottom-sheet--open');
     if (backdrop) backdrop.classList.add('bottom-sheet-backdrop--open');
+    _lockOverlayScroll();
   }
 
   function _closeEditSheet() {
@@ -47,6 +48,7 @@ const ExpenseApp = (() => {
     const backdrop = document.getElementById('overlay-edit-backdrop');
     if (sheet) sheet.classList.remove('bottom-sheet--open');
     if (backdrop) backdrop.classList.remove('bottom-sheet-backdrop--open');
+    _unlockOverlayScroll();
   }
 
   /* -----------------------------------------------------------------
@@ -1146,6 +1148,7 @@ const ExpenseApp = (() => {
         return;
       }
       _toast('预算已保存', 'success');
+      _unlockOverlayScroll();
       overlay.classList.remove('page-overlay--open');
       ExpenseHome.render();
     });
@@ -1164,17 +1167,37 @@ const ExpenseApp = (() => {
           return;
         }
         _toast('预算已重置', 'success');
+        _unlockOverlayScroll();
         overlay.classList.remove('page-overlay--open');
         ExpenseHome.render();
       });
     });
 
     overlay.classList.add('page-overlay--open');
+    _lockOverlayScroll();
   }
 
   /* =================================================================
      分类管理 — 独立全屏页面（覆盖层，从右侧滑入）
      ================================================================= */
+
+  let _overlayScrollYBefore = 0;
+
+  /** 打开全屏覆盖层：锁住背景滚动并记录原位置（与分类抽屉同一模式，防移动端滚动穿透） */
+  function _lockOverlayScroll() {
+    _overlayScrollYBefore = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.style.top = `-${_overlayScrollYBefore}px`;
+    document.body.classList.add('page-overlay-open');
+    document.documentElement.classList.add('page-overlay-open');
+  }
+
+  /** 关闭全屏覆盖层：解锁滚动，精确回到打开前的位置 */
+  function _unlockOverlayScroll() {
+    document.body.style.top = '';
+    document.body.classList.remove('page-overlay-open');
+    document.documentElement.classList.remove('page-overlay-open');
+    window.scrollTo(0, _overlayScrollYBefore);
+  }
 
   /** 打开分类管理覆盖层，渲染分类列表 */
   function _openCategoryManager() {
@@ -1182,6 +1205,7 @@ const ExpenseApp = (() => {
     if (!overlay) return;
     _renderCategoryManagerOverlay();
     overlay.classList.add('page-overlay--open');
+    _lockOverlayScroll();
   }
 
   /** 渲染分类列表到覆盖层 body */
@@ -1433,6 +1457,7 @@ const ExpenseApp = (() => {
   function _bindOverlays() {
     // 预算覆盖层
     document.getElementById('overlay-budget-back').addEventListener('click', () => {
+      _unlockOverlayScroll();
       document.getElementById('overlay-budget').classList.remove('page-overlay--open');
     });
 
@@ -1478,6 +1503,7 @@ const ExpenseApp = (() => {
 
     // 分类管理覆盖层 — 右上角 ✕ 返回按钮：关闭覆盖层，切回记账页
     document.getElementById('overlay-categories-back').addEventListener('click', () => {
+      _unlockOverlayScroll();
       document.getElementById('overlay-categories').classList.remove('page-overlay--open');
       navigate('add');
       // 刷新记账页的分类入口

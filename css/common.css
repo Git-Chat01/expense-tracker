@@ -320,6 +320,19 @@ ul, ol {
   pointer-events: auto;
 }
 
+/* 覆盖层打开时锁定背景滚动（与分类抽屉 category-picker-open 同一模式） */
+html.page-overlay-open,
+body.page-overlay-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+body.page-overlay-open {
+  position: fixed;
+  width: 100%;
+  left: 0;
+  right: 0;
+}
+
 .page-overlay__header {
   display: flex;
   align-items: center;
