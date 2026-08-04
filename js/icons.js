@@ -132,16 +132,22 @@ const ExpenseIcons = (() => {
   "droplet": "<path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5S5 13 5 15a7 7 0 0 0 7 7\"/>",
   "spray-can": "<path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 3h.01M7 5h.01M11 7h.01M3 7h.01M7 9h.01M3 11h.01M15 5h4v4h-4zm4 4l2 2v10c0 .6-.4 1-1 1h-6c-.6 0-1-.4-1-1V11l2-2m-2 5l8-2m-8 7l8-2\"/>",
   "brush-cleaning": "<g fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\"><path d=\"m16 22l-1-4m4-4a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2h-3a1 1 0 0 1-1-1V4a2 2 0 0 0-4 0v5a1 1 0 0 1-1 1H6a2 2 0 0 0-2 2v1a1 1 0 0 0 1 1\"/><path d=\"M19 14H5l-1.973 6.767A1 1 0 0 0 4 22h16a1 1 0 0 0 .973-1.233zM8 22l1-4\"/></g>",
+  "glass-water": "<g fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\"><path d=\"M5.116 4.104A1 1 0 0 1 6.11 3h11.78a1 1 0 0 1 .994 1.105L17.19 20.21A2 2 0 0 1 15.2 22H8.8a2 2 0 0 1-2-1.79z\"/><path d=\"M6 12a5 5 0 0 1 6 0a5 5 0 0 0 6 0\"/></g>",
+  "cup-soda": "<g fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\"><path d=\"m6 8l1.75 12.28a2 2 0 0 0 2 1.72h4.54a2 2 0 0 0 2-1.72L18 8M5 8h14\"/><path d=\"M7 15a6.47 6.47 0 0 1 5 0a6.47 6.47 0 0 0 5 0m-5-7l1-6h2\"/></g>",
+  "soap-dispenser-droplet": "<path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M10.5 2v4M14 2H7a2 2 0 0 0-2 2m14.29 10.76A6.67 6.67 0 0 1 17 11a6.6 6.6 0 0 1-2.29 3.76c-1.15.92-1.71 2.04-1.71 3.19c0 2.22 1.8 4.05 4 4.05s4-1.83 4-4.05c0-1.16-.57-2.26-1.71-3.19M9.607 21H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h7V7a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3\"/>",
+  "shopping-basket": "<path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"m15 11l-1 9m5-9l-4-7M2 11h20M3.5 11l1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4M4.5 15.5h15M5 11l4-7m0 7l1 9\"/>",
   };
 
   const CATEGORY_ICON_PRESETS = [
     // 餐饮
     "utensils", "utensils-crossed", "coffee", "beer", "wine", "pizza", "cake", "ice-cream-cone", "candy", "cookie", "sandwich", "popcorn",
     "milk", "donut", "croissant", "chef-hat", "soup", "hamburger",
+    "glass-water", "cup-soda",
     // 交通
     "car", "car-front", "bus", "train-front", "tram-front", "plane", "ship", "bike", "fuel",
     // 购物
     "shopping-bag", "shopping-cart", "shirt", "watch", "gem", "gift", "sparkles", "tag", "credit-card",
+    "shopping-basket",
     "sport-shoe", "glasses", "backpack",
     // 娱乐
     "gamepad-2", "music", "film", "headphones", "trophy", "ticket", "guitar", "camera",
@@ -152,6 +158,7 @@ const ExpenseIcons = (() => {
     // 家居健康
     "house", "bed-double", "sofa", "lamp", "washing-machine", "hammer", "wrench", "plug", "thermometer", "heart-pulse",
     "microwave", "bath", "shower-head", "flower", "sprout", "drill",
+    "soap-dispenser-droplet",
     // 医疗
     "pill", "syringe", "stethoscope",
     "smile", "eye", "brain",
@@ -299,6 +306,7 @@ const ExpenseIcons = (() => {
   "droplet": "水滴",
   "spray-can": "喷雾",
   "brush-cleaning": "清洁刷",
+  "glass-water": "玻璃水杯", "cup-soda": "汽水杯", "soap-dispenser-droplet": "洗涤液瓶", "shopping-basket": "购物篮",
   };
   return { CATEGORY_ICON_PATHS, CATEGORY_ICON_PRESETS, CATEGORY_ICON_NAMES_ZH };
 })();
