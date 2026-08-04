@@ -1203,7 +1203,11 @@ const ExpenseApp = (() => {
             ${ExpenseCategories.getIconMarkup(p)}
             <span>${ExpenseData.escapeHtml(p.name)}</span>
             <span style="font-size:11px;color:var(--color-text-tertiary);font-weight:400">${p.isPreset ? '预设' : '自定义'}</span>
-            ${!p.isPreset ? `<button class="btn btn--ghost btn--small" data-del-cat="${ExpenseData.escapeHtml(p.id)}" style="color:var(--color-danger);font-size:11px;margin-left:auto">删除</button>` : ''}
+            ${!p.isPreset ? `
+              <span style="margin-left:auto;display:flex;gap:6px">
+                <button class="btn btn--ghost btn--small" data-edit-cat="${ExpenseData.escapeHtml(p.id)}" style="font-size:11px">编辑</button>
+                <button class="btn btn--ghost btn--small" data-del-cat="${ExpenseData.escapeHtml(p.id)}" style="color:var(--color-danger);font-size:11px">删除</button>
+              </span>` : ''}
           </div>
           <div style="padding-left:24px">
             ${children.map(c => `
@@ -1213,7 +1217,11 @@ const ExpenseApp = (() => {
                   <span>${ExpenseData.escapeHtml(c.name)}</span>
                   <span style="font-size:11px;color:var(--color-text-tertiary)">${c.isPreset ? '预设' : '自定义'}</span>
                 </span>
-                ${!c.isPreset ? `<button class="btn btn--ghost btn--small" data-del-cat="${ExpenseData.escapeHtml(c.id)}" style="color:var(--color-danger);font-size:11px">删除</button>` : ''}
+                ${!c.isPreset ? `
+                  <span style="display:flex;gap:6px">
+                    <button class="btn btn--ghost btn--small" data-edit-cat="${ExpenseData.escapeHtml(c.id)}" style="font-size:11px">编辑</button>
+                    <button class="btn btn--ghost btn--small" data-del-cat="${ExpenseData.escapeHtml(c.id)}" style="color:var(--color-danger);font-size:11px">删除</button>
+                  </span>` : ''}
               </div>
             `).join('')}
             ${children.length === 0 ? '<div style="padding:6px 0;font-size:12px;color:var(--color-text-tertiary)">暂无子分类</div>' : ''}
@@ -1221,15 +1229,19 @@ const ExpenseApp = (() => {
         </div>`;
     }).join('');
 
-    // 绑定删除事件
+    // 绑定删除事件（级联删除：一级分类的子分类会一并删除，确认框明示）
     body.querySelectorAll('[data-del-cat]').forEach(btn => {
       btn.addEventListener('click', () => {
         const catId = btn.dataset.delCat;
         const cat = ExpenseDB.getCategory(catId);
         if (!cat) return;
+        const children = ExpenseDB.getChildCategories(catId);
+        const message = children.length > 0
+          ? `该分类下的历史账单会显示为「未分类」，不会被删除。\n其 ${children.length} 个子分类（${children.map(c => c.name).join('、')}）将一并删除。`
+          : '该分类下的历史账单会显示为「未分类」，不会被删除。';
         _confirmDialog({
           title: `删除分类「${cat.name}」？`,
-          message: '该分类下的历史账单会显示为「未分类」，不会被删除。',
+          message,
           confirmText: '删除',
           danger: true,
         }).then(ok => {
@@ -1239,9 +1251,9 @@ const ExpenseApp = (() => {
             return;
           }
           _invalidateHabitStatsCache();  // 分类关系变了，父级统计可能受影响
-          if (_formState.categoryId === catId) {
+          // 当前选中分类被删（含被级联删除的子分类）→ 无分类，还原为展开让用户选
+          if (_formState.categoryId && !ExpenseDB.getCategory(_formState.categoryId)) {
             _formState.categoryId = '';
-            // v187：当前分类被删 → 无分类，还原为展开让用户选
             _applyHabitDefaults();
             _renderPaymentMethods();
             _renderNecessityOptions();
@@ -1252,6 +1264,113 @@ const ExpenseApp = (() => {
         });
       });
     });
+
+    // 绑定编辑事件
+    body.querySelectorAll('[data-edit-cat]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        _showEditCategoryForm(btn.dataset.editCat);
+      });
+    });
+  }
+
+  /** 渲染常用线条图标选择网格：点选把图标名填入输入框并高亮；手输 emoji 时联动取消高亮 */
+  function _renderCategoryIconPicker(inputId, containerId) {
+    const input = document.getElementById(inputId);
+    const container = document.getElementById(containerId);
+    if (!input || !container) return;
+
+    // 线条图标网格（与预设分类同风格）；手输 emoji 依然可用，渲染端对非图标名值走 emoji 兜底
+    container.innerHTML = ExpenseIcons.CATEGORY_ICON_PRESETS.map(name =>
+      `<button type="button" class="cat-icon-pick" data-icon="${name}" aria-label="选择图标 ${name}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ExpenseIcons.CATEGORY_ICON_PATHS[name]}</svg>
+      </button>`
+    ).join('');
+
+    // 高亮与输入框当前值一致的图标（点选、手输都走这里；手输 emoji 无匹配 → 全部取消高亮）
+    const syncHighlight = () => {
+      const current = input.value.trim();
+      container.querySelectorAll('.cat-icon-pick').forEach(btn => {
+        btn.classList.toggle('cat-icon-pick--selected', btn.dataset.icon === current);
+      });
+    };
+
+    container.querySelectorAll('.cat-icon-pick').forEach(btn => {
+      btn.addEventListener('click', () => {
+        input.value = btn.dataset.icon;
+        syncHighlight();
+      });
+    });
+    input.addEventListener('input', syncHighlight);
+    syncHighlight();
+  }
+
+  /** 同层重名检测：父级相同（含同为顶级）且非自身即视为冲突 */
+  function _isCategoryNameTaken(name, parentId, excludeId) {
+    return ExpenseDB.getCategories().some(c =>
+      c.id !== excludeId &&
+      c.name === name &&
+      (c.parentId || null) === (parentId || null)
+    );
+  }
+
+  /** 在覆盖层 body 中渲染编辑分类表单（仅自定义分类；改名/改图标不影响历史账单） */
+  function _showEditCategoryForm(catId) {
+    const body = document.getElementById('overlay-categories-body');
+    const cat = ExpenseDB.getCategory(catId);
+    if (!body || !cat || cat.isPreset) return;
+
+    // 一级分类可选的父级排除自身（不能把自己挂到自己下面）
+    const parents = ExpenseDB.getParentCategories().filter(p => p.id !== catId);
+    body.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div>
+          <label style="font-weight:600;display:block;margin-bottom:6px">所属一级分类</label>
+          <select class="input" id="edit-cat-parent">
+            <option value="">-- 设为一级分类 --</option>
+            ${parents.map(p => `<option value="${ExpenseData.escapeHtml(p.id)}" ${cat.parentId === p.id ? 'selected' : ''}>${ExpenseData.escapeHtml(p.icon)} ${ExpenseData.escapeHtml(p.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="font-weight:600;display:block;margin-bottom:6px">分类名称 <span style="color:var(--color-danger)">*</span></label>
+          <input type="text" class="input" id="edit-cat-name" value="${ExpenseData.escapeHtml(cat.name)}" placeholder="例如：宠物" maxlength="10">
+        </div>
+        <div>
+          <label style="font-weight:600;display:block;margin-bottom:6px">图标 <span style="font-weight:400;color:var(--color-text-tertiary);font-size:12px">点下方图标快速选择，或手输</span></label>
+          <input type="text" class="input" id="edit-cat-icon" value="${ExpenseData.escapeHtml(cat.icon)}" placeholder="例如：🐱（留空默认 📌）" maxlength="4">
+          <div id="edit-cat-icon-picker"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn--primary" id="edit-cat-save" style="flex:1">保存修改</button>
+          <button class="btn btn--ghost" id="edit-cat-cancel">取消</button>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('edit-cat-save').addEventListener('click', () => {
+      const name = document.getElementById('edit-cat-name').value.trim();
+      if (!name) { _toast('请输入分类名称', 'warning'); return; }
+      const icon = document.getElementById('edit-cat-icon').value.trim() || '📌';
+      const parentId = document.getElementById('edit-cat-parent').value || null;
+      if (_isCategoryNameTaken(name, parentId, catId)) {
+        _toast('同层已存在同名分类，请换一个名称', 'warning');
+        return;
+      }
+      if (!ExpenseDB.updateCategory(catId, { name, icon, parentId })) {
+        _toast('分类修改失败，请检查浏览器存储空间', 'warning');
+        return;
+      }
+      _toast(`已保存分类「${name}」`, 'success');
+      _invalidateHabitStatsCache();  // 换父级会让父分类聚合统计过期
+      _renderCategoryManagerOverlay();
+      // 名称/图标/父级变化会同步到记账页分类入口与已选分类摘要（renderGrid 内刷新）
+      _renderAddCategories();
+    });
+
+    document.getElementById('edit-cat-cancel').addEventListener('click', () => {
+      _renderCategoryManagerOverlay();
+    });
+
+    _renderCategoryIconPicker('edit-cat-icon', 'edit-cat-icon-picker');
   }
 
   /** 在覆盖层 body 中渲染新增分类表单 */
@@ -1274,8 +1393,9 @@ const ExpenseApp = (() => {
           <input type="text" class="input" id="new-cat-name" placeholder="例如：宠物" maxlength="10">
         </div>
         <div>
-          <label style="font-weight:600;display:block;margin-bottom:6px">图标 Emoji</label>
+          <label style="font-weight:600;display:block;margin-bottom:6px">图标 <span style="font-weight:400;color:var(--color-text-tertiary);font-size:12px">点下方图标快速选择，或手输</span></label>
           <input type="text" class="input" id="new-cat-icon" placeholder="例如：🐱（留空默认 📌）" maxlength="4">
+          <div id="new-cat-icon-picker"></div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn--primary" id="new-cat-save" style="flex:1">确认添加</button>
@@ -1289,6 +1409,10 @@ const ExpenseApp = (() => {
       if (!name) { _toast('请输入分类名称', 'warning'); return; }
       const icon = document.getElementById('new-cat-icon').value.trim() || '📌';
       const parentId = document.getElementById('new-cat-parent').value || null;
+      if (_isCategoryNameTaken(name, parentId)) {
+        _toast('同层已存在同名分类，请换一个名称', 'warning');
+        return;
+      }
 
       if (!ExpenseDB.addCategory({ name, icon, parentId })) {
         _toast('分类添加失败，请检查浏览器存储空间', 'warning');
@@ -1302,6 +1426,8 @@ const ExpenseApp = (() => {
     document.getElementById('new-cat-cancel').addEventListener('click', () => {
       _renderCategoryManagerOverlay();
     });
+
+    _renderCategoryIconPicker('new-cat-icon', 'new-cat-icon-picker');
   }
 
   function _bindOverlays() {

@@ -255,6 +255,44 @@
   white-space: nowrap;
 }
 
+/* 分类表单的常用图标选择网格（新增/编辑分类时点选填图标） */
+.cat-icon-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.cat-icon-pick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.cat-icon-pick svg {
+  width: 20px;
+  height: 20px;
+}
+
+.cat-icon-pick:active {
+  transform: scale(.92);
+}
+
+.cat-icon-pick--selected {
+  border-color: var(--color-primary);
+  background: #EBF3FC;
+  box-shadow: inset 0 0 0 1px var(--color-primary);
+}
+
 /* -----------------------------------------------------------------
    4. 支付方式行（紧凑 chip 行）
    ----------------------------------------------------------------- */
@@ -461,6 +499,7 @@
 }
 .category-icon svg { width: 17px; height: 17px; overflow: visible; }
 .category-icon--emoji { font-size: 17px; }
+.category-icon--custom { --category-icon-bg: #E4F4F1; --category-icon-color: #1E7A66; }
 .category-icon--food { --category-icon-bg: #FFF0E5; --category-icon-color: #A35F2F; }
 .category-icon--transport { --category-icon-bg: #E7F4FB; --category-icon-color: #2677A7; }
 .category-icon--shopping { --category-icon-bg: #F0EBFE; --category-icon-color: #7459B8; }

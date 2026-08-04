@@ -84,6 +84,11 @@ const ExpenseCategories = (() => {
       ? _CATEGORY_ICON_DATA[category.id]
       : null;
     if (!iconData) {
+      // 自定义分类：icon 字段是线条图标名 → SVG；否则按 emoji 渲染（兼容老数据与手输 emoji）
+      const customBody = category && category.icon && ExpenseIcons.CATEGORY_ICON_PATHS[category.icon];
+      if (customBody) {
+        return `<span class="category-icon category-icon--custom" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${customBody}</svg></span>`;
+      }
       return `<span class="category-icon category-icon--emoji" aria-hidden="true">${_escapeHtml(category && category.icon ? category.icon : '•')}</span>`;
     }
     const [iconName, tone] = iconData;

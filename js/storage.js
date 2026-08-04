@@ -231,6 +231,9 @@ const ExpenseDB = (() => {
 
   /**
    * 删除自定义分类（预设分类不可删）
+   * 级联删除其子分类：若不删，子分类会挂在已删除的父级 id 下，
+   * 分类列表只渲染顶级分类，这些子分类将永久无法管理（孤儿分类）。
+   * 注意：账单按 categoryId 引用分类，删除后相关账单显示「未分类」，账单数据本身不受影响。
    * @param {string} id
    * @returns {boolean}
    */
@@ -238,7 +241,25 @@ const ExpenseDB = (() => {
     const list = _read(KEYS.categories) || [];
     const target = list.find(c => c.id === id);
     if (!target || target.isPreset) return false;
-    return _write(KEYS.categories, list.filter(c => c.id !== id));
+    return _write(KEYS.categories, list.filter(c => c.id !== id && c.parentId !== id));
+  }
+
+  /**
+   * 更新自定义分类（改名/改图标/换父级；预设分类不可编辑）
+   * 只修改分类记录本身，不触碰任何账单数据——账单按 categoryId 引用分类，
+   * 因此编辑名称/图标对历史账单零影响，这也是编辑优于"删除重建"的原因。
+   * @param {string} id
+   * @param {Object} patch 含 name / icon / parentId 中的若干字段，未提供的字段保持原值
+   * @returns {boolean} 写入失败返回 false
+   */
+  function updateCategory(id, patch) {
+    const list = _read(KEYS.categories) || [];
+    const target = list.find(c => c.id === id);
+    if (!target || target.isPreset) return false;
+    if (typeof patch.name === 'string' && patch.name.trim()) target.name = patch.name.trim();
+    if (typeof patch.icon === 'string') target.icon = patch.icon.trim() || '📌';
+    if (patch.parentId !== undefined) target.parentId = patch.parentId || null;
+    return _write(KEYS.categories, list);
   }
 
   /**
@@ -729,6 +750,7 @@ const ExpenseDB = (() => {
     getParentCategories,
     getChildCategories,
     addCategory,
+    updateCategory,
     deleteCategory,
     initCategories,
     syncPresetCategories,
