@@ -1304,18 +1304,33 @@ const ExpenseApp = (() => {
     if (!input || !container) return;
 
     // 线条图标网格（与预设分类同风格）；手输 emoji 依然可用，渲染端对非图标名值走 emoji 兜底
+    // 按钮悬停/无障碍提示用中文名（图标名是存储标识符，用户不需要理解）
     container.innerHTML = ExpenseIcons.CATEGORY_ICON_PRESETS.map(name =>
-      `<button type="button" class="cat-icon-pick" data-icon="${name}" aria-label="选择图标 ${name}">
+      `<button type="button" class="cat-icon-pick" data-icon="${name}" title="${(ExpenseIcons.CATEGORY_ICON_NAMES_ZH[name] || name)}" aria-label="选择图标：${(ExpenseIcons.CATEGORY_ICON_NAMES_ZH[name] || name)}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ExpenseIcons.CATEGORY_ICON_PATHS[name]}</svg>
       </button>`
     ).join('');
 
     // 高亮与输入框当前值一致的图标（点选、手输都走这里；手输 emoji 无匹配 → 全部取消高亮）
+    // 同时把当前图标的含义翻译成中文显示在输入框下方，避免用户面对英文标识符
+    const nameHint = document.getElementById(inputId + '-name');
+    const updateNameHint = () => {
+      if (!nameHint) return;
+      const current = input.value.trim();
+      if (!current) {
+        nameHint.textContent = '当前图标：未选择';
+      } else if (ExpenseIcons.CATEGORY_ICON_NAMES_ZH[current]) {
+        nameHint.textContent = '当前图标：' + ExpenseIcons.CATEGORY_ICON_NAMES_ZH[current];
+      } else {
+        nameHint.textContent = '当前图标：自定义表情';
+      }
+    };
     const syncHighlight = () => {
       const current = input.value.trim();
       container.querySelectorAll('.cat-icon-pick').forEach(btn => {
         btn.classList.toggle('cat-icon-pick--selected', btn.dataset.icon === current);
       });
+      updateNameHint();
     };
 
     container.querySelectorAll('.cat-icon-pick').forEach(btn => {
@@ -1361,7 +1376,8 @@ const ExpenseApp = (() => {
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">图标 <span style="font-weight:400;color:var(--color-text-tertiary);font-size:12px">点下方图标快速选择，或手输</span></label>
           <input type="text" class="input" id="edit-cat-icon" value="${ExpenseData.escapeHtml(cat.icon)}" placeholder="例如：🐱（留空默认 📌）" maxlength="4">
-          <div id="edit-cat-icon-picker"></div>
+          <div class="cat-icon-name" id="edit-cat-icon-name"></div>
+          <div class="cat-icon-picker" id="edit-cat-icon-picker"></div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn--primary" id="edit-cat-save" style="flex:1">保存修改</button>
@@ -1419,7 +1435,8 @@ const ExpenseApp = (() => {
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">图标 <span style="font-weight:400;color:var(--color-text-tertiary);font-size:12px">点下方图标快速选择，或手输</span></label>
           <input type="text" class="input" id="new-cat-icon" placeholder="例如：🐱（留空默认 📌）" maxlength="4">
-          <div id="new-cat-icon-picker"></div>
+          <div class="cat-icon-name" id="new-cat-icon-name"></div>
+          <div class="cat-icon-picker" id="new-cat-icon-picker"></div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn btn--primary" id="new-cat-save" style="flex:1">确认添加</button>

@@ -256,11 +256,38 @@
 }
 
 /* 分类表单的常用图标选择网格（新增/编辑分类时点选填图标） */
+/* 输入框下方的当前图标中文提示（图标名是英文标识符，用户只需看懂中文含义） */
+.cat-icon-name {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  min-height: 16px;  /* 占位，避免出现/消失时表单跳动 */
+}
+
 .cat-icon-picker {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
   gap: 8px;
   margin-top: 16px;
+  /* 只露出约 3 行（42px×3 + 8px×2 间距 = 150px），其余在网格内上下滑动，
+     避免 78 个图标一次性全部平铺显得密集 */
+  max-height: 150px;
+  overflow-y: auto;
+  overscroll-behavior: contain;  /* 网格滚到顶/底时不把滚动传递给外层覆盖层 */
+  padding-bottom: 4px;
+  /* 顶、底渐隐：提示上方/下方还有更多图标，底部渐隐更宽以暗示「下滑查看更多」 */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 18px), transparent 100%);
+  scrollbar-width: thin;
+}
+
+/* 细滚动条：桌面端不喧宾夺主，移动端触屏无需显示（渐隐已做提示） */
+.cat-icon-picker::-webkit-scrollbar {
+  width: 4px;
+}
+.cat-icon-picker::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, .18);
+  border-radius: 2px;
 }
 
 .cat-icon-pick {
