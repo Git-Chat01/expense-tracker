@@ -14,7 +14,7 @@ const ExpenseHome = (() => {
   let _$monthAmount, _$monthCount, _$monthDiff, _$monthComparison, _$monthContextDot;
   let _$alerts, _$recent, _$viewAllBtn;
   let _$budgetSummary, _$budgetSummaryLabel;
-  let _$budgetSummaryProgress, _$budgetActionLabel;
+  let _$budgetSummaryProgress, _$budgetSummaryPercentage, _$budgetActionLabel;
   let _$budgetSummarySpent, _$budgetSummaryLimit, _$budgetSummaryStatus;
   let _$budgetSummaryDecisionLabel, _$budgetSummaryDecisionValue;
   let _$budgetSummaryRemaining, _$budgetSummaryDays, _$budgetSummaryForecast;
@@ -52,6 +52,7 @@ const ExpenseHome = (() => {
     _$budgetSummary = document.getElementById('home-budget-summary');
     _$budgetSummaryLabel = document.getElementById('home-budget-summary-label');
     _$budgetSummaryProgress = document.getElementById('home-budget-summary-progress');
+    _$budgetSummaryPercentage = document.getElementById('home-budget-summary-percentage');
     _$budgetActionLabel = document.getElementById('home-budget-action-label');
     _$budgetSummarySpent = document.getElementById('home-budget-summary-spent');
     _$budgetSummaryLimit = document.getElementById('home-budget-summary-limit');
@@ -178,6 +179,9 @@ const ExpenseHome = (() => {
       _$budgetSummary.className = 'home-budget-brief card home-budget-brief--setup';
       _$budgetSummaryLabel.textContent = '还没有设置本月预算';
       _$budgetSummaryProgress.style.width = '0%';
+      if (_$budgetSummaryPercentage) _$budgetSummaryPercentage.textContent = '0%';
+      _$budgetSummaryProgress.parentElement.setAttribute('aria-valuenow', '0');
+      _$budgetSummaryProgress.parentElement.setAttribute('aria-valuetext', '尚未设置预算');
       if (_$budgetActionLabel) _$budgetActionLabel.textContent = '去设置';
       if (_$budgetSummaryForecast) _$budgetSummaryForecast.hidden = true;
       return;
@@ -199,8 +203,11 @@ const ExpenseHome = (() => {
 
     _$budgetSummary.className = 'home-budget-brief card home-budget-brief--' + state;
     _$budgetSummaryLabel.textContent = '已设置本月预算';
-    _$budgetSummaryProgress.style.width = Math.max(0, Math.min(100, spentPct)) + '%';
-    _$budgetSummaryProgress.parentElement.setAttribute('aria-label', '预算已使用 ' + spentPct + '%');
+    var visualPct = Math.max(0, Math.min(100, spentPct));
+    _$budgetSummaryProgress.style.width = visualPct + '%';
+    if (_$budgetSummaryPercentage) _$budgetSummaryPercentage.textContent = Math.max(0, spentPct) + '%';
+    _$budgetSummaryProgress.parentElement.setAttribute('aria-valuenow', String(visualPct));
+    _$budgetSummaryProgress.parentElement.setAttribute('aria-valuetext', '预算已使用 ' + spentPct + '%');
     if (_$budgetActionLabel) _$budgetActionLabel.textContent = '调整';
     if (_$budgetSummarySpent) _$budgetSummarySpent.innerHTML = _moneyMarkup(roundedSpent);
     if (_$budgetSummaryLimit) _$budgetSummaryLimit.innerHTML = '/ ' + _moneyMarkup(roundedBudget);
