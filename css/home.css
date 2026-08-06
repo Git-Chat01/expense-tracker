@@ -723,9 +723,30 @@
   white-space: nowrap;
 }
 
+.home-budget-brief__progress-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--color-text-tertiary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.home-budget-brief__progress-meta strong {
+  color: var(--budget-tone);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  transition: color var(--transition-normal);
+}
+
 .home-budget-brief__track {
   height: 6px;
-  margin-top: 12px;
+  margin-top: 6px;
   overflow: hidden;
   border-radius: 999px;
   background: var(--color-divider);
@@ -795,6 +816,7 @@
 }
 
 .home-budget-brief--setup .home-budget-brief__body,
+.home-budget-brief--setup .home-budget-brief__progress-meta,
 .home-budget-brief--setup .home-budget-brief__track,
 .home-budget-brief--setup .home-budget-brief__decision,
 .home-budget-brief--setup .home-budget-brief__support,

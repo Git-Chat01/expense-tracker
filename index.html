@@ -13,7 +13,7 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/common.css?v=196">
-  <link rel="stylesheet" href="css/home.css?v=175">
+  <link rel="stylesheet" href="css/home.css?v=201">
   <link rel="stylesheet" href="css/add.css?v=199">
   <link rel="stylesheet" href="css/list.css?v=175">
   <link rel="stylesheet" href="css/stats.css?v=194">
@@ -92,7 +92,11 @@
               </div>
               <span class="home-budget-brief__status" id="home-budget-summary-status">节奏正常</span>
             </div>
-            <div class="home-budget-brief__track" aria-label="预算使用进度">
+            <div class="home-budget-brief__progress-meta">
+              <span>预算使用进度</span>
+              <strong id="home-budget-summary-percentage">0%</strong>
+            </div>
+            <div class="home-budget-brief__track" role="progressbar" aria-label="预算使用进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
               <span class="home-budget-brief__progress" id="home-budget-summary-progress"></span>
             </div>
             <div class="home-budget-brief__decision" aria-live="polite">
@@ -181,7 +185,7 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260804-200 · 新增日用图标
+      v20260806-201 · 预算进度增加百分比
     </div>
   </main>
 
@@ -677,7 +681,7 @@
 <script src="js/storage.js?v=195"></script>
 <script src="js/data.js?v=195"></script>
 <script src="js/icons.js?v=200"></script>
-<script src="js/home.js?v=194"></script>
+<script src="js/home.js?v=201"></script>
 <script src="js/categories.js?v=195"></script>
 <script src="js/list.js?v=194"></script>
 <script src="js/stats.js?v=194"></script>
