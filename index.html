@@ -13,7 +13,7 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/common.css?v=196">
-  <link rel="stylesheet" href="css/home.css?v=204">
+  <link rel="stylesheet" href="css/home.css?v=205">
   <link rel="stylesheet" href="css/add.css?v=200">
   <link rel="stylesheet" href="css/list.css?v=175">
   <link rel="stylesheet" href="css/stats.css?v=194">
@@ -183,8 +183,18 @@
       </aside>
     </div>
 
-    <!-- 常驻首页底部：不打扰记账，只用于手动确认当前版本 -->
-    <div id="app-version" class="app-version" aria-label="当前应用版本">v20260807-206</div>
+    <!-- 常驻首页底部：版本确认与本次更新说明，不干扰日常记账 -->
+    <div class="app-version-wrap">
+      <button id="app-version" class="app-version" type="button" data-version="207" data-version-label="v20260807-207" aria-expanded="false" aria-controls="app-version-detail">
+        <span>v20260807-207</span>
+        <span class="app-version__divider" aria-hidden="true">·</span>
+        <span>本次更新</span>
+        <span class="app-version__toggle" aria-hidden="true">⌄</span>
+      </button>
+      <section id="app-version-detail" class="app-version-detail" aria-label="本次更新内容" hidden>
+        <ul id="app-version-list" class="app-version-detail__list"></ul>
+      </section>
+    </div>
   </main>
 
   <!-- ==============================================================
@@ -555,6 +565,9 @@
   var bar = document.getElementById('sw-update-bar');
   var detail = document.getElementById('sw-update-bar-detail');
   var listEl = document.getElementById('sw-update-bar-list');
+  var versionButton = document.getElementById('app-version');
+  var versionDetail = document.getElementById('app-version-detail');
+  var versionList = document.getElementById('app-version-list');
   if (!bar || !detail || !listEl) return;
 
   // 更新内容：updates.json 最新条目；拉取失败（如 file:// 打开）时降级为通用文案
@@ -582,6 +595,32 @@
       .then(renderChangelog);
   }
 
+  // 当前版本的说明常驻于首页底部；不依赖 SW 是否正处于 waiting 状态。
+  function renderCurrentVersionChangelog(items) {
+    if (!versionList) return;
+    versionList.textContent = '';
+    (items || ['本次更新优化了体验与稳定性']).forEach(function(text) {
+      var item = document.createElement('li');
+      item.textContent = text;
+      versionList.appendChild(item);
+    });
+  }
+
+  function fillCurrentVersionChangelog() {
+    if (!versionButton || !versionList) return;
+    var currentVersion = versionButton.getAttribute('data-version');
+    fetch('updates.json?v=' + Date.now())
+      .then(function(res) { return res.ok ? res.json() : null; })
+      .then(function(data) {
+        if (!data || !data.versions) return null;
+        return data.versions.find(function(item) {
+          return String(item.version) === currentVersion;
+        });
+      })
+      .then(function(entry) { renderCurrentVersionChangelog(entry && entry.items); })
+      .catch(function() { renderCurrentVersionChangelog(); });
+  }
+
   function setExpanded(expanded) {
     bar.classList.toggle('sw-update-bar--open', expanded);
     detail.hidden = !expanded;
@@ -592,7 +631,7 @@
     // 从页面底部版本信息提取版本号，显示在更新条副标题里
     var versionEl = document.getElementById('app-version');
     if (versionEl) {
-      var versionText = versionEl.textContent.trim().split(' · ')[0]; // "v20260803-181"
+      var versionText = versionEl.getAttribute('data-version-label') || versionEl.textContent.trim().split(' · ')[0];
       var subEl = bar.querySelector('.sw-update-bar__sub');
       if (subEl) subEl.textContent = versionText + ' 可用，建议更新';
     }
@@ -631,6 +670,16 @@
     head.addEventListener('click', function() {
       fillChangelog(); // 首次展开时顺带拉取内容
       setExpanded(detail.hidden);
+    });
+  }
+
+  // 点击底部版本号可查看本次更新；已有新版本时，上方更新条仍负责“立即更新”。
+  if (versionButton && versionDetail && versionList) {
+    versionButton.addEventListener('click', function() {
+      var expanded = versionDetail.hidden;
+      versionDetail.hidden = !expanded;
+      versionButton.setAttribute('aria-expanded', String(expanded));
+      if (expanded) fillCurrentVersionChangelog();
     });
   }
 
