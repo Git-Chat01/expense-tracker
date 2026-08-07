@@ -12,8 +12,8 @@
   <title>消费轨迹</title>
 
   <!-- CSS -->
-  <link rel="stylesheet" href="css/common.css?v=196">
-  <link rel="stylesheet" href="css/home.css?v=205">
+  <link rel="stylesheet" href="css/common.css?v=197">
+  <link rel="stylesheet" href="css/home.css?v=206">
   <link rel="stylesheet" href="css/add.css?v=200">
   <link rel="stylesheet" href="css/list.css?v=175">
   <link rel="stylesheet" href="css/stats.css?v=194">
@@ -160,39 +160,28 @@
           </details>
         </section>
 
-        <!-- SW 更新提示（低存在感，仅新版本可用时显示） -->
-        <section class="home-section home-section--support">
-          <div id="sw-update-bar" class="sw-update-bar">
-            <div class="sw-update-bar__head" id="sw-update-bar-head">
-              <span class="sw-update-bar__icon">↻</span>
-              <div class="sw-update-bar__body">
-                <span class="sw-update-bar__title">发现新版本</span>
-                <span class="sw-update-bar__sub">体验优化，建议更新</span>
-              </div>
-              <span class="sw-update-bar__toggle" id="sw-update-bar-toggle" aria-hidden="true">▾</span>
-            </div>
-            <div class="sw-update-bar__detail" id="sw-update-bar-detail" hidden>
-              <ul class="sw-update-bar__list" id="sw-update-bar-list"></ul>
-              <div class="sw-update-bar__actions">
-                <button type="button" class="sw-update-bar__later" id="sw-update-btn-later">稍后再说</button>
-                <button type="button" class="sw-update-bar__btn" id="sw-update-btn-now">立即更新</button>
-              </div>
-            </div>
-          </div>
-        </section>
       </aside>
     </div>
 
-    <!-- 常驻首页底部：版本确认与本次更新说明，不干扰日常记账 -->
-    <div class="app-version-wrap">
-      <button id="app-version" class="app-version" type="button" data-version="207" data-version-label="v20260807-207" aria-expanded="false" aria-controls="app-version-detail">
-        <span>v20260807-207</span>
-        <span class="app-version__divider" aria-hidden="true">·</span>
-        <span>本次更新</span>
-        <span class="app-version__toggle" aria-hidden="true">⌄</span>
-      </button>
-      <section id="app-version-detail" class="app-version-detail" aria-label="本次更新内容" hidden>
-        <ul id="app-version-list" class="app-version-detail__list"></ul>
+    <!-- 首页底部版本位：新版本等待时原地切换为更新说明卡 -->
+    <div id="app-version-slot" class="app-version-slot">
+      <div id="app-version" class="app-version" aria-label="当前应用版本">v20260808-208</div>
+      <section id="sw-update-bar" class="sw-update-bar" aria-labelledby="sw-update-bar-title" hidden>
+        <button type="button" class="sw-update-bar__head" id="sw-update-bar-head" aria-expanded="false" aria-controls="sw-update-bar-detail">
+          <svg class="sw-update-bar__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-15.5-6.2L3 8.3M3 3v5.3h5.3M3 12a9 9 0 0 0 15.5 6.2l2.5-2.5M21 21v-5.3h-5.3"/></svg>
+          <span class="sw-update-bar__body">
+            <span class="sw-update-bar__title" id="sw-update-bar-title">发现新版本</span>
+            <span class="sw-update-bar__sub">点击查看这次更新内容</span>
+          </span>
+          <svg class="sw-update-bar__toggle" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="sw-update-bar__detail" id="sw-update-bar-detail" hidden>
+          <ul class="sw-update-bar__list" id="sw-update-bar-list"></ul>
+          <div class="sw-update-bar__actions">
+            <button type="button" class="sw-update-bar__later" id="sw-update-btn-later">继续使用当前版本</button>
+            <button type="button" class="sw-update-bar__btn" id="sw-update-btn-now">立即更新</button>
+          </div>
+        </div>
       </section>
     </div>
   </main>
@@ -562,88 +551,104 @@
 (function() {
   if (!('serviceWorker' in navigator)) return;
 
+  var versionEl = document.getElementById('app-version');
   var bar = document.getElementById('sw-update-bar');
+  var head = document.getElementById('sw-update-bar-head');
   var detail = document.getElementById('sw-update-bar-detail');
   var listEl = document.getElementById('sw-update-bar-list');
-  var versionButton = document.getElementById('app-version');
-  var versionDetail = document.getElementById('app-version-detail');
-  var versionList = document.getElementById('app-version-list');
-  if (!bar || !detail || !listEl) return;
+  var laterBtn = document.getElementById('sw-update-btn-later');
+  var updateBtn = document.getElementById('sw-update-btn-now');
+  if (!versionEl || !bar || !head || !detail || !listEl || !laterBtn || !updateBtn) return;
 
-  // 更新内容：updates.json 最新条目；拉取失败（如 file:// 打开）时降级为通用文案
+  var DEFERRED_VERSION_KEY = 'sw-deferred-update-version';
+  var JUST_UPDATED_KEY = 'sw-just-updated';
   var changelogItems = null;
+  var pendingVersion = '';
+  var changelogLoading = null;
+  var deferRequested = false;
+
+  function getSessionValue(key) {
+    try { return sessionStorage.getItem(key) || ''; } catch (err) { return ''; }
+  }
+
+  function setSessionValue(key, value) {
+    try { sessionStorage.setItem(key, value); } catch (err) { /* 会话存储不可用时不影响更新 */ }
+  }
+
+  function removeSessionValue(key) {
+    try { sessionStorage.removeItem(key); } catch (err) { /* 会话存储不可用时不影响更新 */ }
+  }
 
   function renderChangelog() {
     var items = changelogItems || ['本次更新优化了体验与稳定性'];
-    listEl.innerHTML = items.map(function(t) { return '<li>' + t + '</li>'; }).join('');
+    listEl.textContent = '';
+    items.forEach(function(text) {
+      var item = document.createElement('li');
+      item.textContent = text;
+      listEl.appendChild(item);
+    });
+  }
+
+  function isDeferred() {
+    return Boolean(pendingVersion && (deferRequested || getSessionValue(DEFERRED_VERSION_KEY) === pendingVersion));
+  }
+
+  function syncUpdateSummary() {
+    var subEl = bar.querySelector('.sw-update-bar__sub');
+    if (!subEl) return;
+    if (!pendingVersion) {
+      subEl.textContent = '点击查看这次更新内容';
+      return;
+    }
+    subEl.textContent = isDeferred()
+      ? 'v' + pendingVersion + ' 已选择继续使用当前版本'
+      : 'v' + pendingVersion + ' 已就绪 · 点击查看更新内容';
   }
 
   function fillChangelog() {
-    if (changelogItems) { renderChangelog(); return; }
+    if (changelogItems) {
+      renderChangelog();
+      syncUpdateSummary();
+      return Promise.resolve();
+    }
+    if (changelogLoading) return changelogLoading;
+
     // 时间戳参数绕过 HTTP 缓存；SW 网络优先策略下能拿到服务器最新内容
-    fetch('updates.json?v=' + Date.now())
+    changelogLoading = fetch('updates.json?v=' + Date.now())
       .then(function(res) { return res.ok ? res.json() : null; })
       .then(function(data) {
         if (data && data.versions && data.versions.length) {
           changelogItems = data.versions[0].items; // versions 按时间倒序，取最新一条
-          // 副标题改显目标版本号（新 SW 对应的版本，而非当前页面版本）
-          var subEl = bar.querySelector('.sw-update-bar__sub');
-          if (subEl && data.latest) subEl.textContent = 'v' + data.latest + ' 可用，建议更新';
+          pendingVersion = String(data.latest || data.versions[0].version || '');
+          if (deferRequested && pendingVersion) setSessionValue(DEFERRED_VERSION_KEY, pendingVersion);
         }
+        syncUpdateSummary();
+        renderChangelog();
       })
-      .catch(function() { /* file:// 等环境 fetch 失败，走降级文案 */ })
-      .then(renderChangelog);
-  }
-
-  // 当前版本的说明常驻于首页底部；不依赖 SW 是否正处于 waiting 状态。
-  function renderCurrentVersionChangelog(items) {
-    if (!versionList) return;
-    versionList.textContent = '';
-    (items || ['本次更新优化了体验与稳定性']).forEach(function(text) {
-      var item = document.createElement('li');
-      item.textContent = text;
-      versionList.appendChild(item);
-    });
-  }
-
-  function fillCurrentVersionChangelog() {
-    if (!versionButton || !versionList) return;
-    var currentVersion = versionButton.getAttribute('data-version');
-    fetch('updates.json?v=' + Date.now())
-      .then(function(res) { return res.ok ? res.json() : null; })
-      .then(function(data) {
-        if (!data || !data.versions) return null;
-        return data.versions.find(function(item) {
-          return String(item.version) === currentVersion;
-        });
-      })
-      .then(function(entry) { renderCurrentVersionChangelog(entry && entry.items); })
-      .catch(function() { renderCurrentVersionChangelog(); });
+      .catch(function() {
+        syncUpdateSummary();
+        renderChangelog();
+      });
+    return changelogLoading;
   }
 
   function setExpanded(expanded) {
-    bar.classList.toggle('sw-update-bar--open', expanded);
     detail.hidden = !expanded;
+    head.setAttribute('aria-expanded', String(expanded));
   }
 
-  function showBar() {
-    if (!bar) return;
-    // 从页面底部版本信息提取版本号，显示在更新条副标题里
-    var versionEl = document.getElementById('app-version');
-    if (versionEl) {
-      var versionText = versionEl.getAttribute('data-version-label') || versionEl.textContent.trim().split(' · ')[0];
-      var subEl = bar.querySelector('.sw-update-bar__sub');
-      if (subEl) subEl.textContent = versionText + ' 可用，建议更新';
-    }
-    bar.classList.add('sw-update-bar--visible');
+  function showUpdateBar() {
+    versionEl.hidden = true;
+    bar.hidden = false;
+    syncUpdateSummary();
     fillChangelog();
   }
 
   navigator.serviceWorker.ready.then(function(reg) {
     // 如果刚刚执行过更新（页面刷新后 3 秒内），跳过显示
-    var justUpdated = sessionStorage.getItem('sw-just-updated');
+    var justUpdated = getSessionValue(JUST_UPDATED_KEY);
     if (justUpdated && Date.now() - parseInt(justUpdated, 10) < 3000) {
-      sessionStorage.removeItem('sw-just-updated');
+      removeSessionValue(JUST_UPDATED_KEY);
       return;
     }
 
@@ -653,62 +658,58 @@
       if (!worker) return;
       worker.addEventListener('statechange', function() {
         if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-          showBar();
+          showUpdateBar();
         }
       });
     });
 
     // 再触发更新检查，完成后补检 waiting 状态
     reg.update().then(function() {
-      if (reg.waiting) showBar();
+      if (reg.waiting) showUpdateBar();
     });
   });
 
   // 点击条头部：展开/收起更新内容
-  var head = document.getElementById('sw-update-bar-head');
-  if (head) {
-    head.addEventListener('click', function() {
-      fillChangelog(); // 首次展开时顺带拉取内容
-      setExpanded(detail.hidden);
-    });
-  }
+  head.addEventListener('click', function() {
+    var expanded = detail.hidden;
+    setExpanded(expanded);
+    if (expanded) {
+      renderChangelog();
+      fillChangelog();
+    }
+  });
 
-  // 点击底部版本号可查看本次更新；已有新版本时，上方更新条仍负责“立即更新”。
-  if (versionButton && versionDetail && versionList) {
-    versionButton.addEventListener('click', function() {
-      var expanded = versionDetail.hidden;
-      versionDetail.hidden = !expanded;
-      versionButton.setAttribute('aria-expanded', String(expanded));
-      if (expanded) fillCurrentVersionChangelog();
-    });
-  }
+  // 继续当前版本：收起卡片并记住本次选择，仍可随时重新打开更新。
+  laterBtn.addEventListener('click', function() {
+    deferRequested = true;
+    if (pendingVersion) setSessionValue(DEFERRED_VERSION_KEY, pendingVersion);
+    setExpanded(false);
+    syncUpdateSummary();
+  });
 
-  // "稍后再说"：收起内容，条保留（低存在感），下次打开页面仍会提醒
-  var laterBtn = document.getElementById('sw-update-btn-later');
-  if (laterBtn) {
-    laterBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
+  // 立即更新：仅由用户点此按钮激活 waiting 的新 Service Worker。
+  updateBtn.addEventListener('click', function() {
+    if (updateBtn.disabled) return;
+    navigator.serviceWorker.ready.then(function(reg) {
+      if (!reg.waiting) {
+        updateBtn.disabled = true;
+        updateBtn.textContent = '已是最新版本';
+        return;
+      }
+      deferRequested = false;
+      removeSessionValue(DEFERRED_VERSION_KEY);
+      setSessionValue(JUST_UPDATED_KEY, String(Date.now()));
+      updateBtn.disabled = true;
+      updateBtn.textContent = '正在更新…';
       setExpanded(false);
+      reg.waiting.postMessage('skipWaiting');
+      if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }).catch(function() {
+      updateBtn.disabled = false;
+      updateBtn.textContent = '立即更新';
     });
-  }
-
-  // "立即更新"：通知 SW 激活新版本，刷新页面（点此按钮才真正更新）
-  var updateBtn = document.getElementById('sw-update-btn-now');
-  if (updateBtn) {
-    updateBtn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      navigator.serviceWorker.ready.then(function(reg) {
-        if (reg.waiting) {
-          sessionStorage.setItem('sw-just-updated', String(Date.now()));
-          reg.waiting.postMessage('skipWaiting');
-          setExpanded(false);
-          // 禁用浏览器滚动还原 + 立即滚回顶部
-          if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-      });
-    });
-  }
+  });
 
   // SW 激活后刷新页面（确保回到顶部，不被浏览器还原滚动位置）
   var refreshing = false;
