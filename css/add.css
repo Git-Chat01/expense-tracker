@@ -21,7 +21,7 @@
 .add-header {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 30;
   background: var(--color-bg);
   padding-bottom: var(--space-xs);
 }
@@ -768,7 +768,14 @@
   gap: 12px;
   padding-top: 10px;
 }
-.add-header { padding: 2px 0 8px; }
+/*
+   v203 · 保持大金额作为主视觉；viewport-fit=cover 的独立 PWA 中，
+   顶部安全区此前会遮住吸顶头部的上缘。安全区只补回不可用空间，
+   不压缩金额字号、分类区或键盘。
+*/
+.add-header {
+  padding: calc(env(safe-area-inset-top, 0px) + 2px) 0 8px;
+}
 .add-category-area { gap: 8px; }
 .add-category-summary { min-height: 56px; }
 .add-category-all {
