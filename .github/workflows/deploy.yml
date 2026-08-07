@@ -10,7 +10,8 @@ on:
     branches: [master]
 
 concurrency:
-  group: pages
+  # Avoid colliding with GitHub Pages' own pages-build-deployment workflow.
+  group: expense-tracker-gh-pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
