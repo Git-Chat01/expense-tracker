@@ -489,15 +489,22 @@
 .app-version { display: none; }
 @media (min-width: 480px) { .home-header { padding-top: 36px; } }
 
-/* v204 · 自动更新后给出一次轻量版本确认，只位于首页文档流中。 */
+/* v205 · 自动更新后，用户滑到首页底部才给出一次轻量版本确认。 */
+.sw-update-complete-slot { display: none; }
+.sw-update-complete-slot--reserved {
+  display: flex;
+  align-items: flex-end;
+  min-height: 42px;
+  margin: 0 var(--space-xl);
+}
 .sw-update-complete {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   width: fit-content;
-  max-width: calc(100% - var(--space-xl) * 2);
+  max-width: 100%;
   min-height: 32px;
-  margin: 0 var(--space-xl) 10px;
+  margin: 0;
   padding: 6px 10px;
   border: 1px solid rgba(15, 89, 102, 0.16);
   border-radius: 999px;
@@ -519,7 +526,12 @@
   stroke-linejoin: round;
   stroke-width: 2.4;
 }
-.sw-update-complete__copy { min-width: 0; }
+.sw-update-complete__copy {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .sw-update-complete--leaving {
   opacity: 0;
   transform: translateY(-2px);

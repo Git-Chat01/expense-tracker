@@ -13,7 +13,7 @@
 
   <!-- CSS -->
   <link rel="stylesheet" href="css/common.css?v=196">
-  <link rel="stylesheet" href="css/home.css?v=202">
+  <link rel="stylesheet" href="css/home.css?v=203">
   <link rel="stylesheet" href="css/add.css?v=200">
   <link rel="stylesheet" href="css/list.css?v=175">
   <link rel="stylesheet" href="css/stats.css?v=194">
@@ -38,12 +38,6 @@
       </div>
       <span class="home-header__date" id="home-date"></span>
     </header>
-
-    <!-- 自动更新完成后，仅在首页短暂显示版本与本次摘要，不遮挡记账操作区 -->
-    <div id="sw-update-complete" class="sw-update-complete" role="status" aria-live="polite" aria-atomic="true" hidden>
-      <svg class="sw-update-complete__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-      <span id="sw-update-complete-copy" class="sw-update-complete__copy"></span>
-    </div>
 
     <div class="home-dashboard">
       <div class="home-dashboard__primary">
@@ -191,7 +185,15 @@
 
     <!-- 版本号（方便确认 PWA 是否已更新） -->
     <div id="app-version" class="app-version" aria-label="应用版本">
-      v20260807-204 · 新增自动更新提示
+      v20260807-205 · 更新提示触底显示
+    </div>
+
+    <!-- 自动更新完成后，用户滑到首页底部才显示版本与本次摘要 -->
+    <div id="sw-update-complete-slot" class="sw-update-complete-slot">
+      <div id="sw-update-complete" class="sw-update-complete" role="status" aria-live="polite" aria-atomic="true" hidden>
+        <svg class="sw-update-complete__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <span id="sw-update-complete-copy" class="sw-update-complete__copy"></span>
+      </div>
     </div>
   </main>
 
@@ -563,6 +565,7 @@
   var bar = document.getElementById('sw-update-bar');
   var detail = document.getElementById('sw-update-bar-detail');
   var listEl = document.getElementById('sw-update-bar-list');
+  var completeNoticeSlot = document.getElementById('sw-update-complete-slot');
   var completeNotice = document.getElementById('sw-update-complete');
   var completeNoticeCopy = document.getElementById('sw-update-complete-copy');
   if (!bar || !detail || !listEl) return;
@@ -610,41 +613,141 @@
     fillChangelog();
   }
 
-  // 自动激活会直接刷新页面，不会稳定停在 waiting 状态；
-  // 以 sessionStorage 仅记录本次会话见过的版本，给用户一次轻量确认。
-  // 此处不读取、修改任何账目或 localStorage 数据。
-  function showCompletedUpdateNotice() {
-    if (!completeNotice || !completeNoticeCopy) return;
+  var homeView = document.getElementById('view-home');
+  var completedUpdatePending = false;
+  var completedUpdateVersionId = '';
+  var completedUpdateVersion = '';
+  var completeNoticeTimer = null;
+  var completeNoticeScrollQueued = false;
+  var completeNoticeScrollBound = false;
+  var completeNoticeInputSeen = false;
 
-    var versionEl = document.getElementById('app-version');
-    var versionText = versionEl ? versionEl.textContent.trim() : '当前版本';
-    var seenVersion = '';
+  function hasReachedHomeBottom() {
+    if (!homeView || !homeView.classList.contains('main-view--active')) return false;
 
-    try {
-      seenVersion = sessionStorage.getItem('sw-version-notice') || '';
-      sessionStorage.setItem('sw-version-notice', versionText);
-    } catch (err) {
-      return;
+    var threshold = 8;
+    // 优先检查首页自身；部分手机浏览器会把实际滚动放在页面根节点。
+    if (homeView.scrollHeight > homeView.clientHeight + threshold) {
+      return homeView.scrollTop + homeView.clientHeight >= homeView.scrollHeight - threshold;
     }
 
-    if (seenVersion === versionText) return;
+    var root = document.scrollingElement || document.documentElement;
+    var pageTop = window.pageYOffset || root.scrollTop || document.body.scrollTop || 0;
+    var pageHeight = root.scrollHeight;
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    return pageHeight > viewportHeight + threshold && pageTop + viewportHeight >= pageHeight - threshold;
+  }
 
-    completeNoticeCopy.textContent = '已更新至 ' + versionText;
+  function unbindCompletedUpdateNoticeScroll() {
+    if (!completeNoticeScrollBound) return;
+    completeNoticeScrollBound = false;
+    if (homeView) homeView.removeEventListener('scroll', queueCompletedUpdateNotice);
+    window.removeEventListener('scroll', queueCompletedUpdateNotice);
+    if (homeView) {
+      homeView.removeEventListener('touchstart', markCompletedUpdateNoticeInput);
+      homeView.removeEventListener('pointerdown', markCompletedUpdateNoticeInput);
+      homeView.removeEventListener('wheel', markCompletedUpdateNoticeInput);
+    }
+    window.removeEventListener('keydown', markCompletedUpdateNoticeKeyboard);
+  }
+
+  // 自动激活会直接刷新页面，不会稳定停在 waiting 状态。
+  // 提示在用户真正滑到首页底部时才展示，sessionStorage 仅在展示后记录版本；
+  // 此处不读取、修改任何账目或 localStorage 数据。
+  function revealCompletedUpdateNotice() {
+    if (!completeNotice || !completeNoticeCopy) return;
+
+    if (!completedUpdatePending || !completeNoticeInputSeen || !hasReachedHomeBottom()) return;
+    completedUpdatePending = false;
+    unbindCompletedUpdateNoticeScroll();
+
+    try {
+      sessionStorage.setItem('sw-version-notice', completedUpdateVersionId);
+      sessionStorage.removeItem('sw-update-pending-version');
+    } catch (err) { /* 无会话存储时仍可正常显示一次 */ }
+
+    completeNoticeCopy.textContent = '已更新至 ' + completedUpdateVersion;
     completeNotice.hidden = false;
     completeNotice.classList.remove('sw-update-complete--leaving');
 
-    window.setTimeout(function() {
+    if (completeNoticeTimer) window.clearTimeout(completeNoticeTimer);
+    completeNoticeTimer = window.setTimeout(function() {
       completeNotice.classList.add('sw-update-complete--leaving');
       window.setTimeout(function() {
         completeNotice.hidden = true;
         completeNotice.classList.remove('sw-update-complete--leaving');
       }, 240);
-    }, 5200);
+    }, 5000);
+  }
+
+  function markCompletedUpdateNoticeInput() {
+    completeNoticeInputSeen = true;
+  }
+
+  function markCompletedUpdateNoticeKeyboard(event) {
+    if (!homeView || !homeView.classList.contains('main-view--active')) return;
+    if (['End', 'PageDown', 'ArrowDown', ' '].indexOf(event.key) !== -1) {
+      markCompletedUpdateNoticeInput();
+    }
+  }
+
+  function queueCompletedUpdateNotice() {
+    if (!completedUpdatePending || completeNoticeScrollQueued) return;
+    completeNoticeScrollQueued = true;
+    window.requestAnimationFrame(function() {
+      completeNoticeScrollQueued = false;
+      revealCompletedUpdateNotice();
+    });
+  }
+
+  function armCompletedUpdateNotice() {
+    if (!completeNoticeSlot || !completeNotice || !completeNoticeCopy || !homeView) return;
+
+    var versionEl = document.getElementById('app-version');
+    var versionText = versionEl ? versionEl.textContent.trim() : '当前版本';
+    var versionId = versionText.split(' · ')[0];
+    var seenVersion = '';
+    var pendingVersion = '';
+    var controllerChanged = false;
+
+    try {
+      seenVersion = sessionStorage.getItem('sw-version-notice') || '';
+      pendingVersion = sessionStorage.getItem('sw-update-pending-version') || '';
+      controllerChanged = sessionStorage.getItem('sw-update-controller-changed') === '1';
+      sessionStorage.removeItem('sw-update-controller-changed');
+    } catch (err) { /* 无会话存储时保留本页触底提示 */ }
+
+    // v204 曾存整段文案，兼容为仅比较版本号；以后只保存版本号，避免文案微调误触发。
+    seenVersion = seenVersion.split(' · ')[0];
+    if (controllerChanged || (pendingVersion !== versionId && seenVersion !== versionId)) {
+      pendingVersion = versionId;
+      try {
+        sessionStorage.setItem('sw-update-pending-version', versionId);
+      } catch (err) { /* 无会话存储时仅保留当前页面状态 */ }
+    }
+
+    if (pendingVersion !== versionId) return;
+
+    completedUpdateVersion = versionText;
+    completedUpdateVersionId = versionId;
+    completedUpdatePending = true;
+    completeNoticeSlot.classList.add('sw-update-complete-slot--reserved');
+
+    if (!completeNoticeScrollBound) {
+      completeNoticeScrollBound = true;
+      // 同时监听首页与页面根节点，兼容 iOS PWA 的不同滚动宿主。
+      homeView.addEventListener('scroll', queueCompletedUpdateNotice, { passive: true });
+      window.addEventListener('scroll', queueCompletedUpdateNotice, { passive: true });
+      homeView.addEventListener('touchstart', markCompletedUpdateNoticeInput, { passive: true });
+      homeView.addEventListener('pointerdown', markCompletedUpdateNoticeInput, { passive: true });
+      homeView.addEventListener('wheel', markCompletedUpdateNoticeInput, { passive: true });
+      window.addEventListener('keydown', markCompletedUpdateNoticeKeyboard);
+    }
   }
 
   navigator.serviceWorker.ready.then(function(reg) {
-    // 新版已接管当前页面时，先展示版本确认；首次安装尚未受 SW 控制时不提示。
-    if (navigator.serviceWorker.controller) showCompletedUpdateNotice();
+    // 新版已接管当前页面时，等待用户滑到首页底部再给出版本确认。
+    if (navigator.serviceWorker.controller) armCompletedUpdateNotice();
 
     // 如果刚刚执行过更新（页面刷新后 3 秒内），跳过显示
     var justUpdated = sessionStorage.getItem('sw-just-updated');
@@ -711,6 +814,10 @@
   navigator.serviceWorker.addEventListener('controllerchange', function() {
     if (refreshing) return;
     refreshing = true;
+    try {
+      // 交给下一次加载的页面，确认这是一次真实的 SW 自动切换。
+      sessionStorage.setItem('sw-update-controller-changed', '1');
+    } catch (err) { /* 无会话存储时由版本差异兜底 */ }
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
     window.scrollTo(0, 0);
     window.location.reload();
