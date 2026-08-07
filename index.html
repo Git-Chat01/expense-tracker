@@ -165,7 +165,7 @@
 
     <!-- 首页底部版本位：新版本等待时原地切换为更新说明卡 -->
     <div id="app-version-slot" class="app-version-slot">
-      <div id="app-version" class="app-version" aria-label="当前应用版本">v20260808-208</div>
+      <div id="app-version" class="app-version" aria-label="当前应用版本">v20260808-209</div>
       <section id="sw-update-bar" class="sw-update-bar" aria-labelledby="sw-update-bar-title" hidden>
         <button type="button" class="sw-update-bar__head" id="sw-update-bar-head" aria-expanded="false" aria-controls="sw-update-bar-detail">
           <svg class="sw-update-bar__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-15.5-6.2L3 8.3M3 3v5.3h5.3M3 12a9 9 0 0 0 15.5 6.2l2.5-2.5M21 21v-5.3h-5.3"/></svg>
@@ -558,6 +558,8 @@
   var listEl = document.getElementById('sw-update-bar-list');
   var laterBtn = document.getElementById('sw-update-btn-later');
   var updateBtn = document.getElementById('sw-update-btn-now');
+  var homeView = document.getElementById('view-home');
+  var tabBar = document.querySelector('.tab-bar');
   if (!versionEl || !bar || !head || !detail || !listEl || !laterBtn || !updateBtn) return;
 
   var DEFERRED_VERSION_KEY = 'sw-deferred-update-version';
@@ -566,6 +568,7 @@
   var pendingVersion = '';
   var changelogLoading = null;
   var deferRequested = false;
+  var scrollFrame = 0;
 
   function getSessionValue(key) {
     try { return sessionStorage.getItem(key) || ''; } catch (err) { return ''; }
@@ -632,9 +635,98 @@
     return changelogLoading;
   }
 
-  function setExpanded(expanded) {
+  function cancelUpdateCardAlignment() {
+    if (scrollFrame) {
+      window.cancelAnimationFrame(scrollFrame);
+      scrollFrame = 0;
+    }
+  }
+
+  function getUpdateScrollContainer() {
+    if (homeView && homeView.scrollHeight > homeView.clientHeight + 1) return homeView;
+    return null;
+  }
+
+  function moveScrollableElementBy(target, offset, behavior) {
+    if (!target || Math.abs(offset) < 1) return 0;
+
+    var maxScrollTop = Math.max(0, target.scrollHeight - target.clientHeight);
+    var available = offset > 0
+      ? maxScrollTop - target.scrollTop
+      : target.scrollTop;
+    var applied = Math.sign(offset) * Math.min(Math.abs(offset), Math.max(0, available));
+    if (Math.abs(applied) < 1) return 0;
+
+    if (typeof target.scrollBy === 'function') {
+      target.scrollBy({ top: applied, behavior: behavior });
+    } else {
+      target.scrollTop += applied;
+    }
+    return applied;
+  }
+
+  function moveUpdateCardBy(offset, behavior) {
+    if (Math.abs(offset) < 1) return;
+
+    var target = getUpdateScrollContainer();
+    var remaining = offset - moveScrollableElementBy(target, offset, behavior);
+    if (Math.abs(remaining) >= 1) window.scrollBy({ top: remaining, behavior: behavior });
+  }
+
+  function resetScrollTop(target) {
+    if (!target) return;
+    target.scrollTop = 0;
+    try { target.scrollTo(0, 0); } catch (err) { /* 部分移动端对象不支持 scrollTo */ }
+  }
+
+  function scrollHomeToTop() {
+    cancelUpdateCardAlignment();
+    window.scrollTo(0, 0);
+    resetScrollTop(document.documentElement);
+    resetScrollTop(document.body);
+    resetScrollTop(homeView);
+  }
+
+  // 更新卡位于首页末尾。展开后把完整内容避开底部导航；收起后回到紧凑位置。
+  function alignUpdateCard(expanded) {
+    cancelUpdateCardAlignment();
+    scrollFrame = window.requestAnimationFrame(function() {
+      scrollFrame = window.requestAnimationFrame(function() {
+        scrollFrame = 0;
+        if (bar.hidden) return;
+
+        var cardRect = bar.getBoundingClientRect();
+        var tabRect = tabBar ? tabBar.getBoundingClientRect() : null;
+        var viewRect = homeView ? homeView.getBoundingClientRect() : null;
+        var visibleTop = Math.max(12, viewRect ? viewRect.top + 12 : 12);
+        var visibleBottom = Math.min(
+          window.innerHeight - 12,
+          tabRect ? tabRect.top - 12 : window.innerHeight - 12,
+          viewRect ? viewRect.bottom - 12 : window.innerHeight - 12
+        );
+        if (visibleBottom <= visibleTop) return;
+
+        var offset = 0;
+        if (cardRect.bottom > visibleBottom) {
+          offset = cardRect.bottom - visibleBottom;
+        } else if (expanded && cardRect.top < visibleTop) {
+          offset = cardRect.top - visibleTop;
+        } else if (!expanded && cardRect.bottom < visibleBottom - 8) {
+          offset = cardRect.bottom - (visibleBottom - 8);
+        }
+        moveUpdateCardBy(offset, 'smooth');
+      });
+    });
+  }
+
+  function setExpanded(expanded, shouldAlign) {
     detail.hidden = !expanded;
     head.setAttribute('aria-expanded', String(expanded));
+    if (shouldAlign === false) {
+      cancelUpdateCardAlignment();
+    } else {
+      alignUpdateCard(expanded);
+    }
   }
 
   function showUpdateBar() {
@@ -675,7 +767,9 @@
     setExpanded(expanded);
     if (expanded) {
       renderChangelog();
-      fillChangelog();
+      fillChangelog().then(function() {
+        if (!detail.hidden) alignUpdateCard(true);
+      });
     }
   });
 
@@ -701,10 +795,10 @@
       setSessionValue(JUST_UPDATED_KEY, String(Date.now()));
       updateBtn.disabled = true;
       updateBtn.textContent = '正在更新…';
-      setExpanded(false);
+      setExpanded(false, false);
       reg.waiting.postMessage('skipWaiting');
       if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollHomeToTop();
     }).catch(function() {
       updateBtn.disabled = false;
       updateBtn.textContent = '立即更新';
@@ -717,7 +811,7 @@
     if (refreshing) return;
     refreshing = true;
     if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-    window.scrollTo(0, 0);
+    scrollHomeToTop();
     window.location.reload();
   });
 })();
