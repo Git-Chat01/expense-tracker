@@ -486,59 +486,23 @@
 .home-backup__actions { justify-content: flex-start; }
 .home-backup__actions .btn { padding-inline: 0; }
 .home-backup__restore { color: var(--color-warning); }
-.app-version { display: none; }
+.app-version {
+  display: block;
+  margin: auto var(--space-xl) 0;
+  padding: 2px 0 0;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  text-align: center;
+  letter-spacing: .04em;
+  opacity: .58;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
 @media (min-width: 480px) { .home-header { padding-top: 36px; } }
-
-/* v205 · 自动更新后，用户滑到首页底部才给出一次轻量版本确认。 */
-.sw-update-complete-slot { display: none; }
-.sw-update-complete-slot--reserved {
-  display: flex;
-  align-items: flex-end;
-  min-height: 42px;
-  margin: 0 var(--space-xl);
-}
-.sw-update-complete {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  width: fit-content;
-  max-width: 100%;
-  min-height: 32px;
-  margin: 0;
-  padding: 6px 10px;
-  border: 1px solid rgba(15, 89, 102, 0.16);
-  border-radius: 999px;
-  background: rgba(220, 237, 234, 0.62);
-  color: var(--color-primary-dark);
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.3;
-  transition: opacity 0.22s ease, transform 0.22s ease;
-}
-.sw-update-complete[hidden] { display: none; }
-.sw-update-complete__icon {
-  flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
-}
-.sw-update-complete__copy {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.sw-update-complete--leaving {
-  opacity: 0;
-  transform: translateY(-2px);
-}
-@media (prefers-reduced-motion: reduce) {
-  .sw-update-complete { transition: none; }
-}
 
 
 .home-budget-alert__edit {
@@ -1075,7 +1039,6 @@
   .home-summary__amount { font-size: 44px; }
   .home-today { grid-template-columns: 1fr auto; }
   .home-dashboard__secondary .home-backup { min-height: 0; }
-  .app-version { padding-bottom: 20px; }
 }
 
 /* v163 · 首页消费记录沿用记账页的分类图形体系。 */
