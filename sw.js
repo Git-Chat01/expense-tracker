@@ -3,7 +3,7 @@
    PWA 离线缓存：首次访问后，无网络也能打开
    ================================================================ */
 
-const CACHE_NAME = 'expense-tracker-v207';
+const CACHE_NAME = 'expense-tracker-v208';
 
 // 需要预缓存的核心文件
 const PRE_CACHE = [
@@ -41,12 +41,12 @@ self.addEventListener('install', (event) => {
         // 部分文件加载失败不影响 SW 安装（如 CDN 资源）
         console.warn('SW: pre-cache partial fail', err);
       });
-    }).then(() => self.skipWaiting())
+    })
   );
-  // 新版本下载完成后立即激活，不再依赖页面底部的手动更新按钮
+  // 新版本下载后保持 waiting，等用户在页面中确认“立即更新”后再激活。
 });
 
-// 保留旧页面的手动更新消息兼容，确保仍停留在旧版本的客户端也能切换
+// 用户确认更新后，页面向 waiting 的新版本发送此消息。
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') {
     self.skipWaiting();

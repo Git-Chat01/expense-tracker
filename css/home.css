@@ -486,76 +486,26 @@
 .home-backup__actions { justify-content: flex-start; }
 .home-backup__actions .btn { padding-inline: 0; }
 .home-backup__restore { color: var(--color-warning); }
-.app-version-wrap {
+.app-version-slot {
   margin: auto var(--space-xl) 0;
   padding: 2px 0 0;
-  text-align: center;
 }
 .app-version {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 4px;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
+  display: block;
+  padding: 2px 0 0;
   color: var(--color-text-tertiary);
   font-family: var(--font-mono);
   font-size: var(--font-size-xs);
   font-variant-numeric: tabular-nums;
   line-height: 1.4;
+  text-align: center;
   letter-spacing: .04em;
   opacity: .58;
-  cursor: pointer;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
-.app-version__divider { opacity: .58; }
-.app-version__toggle {
-  display: inline-block;
-  font-family: var(--font-sans);
-  font-size: 12px;
-  line-height: 1;
-  transition: transform .18s ease;
-}
-.app-version[aria-expanded="true"] .app-version__toggle { transform: rotate(180deg); }
-.app-version:focus-visible {
-  outline: 2px solid rgba(15, 89, 102, .5);
-  outline-offset: 2px;
-}
-.app-version-detail {
-  max-width: 340px;
-  margin: 7px auto 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(15, 89, 102, .09);
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 253, .64);
-  text-align: left;
-}
-.app-version-detail__list {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.app-version-detail__list li {
-  position: relative;
-  padding-left: 12px;
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
-  line-height: 1.5;
-}
-.app-version-detail__list li::before {
-  position: absolute;
-  top: .62em;
-  left: 1px;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: currentColor;
-  content: '';
-  opacity: .55;
-}
+.app-version[hidden] { display: none; }
 @media (min-width: 480px) { .home-header { padding-top: 36px; } }
 
 
