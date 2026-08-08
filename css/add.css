@@ -776,6 +776,15 @@
 .add-header {
   padding: calc(env(safe-area-inset-top, 0px) + 2px) 0 8px;
 }
+
+/*
+   v210 · 记账页实际由 window 滚动。移除激活态主视图的伪滚动层后，
+   大金额与数字键盘的 sticky 都以手机视口为基准；不改变任何功能区尺寸。
+*/
+#view-add.main-view--active {
+  overflow: visible;
+}
+
 .add-category-area { gap: 8px; }
 .add-category-summary { min-height: 56px; }
 .add-category-all {
