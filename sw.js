@@ -3,16 +3,17 @@
    PWA 离线缓存：首次访问后，无网络也能打开
    ================================================================ */
 
-const CACHE_NAME = 'expense-tracker-v211';
+const CACHE_NAME = 'expense-tracker-v212';
 
 // 需要预缓存的核心文件
-const PRE_CACHE = [
+const CORE_PRE_CACHE = [
   './',
   'index.html',
   'updates.json',
   'css/common.css',
   'css/home.css',
   'css/add.css',
+  'css/add-numpad-v212.css',
   'css/list.css',
   'css/stats.css',
   'css/onboarding.css',
@@ -25,9 +26,13 @@ const PRE_CACHE = [
   'js/stats.js',
   'js/onboarding.js',
   'js/app.js',
+  'js/add-numpad-v212.js',
   'manifest.json',
   'icon-192.png',
   'icon-512.png',
+];
+
+const OPTIONAL_PRE_CACHE = [
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js',
 ];
 
@@ -37,9 +42,14 @@ const PRE_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRE_CACHE).catch((err) => {
-        // 部分文件加载失败不影响 SW 安装（如 CDN 资源）
-        console.warn('SW: pre-cache partial fail', err);
+      // 同源核心文件必须完整写入；任何一项失败都阻止不完整 Worker 安装。
+      return cache.addAll(CORE_PRE_CACHE).then(() => {
+        // 第三方图表为可选增强，失败时统计页会使用既有 CSS 降级展示。
+        return Promise.all(OPTIONAL_PRE_CACHE.map((url) => {
+          return cache.add(url).catch((err) => {
+            console.warn('SW: optional pre-cache fail', url, err);
+          });
+        }));
       });
     })
   );
@@ -99,11 +109,11 @@ self.addEventListener('fetch', (event) => {
       return response;
     }).catch(() => {
       // 网络不可用 → 使用缓存
-      return caches.match(event.request).then((cached) => {
+      return caches.open(CACHE_NAME).then((cache) => cache.match(event.request, { ignoreSearch: true })).then((cached) => {
         if (cached) return cached;
         // HTML 请求特殊回退
         if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
-          return caches.match('index.html');
+          return caches.open(CACHE_NAME).then((cache) => cache.match('index.html'));
         }
         return new Response('离线不可用', { status: 503 });
       });
