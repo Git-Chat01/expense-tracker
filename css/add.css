@@ -783,12 +783,7 @@
 */
 #view-add.main-view--active {
   --add-fixed-numpad-height: 213px;
-  --add-tab-bar-offset: var(--tab-bar-height);
   overflow: visible;
-}
-
-@media (min-width: 860px) {
-  #view-add.main-view--active { --add-tab-bar-offset: 64px; }
 }
 
 /* 固定键盘脱离文档流；底部占位只增加滚动空间，不压缩中间功能区。 */
@@ -850,10 +845,12 @@
 /* 低频补充信息与支付行共用紧凑的 44px 触控节奏。 */
 .add-more-fields summary { min-height: 44px; }
 
-/* v211 · 键盘固定在底部导航上方；中间表单独立从它后方滚过。 */
+/* v212 · 根层键盘固定在底部导航上方；中间表单独立从它后方滚过。 */
 .add-numpad {
+  --add-tab-bar-offset: var(--tab-bar-height);
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: calc(var(--add-tab-bar-offset) + var(--safe-area-bottom));
   width: calc(100% - var(--space-lg) - var(--space-lg));
   max-width: min(
@@ -861,15 +858,22 @@
     calc(700px - var(--space-lg) - var(--space-lg))
   );
   z-index: 20;
+  margin: 0 auto;
   padding-top: 10px;
   box-shadow: 0 -12px 20px rgba(244, 245, 242, .96);
-  transform: translateX(-50%);
+  transform: none;
 }
 
 /* 仅在文本输入框真正聚焦时让出原生键盘，点开折叠区本身不误隐藏。 */
-#view-add.add-text-input-active .add-numpad {
+#app.add-text-input-active > .add-numpad {
   visibility: hidden;
   pointer-events: none;
+}
+
+.add-numpad[hidden] { display: none; }
+
+@media (min-width: 860px) {
+  .add-numpad { --add-tab-bar-offset: 64px; }
 }
 
 /* 完整分类改为底部抽屉：只在需要时覆盖当前页面，不推走金额和键盘。 */

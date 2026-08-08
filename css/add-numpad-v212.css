@@ -1,0 +1,43 @@
+/* ================================================================
+   v212 · iOS PWA 根层数字键盘修复
+   使用独立真实文件路径，避免 GitHub Pages 忽略查询参数后复用旧 CSS。
+   ================================================================ */
+
+#view-add.main-view--active {
+  --add-fixed-numpad-height: 213px;
+  overflow: visible;
+}
+
+#view-add.main-view--active .add-container {
+  padding-bottom: calc(var(--add-fixed-numpad-height) + var(--space-xs));
+}
+
+.add-numpad {
+  --add-tab-bar-offset: var(--tab-bar-height);
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--add-tab-bar-offset) + var(--safe-area-bottom));
+  width: calc(100% - var(--space-lg) - var(--space-lg));
+  max-width: min(
+    calc(var(--app-max-width) - var(--space-lg) - var(--space-lg)),
+    calc(700px - var(--space-lg) - var(--space-lg))
+  );
+  z-index: 20;
+  margin: 0 auto;
+  padding-top: 10px;
+  background: var(--color-bg);
+  box-shadow: 0 -12px 20px rgba(244, 245, 242, .96);
+  transform: none;
+}
+
+#app.add-text-input-active > .add-numpad {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.add-numpad[hidden] { display: none; }
+
+@media (min-width: 860px) {
+  .add-numpad { --add-tab-bar-offset: 64px; }
+}
