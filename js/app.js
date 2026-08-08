@@ -142,11 +142,6 @@ const ExpenseApp = (() => {
     document.querySelectorAll('.main-view').forEach(v => v.classList.remove('main-view--active'));
     const target = document.getElementById(`view-${viewId}`);
     if (target) target.classList.add('main-view--active');
-    const rootNumpad = document.getElementById('add-numpad');
-    const appRoot = document.getElementById('app');
-    if (rootNumpad) rootNumpad.hidden = viewId !== 'add';
-    if (appRoot && viewId !== 'add') appRoot.classList.remove('add-text-input-active');
-
     // 切换 tab 高亮
     document.querySelectorAll('.tab-bar__item').forEach(t => {
       t.classList.remove('tab-bar__item--active');
@@ -503,21 +498,6 @@ const ExpenseApp = (() => {
     const noteInput = document.getElementById('add-note');
     const dateInput = document.getElementById('add-date');
     const timeInput = document.getElementById('add-time');
-    const appRoot = document.getElementById('app');
-
-    // v211：只有地点或备注输入框真正获得焦点时才让出原生键盘。
-    // blur 延后一拍复查，避免在两个文本框之间切换时数字键盘闪现。
-    const syncTextInputFocus = () => {
-      const active = document.activeElement;
-      const isTextInputActive = active === locInput || active === noteInput;
-      if (appRoot) appRoot.classList.toggle('add-text-input-active', isTextInputActive);
-    };
-    [locInput, noteInput].forEach(input => {
-      if (!input) return;
-      input.addEventListener('focus', syncTextInputFocus);
-      input.addEventListener('blur', () => setTimeout(syncTextInputFocus, 0));
-    });
-
     if (locInput) locInput.addEventListener('input', () => { _formState.location = locInput.value; });
     if (noteInput) noteInput.addEventListener('input', () => { _formState.note = noteInput.value; });
     if (dateInput) dateInput.addEventListener('change', () => {

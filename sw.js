@@ -3,7 +3,7 @@
    PWA 离线缓存：首次访问后，无网络也能打开
    ================================================================ */
 
-const CACHE_NAME = 'expense-tracker-v212';
+const CACHE_NAME = 'expense-tracker-v213';
 
 // 需要预缓存的核心文件
 const CORE_PRE_CACHE = [
@@ -13,7 +13,7 @@ const CORE_PRE_CACHE = [
   'css/common.css',
   'css/home.css',
   'css/add.css',
-  'css/add-numpad-v212.css',
+  'css/add-flow-v213.css',
   'css/list.css',
   'css/stats.css',
   'css/onboarding.css',
@@ -26,7 +26,6 @@ const CORE_PRE_CACHE = [
   'js/stats.js',
   'js/onboarding.js',
   'js/app.js',
-  'js/add-numpad-v212.js',
   'manifest.json',
   'icon-192.png',
   'icon-512.png',

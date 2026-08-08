@@ -1,0 +1,61 @@
+/* ================================================================
+   v213 · 记账页自然内容流
+   独立真实路径用来覆盖手机可能命中的 v212 固定键盘样式。
+   产品约定：只有大金额吸顶，其余表单与数字键盘自然滚动。
+   ================================================================ */
+
+/* 真实滚动根保持为 window，让金额的 sticky 以视口为基准。 */
+#view-add.main-view--active {
+  overflow: visible;
+}
+
+/* 日期行是普通内容；仅独立的金额区域吸顶。 */
+#view-add .add-header {
+  position: static;
+  top: auto;
+  z-index: auto;
+  padding-bottom: 0;
+}
+
+#view-add .add-amount-display {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 30;
+  background: var(--color-bg);
+}
+
+/* 撤掉固定键盘所需的 213px 人工占位。 */
+#view-add.main-view--active .add-container {
+  padding-bottom: var(--space-lg);
+}
+
+/* 键盘是表单末尾的普通功能区，不 fixed、不 sticky、不带悬浮阴影。 */
+#view-add .add-numpad {
+  position: static;
+  inset: auto;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: 100%;
+  max-width: none;
+  z-index: auto;
+  margin: 0;
+  padding-top: 8px;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+/* 兼容手机短暂混用 v211 / v212 app.js 时的两种焦点状态。 */
+#app.add-text-input-active #view-add .add-numpad,
+#view-add.add-text-input-active .add-numpad {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+#view-add.main-view--active .add-numpad[hidden] {
+  display: grid;
+}

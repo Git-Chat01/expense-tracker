@@ -14,8 +14,8 @@
   <!-- CSS -->
   <link rel="stylesheet" href="css/common.css?v=197">
   <link rel="stylesheet" href="css/home.css?v=206">
-  <link rel="stylesheet" href="css/add.css?v=203">
-  <link rel="stylesheet" href="css/add-numpad-v212.css">
+  <link rel="stylesheet" href="css/add.css?v=204">
+  <link rel="stylesheet" href="css/add-flow-v213.css">
   <link rel="stylesheet" href="css/list.css?v=175">
   <link rel="stylesheet" href="css/stats.css?v=194">
   <link rel="stylesheet" href="css/onboarding.css?v=176">
@@ -166,7 +166,7 @@
 
     <!-- 首页底部版本位：新版本等待时原地切换为更新说明卡 -->
     <div id="app-version-slot" class="app-version-slot">
-      <div id="app-version" class="app-version" aria-label="当前应用版本">v20260808-212</div>
+      <div id="app-version" class="app-version" aria-label="当前应用版本">v20260808-213</div>
       <section id="sw-update-bar" class="sw-update-bar" aria-labelledby="sw-update-bar-title" hidden>
         <button type="button" class="sw-update-bar__head" id="sw-update-bar-head" aria-expanded="false" aria-controls="sw-update-bar-detail">
           <svg class="sw-update-bar__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-15.5-6.2L3 8.3M3 3v5.3h5.3M3 12a9 9 0 0 0 15.5 6.2l2.5-2.5M21 21v-5.3h-5.3"/></svg>
@@ -188,7 +188,7 @@
   </main>
 
   <!-- ==============================================================
-       记账 View（移动端优先：金额 → 日期 → 分类 → 键盘 → 折叠区）
+       记账 View（移动端优先：金额 → 日期 → 分类 → 可选信息 → 键盘）
        ============================================================== -->
   <main id="view-add" class="main-view">
     <div class="add-container">
@@ -216,12 +216,14 @@
             <input type="time" class="input" id="add-time" aria-label="记账时间">
           </div>
         </div>
-        <div class="add-amount-display" aria-live="polite" aria-label="本次支出金额">
-          <span class="add-amount__currency">¥</span>
-          <span class="add-amount__value" id="add-amount-display">0</span>
-          <span class="add-amount__decimal" id="add-amount-decimal">.00</span>
-        </div>
       </header>
+
+      <!-- 仅金额区域吸顶；日期与其他表单区域随页面自然滚动 -->
+      <div class="add-amount-display" aria-live="polite" aria-label="本次支出金额">
+        <span class="add-amount__currency">¥</span>
+        <span class="add-amount__value" id="add-amount-display">0</span>
+        <span class="add-amount__decimal" id="add-amount-decimal">.00</span>
+      </div>
 
       <section class="add-category-area" aria-labelledby="add-category-title">
         <div class="add-section__header">
@@ -283,6 +285,30 @@
           </label>
         </div>
       </details>
+
+      <!-- 数字键盘：与其他表单功能区一样留在页面内，不吸底、不悬浮 -->
+      <div class="add-numpad numpad" id="add-numpad">
+        <button class="numpad__key" data-key="1" type="button">1</button>
+        <button class="numpad__key" data-key="2" type="button">2</button>
+        <button class="numpad__key" data-key="3" type="button">3</button>
+        <button class="numpad__key numpad__key--fn" data-key="backspace" type="button" aria-label="删除一位">⌫</button>
+
+        <button class="numpad__key" data-key="4" type="button">4</button>
+        <button class="numpad__key" data-key="5" type="button">5</button>
+        <button class="numpad__key" data-key="6" type="button">6</button>
+        <button class="numpad__key numpad__key--submit" data-key="submit" type="button">
+          <span id="add-submit-label">保存</span>
+          <span class="numpad__submit-amount" id="add-submit-amount">¥0.00</span>
+        </button>
+
+        <button class="numpad__key" data-key="7" type="button">7</button>
+        <button class="numpad__key" data-key="8" type="button">8</button>
+        <button class="numpad__key" data-key="9" type="button">9</button>
+
+        <button class="numpad__key" data-key="0" type="button">0</button>
+        <button class="numpad__key" data-key="." type="button">.</button>
+        <button class="numpad__key numpad__key--fn" data-key="clear" type="button" aria-label="清空金额">C</button>
+      </div>
 
     </div>
   </main>
@@ -495,30 +521,6 @@
       <div class="onboarding-dots" id="onboarding-dots"></div>
       <button class="btn btn--primary btn--block" id="onboarding-next" type="button">下一步</button>
     </div>
-  </div>
-
-  <!-- v212 · 根层数字键盘：与底部导航同级，避开 iOS PWA 的滚动合成层 -->
-  <div class="add-numpad numpad" id="add-numpad" hidden>
-    <button class="numpad__key" data-key="1" type="button">1</button>
-    <button class="numpad__key" data-key="2" type="button">2</button>
-    <button class="numpad__key" data-key="3" type="button">3</button>
-    <button class="numpad__key numpad__key--fn" data-key="backspace" type="button" aria-label="删除一位">⌫</button>
-
-    <button class="numpad__key" data-key="4" type="button">4</button>
-    <button class="numpad__key" data-key="5" type="button">5</button>
-    <button class="numpad__key" data-key="6" type="button">6</button>
-    <button class="numpad__key numpad__key--submit" data-key="submit" type="button">
-      <span id="add-submit-label">保存</span>
-      <span class="numpad__submit-amount" id="add-submit-amount">¥0.00</span>
-    </button>
-
-    <button class="numpad__key" data-key="7" type="button">7</button>
-    <button class="numpad__key" data-key="8" type="button">8</button>
-    <button class="numpad__key" data-key="9" type="button">9</button>
-
-    <button class="numpad__key" data-key="0" type="button">0</button>
-    <button class="numpad__key" data-key="." type="button">.</button>
-    <button class="numpad__key numpad__key--fn" data-key="clear" type="button" aria-label="清空金额">C</button>
   </div>
 
   <!-- ==============================================================
@@ -830,8 +832,7 @@
 <script src="js/list.js?v=194"></script>
 <script src="js/stats.js?v=194"></script>
 <script src="js/onboarding.js?v=194"></script>
-<script src="js/app.js?v=201"></script>
-<script src="js/add-numpad-v212.js"></script>
+<script src="js/app.js?v=202"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
