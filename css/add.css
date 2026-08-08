@@ -1,7 +1,7 @@
 /* ================================================================
    消费轨迹系统 — add.css
    记账页：金额展示、日期行、分类网格、数字键盘、折叠区
-   移动端优先：金额吸顶，键盘紧贴分类，低频字段默认折叠
+   移动端优先：仅金额吸顶，键盘随表单自然滚动，低频字段默认折叠
    ================================================================ */
 
 /* -----------------------------------------------------------------
@@ -16,20 +16,22 @@
 }
 
 /* -----------------------------------------------------------------
-   1. 头部区（日期 + 金额，共同吸顶）
+   1. 头部区（日期随页面滚动，只有金额吸顶）
    ----------------------------------------------------------------- */
 .add-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
+  position: static;
   background: var(--color-bg);
   padding-bottom: var(--space-xs);
 }
 
 /* 金额展示区 */
 .add-amount-display {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 30;
   text-align: center;
   padding: 2px 0;
+  background: var(--color-bg);
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   display: flex;
@@ -471,7 +473,7 @@
 .add-more-fields__body { display: grid; gap: 10px; padding: 0 0 14px; }
 .add-field { display: grid; gap: 5px; color: var(--color-text-secondary); font-size: var(--font-size-xs); font-weight: 600; }
 .add-field .input { min-height: 42px; padding: 9px 12px; }
-.add-numpad { position: sticky; bottom: 0; z-index: 5; margin-top: auto; padding-top: 8px; background: var(--color-bg); box-shadow: 0 -10px 18px rgba(244, 245, 242, .94); }
+.add-numpad { position: static; margin-top: 0; padding-top: 8px; background: transparent; box-shadow: none; }
 .add-numpad .numpad__key { min-height: 50px; padding: 9px; }
 .add-numpad .numpad__key--submit { display: flex; flex-direction: column; gap: 3px; background: var(--color-primary); }
 .add-numpad .numpad__key--submit:hover { background: var(--color-primary-dark); }
@@ -782,13 +784,7 @@
    大金额的 sticky 以手机视口为基准；不改变任何功能区尺寸。
 */
 #view-add.main-view--active {
-  --add-fixed-numpad-height: 213px;
   overflow: visible;
-}
-
-/* 固定键盘脱离文档流；底部占位只增加滚动空间，不压缩中间功能区。 */
-#view-add.main-view--active .add-container {
-  padding-bottom: calc(var(--add-fixed-numpad-height) + var(--space-xs));
 }
 
 .add-category-area { gap: 8px; }
@@ -845,36 +841,7 @@
 /* 低频补充信息与支付行共用紧凑的 44px 触控节奏。 */
 .add-more-fields summary { min-height: 44px; }
 
-/* v212 · 根层键盘固定在底部导航上方；中间表单独立从它后方滚过。 */
-.add-numpad {
-  --add-tab-bar-offset: var(--tab-bar-height);
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--add-tab-bar-offset) + var(--safe-area-bottom));
-  width: calc(100% - var(--space-lg) - var(--space-lg));
-  max-width: min(
-    calc(var(--app-max-width) - var(--space-lg) - var(--space-lg)),
-    calc(700px - var(--space-lg) - var(--space-lg))
-  );
-  z-index: 20;
-  margin: 0 auto;
-  padding-top: 10px;
-  box-shadow: 0 -12px 20px rgba(244, 245, 242, .96);
-  transform: none;
-}
-
-/* 仅在文本输入框真正聚焦时让出原生键盘，点开折叠区本身不误隐藏。 */
-#app.add-text-input-active > .add-numpad {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-.add-numpad[hidden] { display: none; }
-
-@media (min-width: 860px) {
-  .add-numpad { --add-tab-bar-offset: 64px; }
-}
+/* v213 · 数字键盘是表单末尾的普通功能区，不吸底、不悬浮。 */
 
 /* 完整分类改为底部抽屉：只在需要时覆盖当前页面，不推走金额和键盘。 */
 .category-picker {
