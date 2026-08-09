@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="css/home.css?v=206">
   <link rel="stylesheet" href="css/add.css?v=204">
   <link rel="stylesheet" href="css/add-flow-v213.css">
+  <link rel="stylesheet" href="css/add-budget-impact-v214.css">
   <link rel="stylesheet" href="css/list.css?v=175">
   <link rel="stylesheet" href="css/stats.css?v=194">
   <link rel="stylesheet" href="css/onboarding.css?v=176">
@@ -166,7 +167,7 @@
 
     <!-- 首页底部版本位：新版本等待时原地切换为更新说明卡 -->
     <div id="app-version-slot" class="app-version-slot">
-      <div id="app-version" class="app-version" aria-label="当前应用版本">v20260808-213</div>
+      <div id="app-version" class="app-version" aria-label="当前应用版本">v20260809-214</div>
       <section id="sw-update-bar" class="sw-update-bar" aria-labelledby="sw-update-bar-title" hidden>
         <button type="button" class="sw-update-bar__head" id="sw-update-bar-head" aria-expanded="false" aria-controls="sw-update-bar-detail">
           <svg class="sw-update-bar__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-15.5-6.2L3 8.3M3 3v5.3h5.3M3 12a9 9 0 0 0 15.5 6.2l2.5-2.5M21 21v-5.3h-5.3"/></svg>
@@ -219,10 +220,18 @@
       </header>
 
       <!-- 仅金额区域吸顶；日期与其他表单区域随页面自然滚动 -->
-      <div class="add-amount-display" aria-live="polite" aria-label="本次支出金额">
-        <span class="add-amount__currency">¥</span>
-        <span class="add-amount__value" id="add-amount-display">0</span>
-        <span class="add-amount__decimal" id="add-amount-decimal">.00</span>
+      <div class="add-amount-display">
+        <div class="add-amount__row" aria-live="polite" aria-label="本次支出金额">
+          <span class="add-amount__currency">¥</span>
+          <span class="add-amount__value" id="add-amount-display">0</span>
+          <span class="add-amount__decimal" id="add-amount-decimal">.00</span>
+        </div>
+        <div class="add-budget-impact add-budget-impact--empty" id="add-budget-impact" aria-hidden="true">
+          <span class="add-budget-impact__dot" aria-hidden="true"></span>
+          <span class="add-budget-impact__copy" id="add-budget-impact-copy"></span>
+          <strong class="add-budget-impact__value" id="add-budget-impact-value"></strong>
+        </div>
+        <span class="add-budget-impact__live" id="add-budget-impact-live" aria-live="polite" aria-atomic="true"></span>
       </div>
 
       <section class="add-category-area" aria-labelledby="add-category-title">
@@ -824,7 +833,7 @@
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage.js?v=195"></script>
+<script src="js/storage-v214.js"></script>
 <script src="js/data.js?v=195"></script>
 <script src="js/icons.js?v=200"></script>
 <script src="js/home.js?v=201"></script>
@@ -833,6 +842,7 @@
 <script src="js/stats.js?v=194"></script>
 <script src="js/onboarding.js?v=194"></script>
 <script src="js/app.js?v=202"></script>
+<script src="js/budget-impact-v214.js"></script>
 
 <!-- Chart.js CDN（统计模块依赖） -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
