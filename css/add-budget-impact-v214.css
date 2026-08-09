@@ -1,0 +1,129 @@
+/* ================================================================
+   v214 · 记账当下的预算影响
+   提示属于大金额信息层，不新增卡片，也不改变键盘与表单自然流。
+   ================================================================ */
+
+#view-add .add-amount-display {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+  padding-bottom: 4px;
+}
+
+#view-add .add-amount__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+#view-add .add-budget-impact {
+  display: flex;
+  min-width: 0;
+  min-height: 22px;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 1px 8px 0;
+  color: var(--color-text-secondary);
+  font-size: 12.5px;
+  font-weight: 620;
+  line-height: 1.35;
+  text-align: center;
+  transition: color 140ms ease, opacity 140ms ease;
+}
+
+#view-add .add-budget-impact--empty {
+  visibility: hidden;
+  opacity: 0;
+}
+
+#view-add .add-budget-impact__dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--color-text-tertiary);
+}
+
+#view-add .add-budget-impact__copy {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#view-add .add-budget-impact__value {
+  flex: 0 0 auto;
+  color: inherit;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 720;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+}
+
+#view-add .add-budget-impact[data-state="safe"] .add-budget-impact__dot {
+  background: var(--color-budget-safe);
+}
+
+#view-add .add-budget-impact[data-state="watch"] {
+  color: #8A620D;
+}
+
+#view-add .add-budget-impact[data-state="watch"] .add-budget-impact__dot {
+  background: var(--color-budget-watch);
+}
+
+#view-add .add-budget-impact[data-state="danger"],
+#view-add .add-budget-impact[data-state="exhausted"] {
+  color: var(--color-budget-warn);
+}
+
+#view-add .add-budget-impact[data-state="danger"] .add-budget-impact__dot,
+#view-add .add-budget-impact[data-state="exhausted"] .add-budget-impact__dot {
+  background: var(--color-budget-warn);
+}
+
+#view-add .add-budget-impact[data-state="over"] {
+  color: var(--color-budget-danger);
+}
+
+#view-add .add-budget-impact[data-state="over"] .add-budget-impact__dot {
+  background: var(--color-budget-danger);
+}
+
+#view-add .add-budget-impact__live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 340px) {
+  #view-add .add-budget-impact {
+    gap: 5px;
+    padding-inline: 2px;
+    font-size: 12px;
+  }
+
+  #view-add .add-budget-impact__value {
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #view-add .add-budget-impact {
+    transition: none;
+  }
+}
