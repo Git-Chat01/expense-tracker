@@ -1,0 +1,17 @@
+/* ================================================================
+   v218 · 对齐记账页支付方式 / 价值评定选项尺寸
+   两组保持相同的高度、字体、圆角与触控范围；价值评定取消等分拉伸，
+   改为与支付方式一致的内容自适应宽度。
+   ================================================================ */
+
+#view-add .add-necessity-section--expanded .add-necessity-options {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 8px 6px;
+}
+
+#view-add .add-necessity-options .chip--necessity {
+  flex: 0 0 auto;
+  min-width: auto;
+  max-width: none;
+}
