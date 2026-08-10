@@ -1,0 +1,70 @@
+/* ================================================================
+   v215 · 记账页支付方式 / 价值评定的紧凑选择器
+   可见色块更紧凑，但用伪元素保留 44px 的纵向触控范围。
+   ================================================================ */
+
+/* JS 会为展开态写入 display:grid；这里只在对应区块已展开时切换排布，
+   避免覆盖收起态的 display:none。 */
+#view-add .add-payment-section--expanded .add-payment-methods {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 7px;
+}
+
+#view-add .add-necessity-section--expanded .add-necessity-options {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#view-add .add-payment-methods .chip--payment,
+#view-add .add-necessity-options .chip--necessity {
+  position: relative;
+  min-height: 38px;
+  padding: 6px 10px;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 10px;
+  overflow: visible;
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.15;
+}
+
+#view-add .add-payment-methods .chip--payment {
+  flex: 0 0 auto;
+  min-width: auto;
+}
+
+#view-add .add-necessity-options .chip--necessity {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 96px;
+  gap: 6px;
+}
+
+#view-add .add-necessity-options .necessity-icon {
+  width: 16px;
+  height: 16px;
+}
+
+/* 色块本身为 38px；透明热区上下各外扩 3px，实际纵向触控范围仍为 44px。 */
+#view-add .add-payment-methods .chip--payment::after,
+#view-add .add-necessity-options .chip--necessity::after {
+  content: '';
+  position: absolute;
+  inset: -3px 0;
+}
+
+#view-add .add-payment-methods .chip--payment.chip--active,
+#view-add .add-necessity-options .chip--necessity.chip--active {
+  box-shadow: 0 2px 6px rgba(28, 41, 43, .12);
+}
+
+#view-add .add-payment-methods .chip--payment:focus-visible,
+#view-add .add-necessity-options .chip--necessity:focus-visible {
+  outline: 3px solid rgba(15, 89, 102, .3);
+  outline-offset: 2px;
+}
