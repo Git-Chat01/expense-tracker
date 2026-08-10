@@ -3,7 +3,13 @@
    PWA 离线缓存：首次访问后，无网络也能打开
    ================================================================ */
 
-const CACHE_NAME = 'expense-tracker-v215';
+const APP_VERSION = '216';
+const CACHE_NAME = 'expense-tracker-v' + APP_VERSION;
+const RELEASE_STATE_CACHE = 'expense-tracker-release-state';
+const RELEASE_STATE_URL = new URL(
+  'release-state-v' + APP_VERSION + '.json',
+  self.registration.scope
+).href;
 
 // 需要预缓存的核心文件
 const CORE_PRE_CACHE = [
@@ -30,6 +36,7 @@ const CORE_PRE_CACHE = [
   'js/onboarding.js',
   'js/app.js',
   'js/budget-impact-v214.js',
+  'js/update-flow-v216.js',
   'manifest.json',
   'icon-192.png',
   'icon-512.png',
@@ -39,22 +46,58 @@ const OPTIONAL_PRE_CACHE = [
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js',
 ];
 
+function readReleaseState() {
+  return caches.open(RELEASE_STATE_CACHE)
+    .then((cache) => cache.match(RELEASE_STATE_URL))
+    .then((response) => response ? response.json() : null);
+}
+
+function writeReleaseState(phase) {
+  const state = {
+    version: APP_VERSION,
+    phase,
+    updatedAt: Date.now(),
+  };
+  return caches.open(RELEASE_STATE_CACHE).then((cache) => {
+    return cache.put(RELEASE_STATE_URL, new Response(JSON.stringify(state), {
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    }));
+  });
+}
+
+function finalizeReleaseState() {
+  return readReleaseState().then((state) => {
+    // 安装时存在旧 active Worker，但没有页面继续占用它时，浏览器会自动激活新版。
+    if (state && state.version === APP_VERSION && state.phase === 'pending') {
+      return writeReleaseState('automatic');
+    }
+    return undefined;
+  });
+}
+
 /* -----------------------------------------------------------------
    安装：预缓存核心文件
    ----------------------------------------------------------------- */
 self.addEventListener('install', (event) => {
+  const installPhase = self.registration.active ? 'pending' : 'fresh';
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      // 同源核心文件必须完整写入；任何一项失败都阻止不完整 Worker 安装。
-      return cache.addAll(CORE_PRE_CACHE).then(() => {
-        // 第三方图表为可选增强，失败时统计页会使用既有 CSS 降级展示。
-        return Promise.all(OPTIONAL_PRE_CACHE.map((url) => {
-          return cache.add(url).catch((err) => {
-            console.warn('SW: optional pre-cache fail', url, err);
-          });
-        }));
-      });
-    })
+    Promise.all([
+      caches.open(CACHE_NAME).then((cache) => {
+        // 同源核心文件必须完整写入；任何一项失败都阻止不完整 Worker 安装。
+        return cache.addAll(CORE_PRE_CACHE).then(() => {
+          // 第三方图表为可选增强，失败时统计页会使用既有 CSS 降级展示。
+          return Promise.all(OPTIONAL_PRE_CACHE.map((url) => {
+            return cache.add(url).catch((err) => {
+              console.warn('SW: optional pre-cache fail', url, err);
+            });
+          }));
+        });
+      }),
+      writeReleaseState(installPhase).catch((err) => {
+        // 更新状态只用于补提示；失败不能阻止核心应用安装。
+        console.warn('SW: release state write fail', err);
+      }),
+    ])
   );
   // 新版本下载后保持 waiting，等用户在页面中确认“立即更新”后再激活。
 });
@@ -62,7 +105,13 @@ self.addEventListener('install', (event) => {
 // 用户确认更新后，页面向 waiting 的新版本发送此消息。
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') {
-    self.skipWaiting();
+    event.waitUntil(
+      writeReleaseState('confirmed')
+        .catch((err) => {
+          console.warn('SW: release confirmation write fail', err);
+        })
+        .then(() => self.skipWaiting())
+    );
   }
 });
 
@@ -71,9 +120,14 @@ self.addEventListener('message', (event) => {
    ----------------------------------------------------------------- */
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
+    finalizeReleaseState().catch((err) => {
+      // 元数据失败只会少一次“已更新”提示，不影响缓存切换。
+      console.warn('SW: release state finalize fail', err);
+    }).then(() => caches.keys()).then((keys) => {
       return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys
+          .filter((key) => key !== CACHE_NAME && key !== RELEASE_STATE_CACHE)
+          .map((key) => caches.delete(key))
       );
     }).then(() => {
       // 接管所有客户端后，通知页面有新版本可用
