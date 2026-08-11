@@ -279,49 +279,35 @@ const ExpenseHome = (() => {
     }
     if (alertsSection) alertsSection.style.display = '';
 
-    const sorted = alerts.sort((a, b) => {
-      const order = { danger: 0, warning: 1, info: 2, success: 3 };
-      return (order[a.level] || 0) - (order[b.level] || 0);
-    }).slice(0, 4);
+    // 过滤已忽略的提醒（忽略语义见 _isAlertDismissed），再按危险程度排序，最多 4 条
+    const activeAlerts = alerts
+      .filter((a) => !_isAlertDismissed(a))
+      .sort((a, b) => {
+        const order = { danger: 0, warning: 1, info: 2, success: 3 };
+        return (order[a.level] || 0) - (order[b.level] || 0);
+      })
+      .slice(0, 4);
 
-    _$alerts.innerHTML = sorted.map((a, i) => `
-      <div class="home-alert home-alert--${a.level}">
-        <span class="home-alert__icon">${a.icon}</span>
-        <span class="home-alert__text">${ExpenseData.escapeHtml(a.text)}</span>
-        <button class="home-alert__close" data-alert-idx="${i}" title="忽略">✕</button>
-      </div>
-    `).join('');
-
-    const dismissedKey = `dismissed-alerts-${ExpenseDB.today()}`;
-    let dismissed = [];
-    try {
-      dismissed = JSON.parse(localStorage.getItem(dismissedKey) || '[]');
-    } catch (_) { dismissed = []; }
-
-    const activeAlerts = sorted.filter((_, i) => !dismissed.includes(i));
     if (activeAlerts.length === 0) {
       _$alerts.innerHTML = '';
       if (alertsSection) alertsSection.style.display = 'none';
       return;
     }
 
-    _$alerts.innerHTML = activeAlerts.map((a, idx) => `
-      <div class="home-alert home-alert--${a.level}" data-alert-idx="${idx}">
+    _$alerts.innerHTML = activeAlerts.map((a) => `
+      <div class="home-alert home-alert--${a.level}">
         <span class="home-alert__icon">${a.icon}</span>
         <span class="home-alert__text">${ExpenseData.escapeHtml(a.text)}</span>
-        <button class="home-alert__close" data-alert-idx="${idx}" title="忽略">✕</button>
+        <button class="home-alert__close" data-alert-key="${a.key}" title="忽略">✕</button>
       </div>
     `).join('');
 
+    // 忽略按「提醒 key」持久化到当月，不再按天按索引：
+    // 同一提醒不会因每天打开而反复出现（旧实现按天存储，80% 档会天天重复）
     _$alerts.querySelectorAll('.home-alert__close').forEach(btn => {
       btn.addEventListener('click', () => {
-        const idx = parseInt(btn.dataset.alertIdx);
-        if (!isNaN(idx)) {
-          dismissed.push(idx);
-          try {
-            localStorage.setItem(dismissedKey, JSON.stringify(dismissed));
-          } catch (_) { /* localStorage 满时静默忽略 */ }
-        }
+        const key = btn.dataset.alertKey;
+        if (key) _dismissAlert(key);
         btn.closest('.home-alert').remove();
         if (_$alerts.children.length === 0) {
           const section = document.getElementById('home-alerts-section');
@@ -329,6 +315,38 @@ const ExpenseHome = (() => {
         }
       });
     });
+  }
+
+  /** 忽略记录存储 key：按月维度，下月自动失效（预算重置后提醒规则重新生效） */
+  const _dismissStoreKey = () => `alert-dismissed-${ExpenseDB.yearMonth()}`;
+
+  /** 读取当月忽略记录；兼容旧版按索引数组（结构不匹配时视为无记录） */
+  function _readDismissed() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(_dismissStoreKey()) || '{}');
+      return (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /**
+   * 统一忽略语义（「需要的时候提醒，不反复打扰」）：
+   * 任何档位（含超支/濒临超支的 danger）忽略后，当月不再重复出现；
+   * 下月预算重置后规则重新生效。旧版残留的日期值也按「已忽略」处理。
+   */
+  function _isAlertDismissed(alert) {
+    const dismissed = _readDismissed();
+    return Boolean(dismissed[alert.key]);
+  }
+
+  /** 写入忽略记录；localStorage 满时静默失败，下次打开提醒照常出现 */
+  function _dismissAlert(key) {
+    const dismissed = _readDismissed();
+    dismissed[key] = true;
+    try {
+      localStorage.setItem(_dismissStoreKey(), JSON.stringify(dismissed));
+    } catch (_) { /* localStorage 满时静默忽略 */ }
   }
 
   /**
@@ -344,14 +362,14 @@ const ExpenseHome = (() => {
       const pct = Math.round((monthTotal / monthlyBudget) * 100);
       const remaining = monthlyBudget - monthTotal;
       alerts.push({
-        level: 'danger', icon: _ICONS.danger,
+        key: 'total-95', level: 'danger', icon: _ICONS.danger,
         text: `本月已花掉预算的 ${pct}%，仅剩 ¥${Math.max(0, remaining).toFixed(0)}，建议控制`,
       });
     } else if (monthlyBudget > 0 && monthTotal > monthlyBudget * 0.8) {
       const pct = Math.round((monthTotal / monthlyBudget) * 100);
       const remaining = monthlyBudget - monthTotal;
       alerts.push({
-        level: 'warning', icon: _ICONS.warning,
+        key: 'total-80', level: 'warning', icon: _ICONS.warning,
         text: `本月已花 ¥${monthTotal.toFixed(0)}，占预算的 ${pct}%，剩余 ¥${remaining.toFixed(0)}`,
       });
     }
@@ -367,13 +385,13 @@ const ExpenseHome = (() => {
       if (spent > catBudget * 0.9) {
         const pct = Math.round((spent / catBudget) * 100);
         alerts.push({
-          level: 'danger', icon: _ICONS.danger,
+          key: `cat-${catId}-90`, level: 'danger', icon: _ICONS.danger,
           text: `「${catName}」预算已使用 ${pct}%（¥${spent.toFixed(0)}/¥${catBudget}），注意控制`,
         });
       } else if (spent > catBudget * 0.8) {
         const pct = Math.round((spent / catBudget) * 100);
         alerts.push({
-          level: 'warning', icon: _ICONS.warning,
+          key: `cat-${catId}-80`, level: 'warning', icon: _ICONS.warning,
           text: `「${catName}」已花 ¥${spent.toFixed(0)}，占预算的 ${pct}%`,
         });
       }
@@ -383,7 +401,7 @@ const ExpenseHome = (() => {
       if (prevSpent > 0 && spent < prevSpent * 0.8) {
         const dropPct = Math.round((1 - spent / prevSpent) * 100);
         alerts.push({
-          level: 'success', icon: _ICONS.success,
+          key: `cat-${catId}-drop`, level: 'success', icon: _ICONS.success,
           text: `「${catName}」比上月同期低 ${dropPct}%，继续保持`,
         });
       }
