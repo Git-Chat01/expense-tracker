@@ -3,7 +3,7 @@
    PWA 离线缓存：首次访问后，无网络也能打开
    ================================================================ */
 
-const APP_VERSION = '219';
+const APP_VERSION = '220';
 const CACHE_NAME = 'expense-tracker-v' + APP_VERSION;
 const RELEASE_STATE_CACHE = 'expense-tracker-release-state';
 const RELEASE_STATE_URL = new URL(
@@ -27,6 +27,7 @@ const CORE_PRE_CACHE = [
   'css/list.css',
   'css/stats.css',
   'css/onboarding.css',
+  'css/monthly-report-v220.css',
   'js/storage.js',
   'js/storage-v214.js',
   'js/data.js',
@@ -35,18 +36,16 @@ const CORE_PRE_CACHE = [
   'js/categories.js',
   'js/list.js',
   'js/stats.js',
+  'js/monthly-report-v220.js',
   'js/onboarding.js',
   'js/app.js',
   'js/app-v217.js',
   'js/budget-impact-v214.js',
   'js/update-flow-v216.js',
+  'js/vendor-chart.umd-4.4.7.min.js',
   'manifest.json',
   'icon-192.png',
   'icon-512.png',
-];
-
-const OPTIONAL_PRE_CACHE = [
-  'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js',
 ];
 
 function readReleaseState() {
@@ -87,14 +86,7 @@ self.addEventListener('install', (event) => {
     Promise.all([
       caches.open(CACHE_NAME).then((cache) => {
         // 同源核心文件必须完整写入；任何一项失败都阻止不完整 Worker 安装。
-        return cache.addAll(CORE_PRE_CACHE).then(() => {
-          // 第三方图表为可选增强，失败时统计页会使用既有 CSS 降级展示。
-          return Promise.all(OPTIONAL_PRE_CACHE.map((url) => {
-            return cache.add(url).catch((err) => {
-              console.warn('SW: optional pre-cache fail', url, err);
-            });
-          }));
-        });
+        return cache.addAll(CORE_PRE_CACHE);
       }),
       writeReleaseState(installPhase).catch((err) => {
         // 更新状态只用于补提示；失败不能阻止核心应用安装。

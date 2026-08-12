@@ -23,8 +23,7 @@ const ExpenseApp = (() => {
   };
   // 新建记账只提供四种明确渠道；全局字典仍保留 other，兼容历史账单显示与编辑。
   const ADD_PAYMENT_METHODS = ExpenseData.PAYMENT_METHODS.filter(pm => pm.value !== 'other');
-  const _LARGE_AMOUNT_THRESHOLD = 10000;
-  let _confirmedLargeAmountRaw = null;
+  const _LARGE_AMOUNT_THRESHOLD_CENTS = 1_000_000;
   let _paymentOptionsExpanded = false;
   let _necessityOptionsExpanded = false;  // 价值评定选择器展开状态（v187 起与支付方式同款交互）
   let _paymentHandTouched = false;   // 用户手动改过支付方式（切分类时不被习惯覆盖）
@@ -57,8 +56,9 @@ const ExpenseApp = (() => {
      初始化入口
      ----------------------------------------------------------------- */
   function init() {
-    // 1. 写入预设数据
-    ExpenseData.initPresetData();
+    // 1. 先确认核心数据可读；读取异常时不执行任何初始化写入。
+    const initialStorageStatus = ExpenseDB.getCoreReadStatus();
+    const presetDataReady = initialStorageStatus.ok && ExpenseData.initPresetData();
 
     // 2. 设置默认日期时间
     _resetFormDefaults();
@@ -98,8 +98,36 @@ const ExpenseApp = (() => {
     ExpenseHome.render();
     _renderMerchantSuggestions();
 
-    // 9. 新手引导（仅首次访问展示，关闭后写入 settings.onboardingSeen）
-    if (typeof ExpenseOnboarding !== 'undefined') ExpenseOnboarding.start();
+    // 8.5 挂载月度报告（入口卡 + 未读角标；引擎脚本在 stats.js 之后加载）
+    if (typeof ExpenseMonthlyReport !== 'undefined') ExpenseMonthlyReport.init();
+
+    // 9. 读取异常时明确告知“当前数据状态未知”，且本次会话的核心写入已被存储层暂停。
+    const finalStorageStatus = ExpenseDB.getCoreReadStatus();
+    if (!finalStorageStatus.ok) {
+      const categoryGraphInvalid = finalStorageStatus.code === 'CATEGORY_GRAPH_INVALID';
+      const domainDataInvalid = finalStorageStatus.code === 'DOMAIN_DATA_INVALID';
+      const recoveryAvailable = categoryGraphInvalid || domainDataInvalid;
+      const exportButton = document.getElementById('home-export-btn');
+      if (recoveryAvailable && exportButton) exportButton.textContent = '导出救援副本';
+      _confirmDialog({
+        title: categoryGraphInvalid
+          ? '检测到旧版分类层级异常'
+          : (domainDataInvalid ? '检测到旧版账单或预算字段异常' : '本地数据读取失败'),
+        message: categoryGraphInvalid
+          ? '账单仍保持只读可见，但写入、普通备份和恢复已暂停，应用不会自动改写历史分类。请在“数据与备份”中导出只读救援副本并妥善保存；该文件不能直接恢复，需交由维护人员处理。'
+          : (domainDataInvalid
+            ? '账单仍保持只读可见，但检测到无法安全用于新写入的旧字段。应用不会自动取整、迁移或覆盖；请在“数据与备份”中导出只读救援副本并妥善保存。'
+            : '应用无法完整读取当前账本，不能据此判断数据为空。为避免覆盖，写入和备份已暂停。请勿清理浏览器数据，重新打开后重试；若持续失败，请保留现有备份。'),
+        confirmText: '知道了',
+        notice: true,
+      });
+    } else {
+      if (!presetDataReady) {
+        _toast('初始化数据保存失败，原数据未覆盖。请保留页面并检查浏览器存储空间', 'warning', { duration: 6000 });
+      }
+      // 新手引导（仅首次访问展示，关闭后写入 settings.onboardingSeen）
+      if (typeof ExpenseOnboarding !== 'undefined') ExpenseOnboarding.start();
+    }
   }
 
   /* -----------------------------------------------------------------
@@ -190,6 +218,8 @@ const ExpenseApp = (() => {
       }
     } else if (viewId === 'stats') {
       if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
+      // 切回统计页刷新月报入口卡/未读角标
+      if (typeof ExpenseMonthlyReport !== 'undefined') ExpenseMonthlyReport.refreshEntry();
     }
 
     // 切 Tab 后强制回到顶部。多时间点反复清零，因为：
@@ -274,7 +304,6 @@ const ExpenseApp = (() => {
     }
 
     if (_formState.amountRaw === previousAmountRaw) return;
-    _confirmedLargeAmountRaw = null;
     _setAmountValidation(false);
     _updateAmountDisplay();
   }
@@ -290,6 +319,8 @@ const ExpenseApp = (() => {
       if (e.defaultPrevented) return;
       // 仅记账页可见时处理，避免在其他页面误触
       if (_currentView !== 'add') return;
+      const confirmDialog = document.getElementById('confirm-dialog');
+      if (confirmDialog && confirmDialog.classList.contains('confirm-dialog--open')) return;
       // 如果有 input/textarea 聚焦，不劫持（用户可能正在填写备注/地点）
       if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
       if (document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
@@ -329,8 +360,8 @@ const ExpenseApp = (() => {
         decimal.textContent = '.00';
       }
       if (submitAmount) {
-        const amount = parseFloat(_formState.amountRaw);
-        submitAmount.textContent = `¥${Number.isFinite(amount) ? amount.toFixed(2) : '0.00'}`;
+        const money = ExpenseDB.validateMoney(_formState.amountRaw);
+        submitAmount.textContent = `¥${money.ok ? money.value.toFixed(2) : '0.00'}`;
       }
     }
     _updateSaveState();
@@ -339,8 +370,8 @@ const ExpenseApp = (() => {
   function _updateSaveState() {
     const label = document.getElementById('add-submit-label');
     const submit = document.querySelector('.numpad__key--submit');
-    const amount = parseFloat(_formState.amountRaw);
-    const hasAmount = Number.isFinite(amount) && amount > 0;
+    const money = ExpenseDB.validateMoney(_formState.amountRaw);
+    const hasAmount = money.ok;
     let text = '保存';
 
     if (!hasAmount) text = '输入金额';
@@ -348,7 +379,7 @@ const ExpenseApp = (() => {
 
     if (label) label.textContent = text;
     if (submit) {
-      const amountText = hasAmount ? `，金额 ¥${amount.toFixed(2)}` : '';
+      const amountText = hasAmount ? `，金额 ¥${money.value.toFixed(2)}` : '';
       submit.setAttribute('aria-label', `${text}${amountText}`);
     }
   }
@@ -517,8 +548,10 @@ const ExpenseApp = (() => {
 
   function _getMerchantSuggestions() {
     const suggestions = new Map();
+    const activeCategoryIds = new Set(ExpenseDB.getCategories().map(category => category.id));
 
     ExpenseDB.getExpenses().slice(0, 80).forEach((expense, index) => {
+      if (!activeCategoryIds.has(expense.categoryId)) return;
       const note = (expense.note || '').trim();
       const location = (expense.location || '').trim();
       if (!note && !location) return;
@@ -560,7 +593,8 @@ const ExpenseApp = (() => {
     const chips = document.createElement('div');
     chips.className = 'add-merchant-suggestions__chips';
     suggestions.forEach(suggestion => {
-      const category = ExpenseDB.getCategory(suggestion.categoryId);
+      const category = ExpenseDB.getActiveCategory(suggestion.categoryId);
+      if (!category) return;
       const button = document.createElement('button');
       button.className = 'add-merchant-suggestion';
       button.type = 'button';
@@ -582,6 +616,11 @@ const ExpenseApp = (() => {
   }
 
   function _applyMerchantSuggestion(suggestion) {
+    if (!ExpenseDB.getActiveCategory(suggestion.categoryId)) {
+      _renderMerchantSuggestions();
+      _toast('该建议使用的分类已被删除，请重新选择分类', 'warning');
+      return;
+    }
     _formState.note = suggestion.note;
     _formState.location = suggestion.location;
 
@@ -592,7 +631,7 @@ const ExpenseApp = (() => {
     if (locationInput) locationInput.value = suggestion.location;
     if (moreFields) moreFields.open = true;
 
-    if (ExpenseDB.getCategory(suggestion.categoryId)) {
+    if (ExpenseDB.getActiveCategory(suggestion.categoryId)) {
       _formState.categoryId = suggestion.categoryId;
       ExpenseCategories.setSelected(suggestion.categoryId, { collapse: true });
       _renderAddCategories();
@@ -786,7 +825,7 @@ const ExpenseApp = (() => {
     const stats = _habitStatsCache;
     const catId = _formState.categoryId;
     if (catId) {
-      const cat = ExpenseDB.getCategory(catId);
+      const cat = ExpenseDB.getActiveCategory(catId);
       // 第一层：选中的具体分类（如"外卖"）
       if (stats.direct[catId]) {
         const direct = _pickHabitByThreshold(stats.direct[catId], values);
@@ -817,7 +856,6 @@ const ExpenseApp = (() => {
   function _resetFormDefaults(options = {}) {
     const { clearTransient = true } = options;
     _formState.amountRaw = '';
-    _confirmedLargeAmountRaw = null;
     _paymentOptionsExpanded = false;
     _necessityOptionsExpanded = false;
     _formState.note = '';
@@ -877,25 +915,60 @@ const ExpenseApp = (() => {
   /* -----------------------------------------------------------------
      保存消费记录
      ----------------------------------------------------------------- */
+  function _ensureCurrentCategoryActive() {
+    if (_formState.categoryId && ExpenseDB.getActiveCategory(_formState.categoryId)) return true;
+    const readStatus = ExpenseDB.getCoreReadStatus();
+    _formState.categoryId = '';
+    ExpenseCategories.clearSelection();
+    _renderAddCategories();
+    _updateSaveState();
+    if (!readStatus.ok) {
+      _toast('无法安全读取分类数据，保存已停止且原数据未覆盖。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
+    } else {
+      _toast('所选分类已被删除或失效，请重新选择', 'warning');
+    }
+    return false;
+  }
+
+  function _buildAddExpenseDraft() {
+    return {
+      amount: _formState.amountRaw,
+      categoryId: _formState.categoryId,
+      date: _formState.date,
+      time: _formState.time,
+      location: _formState.location,
+      paymentMethod: _formState.paymentMethod,
+      necessity: _formState.necessity,
+      note: _formState.note,
+    };
+  }
+
+  function _showExpenseValidationError(validation) {
+    const error = validation && validation.error;
+    if (!error) return;
+    if (error.field === 'amount') _setAmountValidation(true);
+    if (error.field === 'categoryId') {
+      _setCategoryValidation(true);
+      if (_formState.categoryId && !_ensureCurrentCategoryActive()) return;
+      const categoryArea = document.querySelector('.add-category-area');
+      if (categoryArea) categoryArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    _toast(error.message, 'warning');
+  }
+
   function _handleSave() {
-    // 校验
-    const amount = parseFloat(_formState.amountRaw);
-    if (!amount || amount <= 0) {
-      _setAmountValidation(true);
-      _toast('请输入金额', 'warning');
+    const validation = ExpenseDB.validateExpenseDraft(_buildAddExpenseDraft());
+    if (!validation.ok) {
+      _showExpenseValidationError(validation);
       return;
     }
     _setAmountValidation(false);
-    if (!_formState.categoryId) {
-      _setCategoryValidation(true);
-      const categoryArea = document.querySelector('.add-category-area');
-      if (categoryArea) categoryArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      _toast('请选择消费分类', 'warning');
-      return;
-    }
+    _setCategoryValidation(false);
+    if (!_ensureCurrentCategoryActive()) return;
 
-    if (amount >= _LARGE_AMOUNT_THRESHOLD && _confirmedLargeAmountRaw !== _formState.amountRaw) {
-      const amountText = amount.toLocaleString('zh-CN', {
+    if (validation.cents >= _LARGE_AMOUNT_THRESHOLD_CENTS) {
+      const confirmedCents = validation.cents;
+      const amountText = validation.value.amount.toLocaleString('zh-CN', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       });
@@ -905,36 +978,44 @@ const ExpenseApp = (() => {
         confirmText: '确认记录',
       }).then(ok => {
         if (!ok) return;
-        _confirmedLargeAmountRaw = _formState.amountRaw;
-        _commitSave();
+        const latest = ExpenseDB.validateExpenseDraft(_buildAddExpenseDraft());
+        if (!latest.ok) {
+          _showExpenseValidationError(latest);
+          return;
+        }
+        if (latest.cents !== confirmedCents) {
+          _toast('金额已变更，请重新确认', 'warning');
+          return;
+        }
+        _commitSave(confirmedCents);
       });
       return;
     }
 
-    _commitSave();
+    _commitSave(validation.cents);
   }
 
   /** 实际写入记录（大金额确认通过后调用；window.confirm 在 iOS 独立 PWA 被禁用，确认改为自绘弹窗） */
-  function _commitSave() {
-    const amount = parseFloat(_formState.amountRaw);
-    const record = ExpenseDB.addExpense({
-      amount:        amount,
-      categoryId:    _formState.categoryId,
-      date:          _formState.date,
-      time:          _formState.time,
-      location:      _formState.location,
-      paymentMethod: _formState.paymentMethod,
-      necessity:     _formState.necessity,   // 价值评定：need/want/impulse，未选则为空串
-      note:          _formState.note,
-    });
+  function _commitSave(expectedCents) {
+    const validation = ExpenseDB.validateExpenseDraft(_buildAddExpenseDraft());
+    if (!validation.ok) {
+      _showExpenseValidationError(validation);
+      return;
+    }
+    if (expectedCents != null && validation.cents !== expectedCents) {
+      _toast('金额已变更，请重新确认', 'warning');
+      return;
+    }
+    if (!_ensureCurrentCategoryActive()) return;
+    const record = ExpenseDB.addExpense(validation.value);
 
     if (!record) {
-      _toast('保存失败，请检查浏览器存储空间后重试', 'warning');
+      _toast('保存失败：无法安全读取或写入本地数据，操作已停止且原数据未覆盖。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
       return;
     }
     _invalidateHabitStatsCache();  // 数据已变更，习惯统计缓存作废
 
-    _toast(`已记录 ¥${amount.toFixed(2)}`, 'success', {
+    _toast(`已记录 ¥${validation.value.amount.toFixed(2)}`, 'success', {
       actionLabel: '撤销',
       duration: 5000,
       onAction: () => {
@@ -953,7 +1034,6 @@ const ExpenseApp = (() => {
 
     // 连续记账只保留可见的分类摘要，避免地点、支付方式和价值评定悄悄误带。
     _formState.amountRaw = '';
-    _confirmedLargeAmountRaw = null;
     _formState.note = '';
     _formState.location = '';
     _paymentHandTouched = false;
@@ -1036,7 +1116,14 @@ const ExpenseApp = (() => {
   let _confirmResolver = null;  // 当前弹窗的 resolve（同一时刻只允许一个确认弹窗）
 
   function _confirmDialog(options) {
-    const { title = '请确认', message = '', confirmText = '确定', cancelText = '取消', danger = false } = options || {};
+    const {
+      title = '请确认',
+      message = '',
+      confirmText = '确定',
+      cancelText = '取消',
+      danger = false,
+      notice = false,
+    } = options || {};
 
     // 单例：首次调用创建 DOM 并绑定事件，后续只更新文案
     let overlay = document.getElementById('confirm-dialog');
@@ -1064,7 +1151,10 @@ const ExpenseApp = (() => {
 
     overlay.querySelector('.confirm-dialog__title').textContent = title;
     overlay.querySelector('.confirm-dialog__message').textContent = message;
-    overlay.querySelector('.confirm-dialog__cancel').textContent = cancelText;
+    const cancelBtn = overlay.querySelector('.confirm-dialog__cancel');
+    cancelBtn.textContent = cancelText;
+    cancelBtn.hidden = notice;
+    cancelBtn.style.display = notice ? 'none' : '';
     const okBtn = overlay.querySelector('.confirm-dialog__ok');
     okBtn.textContent = confirmText;
     // 危险操作（如删除）用红色按钮，普通确认用主色按钮
@@ -1072,6 +1162,7 @@ const ExpenseApp = (() => {
     okBtn.classList.toggle('btn--primary', !danger);
 
     overlay.classList.add('confirm-dialog--open');
+    try { okBtn.focus({ preventScroll: true }); } catch (_) { okBtn.focus(); }
     return new Promise(resolve => { _confirmResolver = resolve; });
   }
 
@@ -1102,7 +1193,7 @@ const ExpenseApp = (() => {
       <div style="margin-bottom:24px">
         <label style="font-weight:600;display:block;margin-bottom:8px">月度总预算</label>
         <input type="number" class="input" id="budget-input-total" value="${monthlyBudget || ''}"
-               placeholder="0 = 不限制" min="0" step="100"
+               placeholder="0 = 不限制" min="0" max="99999999.99" step="0.01" inputmode="decimal"
                style="font-size:var(--font-size-xl);text-align:center">
         ${monthlyBudget > 0 ? `<p style="margin-top:8px;font-size:13px;color:var(--color-text-secondary);text-align:center">已用 ¥${monthTotal.toFixed(0)} · 剩余 ${Math.max(0, monthlyBudget - monthTotal).toFixed(0)}</p>` : ''}
       </div>
@@ -1120,7 +1211,7 @@ const ExpenseApp = (() => {
                 <div style="display:flex;align-items:center;gap:4px">
                   <span style="font-size:14px">¥</span>
                   <input type="number" class="input cat-budget-input" data-cat-id="${ExpenseData.escapeHtml(cat.id)}"
-                         value="${ExpenseData.escapeHtml(catBudget)}" placeholder="不限" min="0" step="100"
+                         value="${ExpenseData.escapeHtml(catBudget)}" placeholder="不限" min="0" max="99999999.99" step="0.01" inputmode="decimal"
                          style="width:100px;text-align:right">
                 </div>
                 ${catBudget > 0 ? `<span style="font-size:11px;color:var(--color-text-tertiary);width:60px;text-align:right">${spent > catBudget ? '<svg viewBox="0 0 24 24" class="inline-icon" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4m0 4h.01"/></svg>超支' : Math.round(spent/catBudget*100)+'%'}</span>` : '<span style="width:60px"></span>'}
@@ -1135,16 +1226,29 @@ const ExpenseApp = (() => {
 
     // 绑定保存
     document.getElementById('budget-btn-save').addEventListener('click', () => {
-      const newBudget = {
-        monthlyTotal: parseFloat(document.getElementById('budget-input-total').value) || 0,
-        categories: {},
-      };
+      const totalInput = document.getElementById('budget-input-total');
+      const draft = { monthlyTotal: totalInput.value, categories: {} };
       body.querySelectorAll('.cat-budget-input').forEach(input => {
-        const val = parseFloat(input.value);
-        if (val > 0) newBudget.categories[input.dataset.catId] = val;
+        draft.categories[input.dataset.catId] = input.value;
       });
-      if (!ExpenseDB.saveBudget(newBudget)) {
-        _toast('预算保存失败，请检查浏览器存储空间', 'warning');
+      const validation = ExpenseDB.validateBudgetDraft(draft);
+      if (!validation.ok) {
+        const field = validation.error && validation.error.field;
+        const categoryMatch = field && field.match(/^categories\.(.+)$/);
+        const invalidInput = categoryMatch
+          ? [...body.querySelectorAll('.cat-budget-input')].find(input => input.dataset.catId === categoryMatch[1])
+          : totalInput;
+        if (invalidInput) invalidInput.focus();
+        let message = validation.error.message;
+        if (categoryMatch) {
+          const category = ExpenseDB.getCategory(categoryMatch[1]);
+          if (category) message = message.replace(`「${category.id}」`, `「${category.name}」`);
+        }
+        _toast(message, 'warning', { duration: 5000 });
+        return;
+      }
+      if (!ExpenseDB.saveBudget(validation.value)) {
+        _toast('预算保存失败，操作已停止且原数据未覆盖。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
         return;
       }
       _toast('预算已保存', 'success');
@@ -1162,8 +1266,8 @@ const ExpenseApp = (() => {
         danger: true,
       }).then(ok => {
         if (!ok) return;
-        if (!ExpenseDB.saveBudget(ExpenseData.DEFAULT_BUDGET)) {
-          _toast('预算重置失败，请检查浏览器存储空间', 'warning');
+        if (!ExpenseDB.saveBudget(ExpenseData.DEFAULT_BUDGET, { mode: 'reset' })) {
+          _toast('预算重置失败，操作已停止且原数据未覆盖。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
           return;
         }
         _toast('预算已重置', 'success');
@@ -1253,16 +1357,25 @@ const ExpenseApp = (() => {
         </div>`;
     }).join('');
 
-    // 绑定删除事件（级联删除：一级分类的子分类会一并删除，确认框明示）
+    // 绑定删除事件（软删除：从新记账入口隐藏，历史引用与名称原样保留）
     body.querySelectorAll('[data-del-cat]').forEach(btn => {
       btn.addEventListener('click', () => {
         const catId = btn.dataset.delCat;
-        const cat = ExpenseDB.getCategory(catId);
-        if (!cat) return;
+        const cat = ExpenseDB.getActiveCategory(catId);
+        if (!cat) {
+          const readStatus = ExpenseDB.getCoreReadStatus();
+          _toast(
+            readStatus.ok ? '该分类已在其他页面删除，分类列表已刷新' : '无法安全读取分类数据，请勿清理浏览器数据，重新打开后重试',
+            'warning',
+            readStatus.ok ? {} : { duration: 6000 },
+          );
+          if (readStatus.ok) _renderCategoryManagerOverlay();
+          return;
+        }
         const children = ExpenseDB.getChildCategories(catId);
         const message = children.length > 0
-          ? `该分类下的历史账单会显示为「未分类」，不会被删除。\n其 ${children.length} 个子分类（${children.map(c => c.name).join('、')}）将一并删除。`
-          : '该分类下的历史账单会显示为「未分类」，不会被删除。';
+          ? `该分类及其 ${children.length} 个子分类（${children.map(c => c.name).join('、')}）将从新记账可选项中移除。历史账单和原分类名称会保留。`
+          : '该分类将从新记账可选项中移除。历史账单和原分类名称会保留。';
         _confirmDialog({
           title: `删除分类「${cat.name}」？`,
           message,
@@ -1271,13 +1384,21 @@ const ExpenseApp = (() => {
         }).then(ok => {
           if (!ok) return;
           if (!ExpenseDB.deleteCategory(catId)) {
-            _toast('分类删除失败，请检查浏览器存储空间', 'warning');
+            const readStatus = ExpenseDB.getCoreReadStatus();
+            if (readStatus.ok && !ExpenseDB.getActiveCategory(catId)) {
+              _toast('该分类已在其他页面删除，分类列表已刷新', 'warning');
+              _renderCategoryManagerOverlay();
+              _renderAddCategories();
+              return;
+            }
+            _toast('分类删除失败，操作已停止且原数据未覆盖。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
             return;
           }
           _invalidateHabitStatsCache();  // 分类关系变了，父级统计可能受影响
-          // 当前选中分类被删（含被级联删除的子分类）→ 无分类，还原为展开让用户选
-          if (_formState.categoryId && !ExpenseDB.getCategory(_formState.categoryId)) {
+          // 当前选中分类被移除（含子分类）→ 同步清理表单与分类组件内部状态。
+          if (_formState.categoryId && !ExpenseDB.getActiveCategory(_formState.categoryId)) {
             _formState.categoryId = '';
+            ExpenseCategories.clearSelection();
             _applyHabitDefaults();
             _renderPaymentMethods();
             _renderNecessityOptions();
@@ -1352,22 +1473,69 @@ const ExpenseApp = (() => {
     );
   }
 
+  function _showCategoryParentValidationError(validation) {
+    const messages = {
+      SELF_PARENT: '分类不能设为自己的子分类',
+      CATEGORY_HAS_CHILDREN: '该分类仍关联子分类（可能包含历史分类），不能再设为二级分类',
+      PARENT_UNAVAILABLE: '所选父分类已不存在，请重新选择',
+      PARENT_NOT_TOP_LEVEL: '只能选择一级分类作为父级',
+    };
+    if (validation.code === 'READ_FAILURE') {
+      _toast('无法安全读取分类数据，操作已停止且原数据未覆盖。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
+      return;
+    }
+    _toast(messages[validation.code] || '分类层级无效，请重新选择', 'warning');
+  }
+
+  function _categoryParentOptionsHtml(parents, selectedId, emptyLabel) {
+    return `<option value="">${emptyLabel}</option>` + parents.map(parent =>
+      `<option value="${ExpenseData.escapeHtml(parent.id)}" ${parent.id === selectedId ? 'selected' : ''}>${ExpenseData.escapeHtml(parent.icon)} ${ExpenseData.escapeHtml(parent.name)}</option>`
+    ).join('');
+  }
+
+  function _refreshEditCategoryParentControl(select, hint, categoryId, preferredParentId) {
+    const validation = ExpenseDB.validateCategoryParent(categoryId, null);
+    if (!validation.valid) {
+      _showCategoryParentValidationError(validation);
+      return false;
+    }
+    const parents = ExpenseDB.getParentCategories().filter(parent => parent.id !== categoryId);
+    const selectedId = parents.some(parent => parent.id === preferredParentId) ? preferredParentId : null;
+    select.innerHTML = _categoryParentOptionsHtml(parents, selectedId, '-- 设为一级分类 --');
+    select.disabled = validation.hasChildren;
+    if (validation.hasChildren) select.value = '';
+    hint.hidden = !validation.hasChildren;
+    const activeChildCount = ExpenseDB.getChildCategories(categoryId).length;
+    hint.textContent = validation.hasChildren
+      ? (activeChildCount > 0
+        ? '该分类下已有子分类，只能保留为一级分类。'
+        : '该分类仍关联已删除的历史子分类，为保持历史层级只能保留为一级分类。')
+      : '';
+    return true;
+  }
+
   /** 在覆盖层 body 中渲染编辑分类表单（仅自定义分类；改名/改图标不影响历史账单） */
   function _showEditCategoryForm(catId) {
     const body = document.getElementById('overlay-categories-body');
-    const cat = ExpenseDB.getCategory(catId);
-    if (!body || !cat || cat.isPreset) return;
+    const cat = ExpenseDB.getActiveCategory(catId);
+    if (!body) return;
+    if (!cat || cat.isPreset) {
+      const readStatus = ExpenseDB.getCoreReadStatus();
+      _toast(
+        readStatus.ok ? '该分类已在其他页面删除，分类列表已刷新' : '无法安全读取分类数据，请勿清理浏览器数据，重新打开后重试',
+        'warning',
+        readStatus.ok ? {} : { duration: 6000 },
+      );
+      if (readStatus.ok) _renderCategoryManagerOverlay();
+      return;
+    }
 
-    // 一级分类可选的父级排除自身（不能把自己挂到自己下面）
-    const parents = ExpenseDB.getParentCategories().filter(p => p.id !== catId);
     body.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:16px">
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">所属一级分类</label>
-          <select class="input" id="edit-cat-parent">
-            <option value="">-- 设为一级分类 --</option>
-            ${parents.map(p => `<option value="${ExpenseData.escapeHtml(p.id)}" ${cat.parentId === p.id ? 'selected' : ''}>${ExpenseData.escapeHtml(p.icon)} ${ExpenseData.escapeHtml(p.name)}</option>`).join('')}
-          </select>
+          <select class="input" id="edit-cat-parent"></select>
+          <div id="edit-cat-parent-hint" hidden style="margin-top:6px;font-size:12px;color:var(--color-text-tertiary)"></div>
         </div>
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">分类名称 <span style="color:var(--color-danger)">*</span></label>
@@ -1386,17 +1554,46 @@ const ExpenseApp = (() => {
       </div>
     `;
 
+    const parentSelect = document.getElementById('edit-cat-parent');
+    const parentHint = document.getElementById('edit-cat-parent-hint');
+    if (!_refreshEditCategoryParentControl(parentSelect, parentHint, catId, cat.parentId)) return;
+
     document.getElementById('edit-cat-save').addEventListener('click', () => {
+      if (!ExpenseDB.getActiveCategory(catId)) {
+        _toast('该分类已在其他页面删除，无法继续编辑，分类列表已刷新', 'warning');
+        _renderCategoryManagerOverlay();
+        return;
+      }
       const name = document.getElementById('edit-cat-name').value.trim();
       if (!name) { _toast('请输入分类名称', 'warning'); return; }
       const icon = document.getElementById('edit-cat-icon').value.trim() || '📌';
-      const parentId = document.getElementById('edit-cat-parent').value || null;
+      const parentId = parentSelect.value || null;
+      const parentValidation = ExpenseDB.validateCategoryParent(catId, parentId);
+      if (!parentValidation.valid) {
+        _showCategoryParentValidationError(parentValidation);
+        if (parentValidation.code !== 'READ_FAILURE') {
+          _refreshEditCategoryParentControl(parentSelect, parentHint, catId, parentId);
+        }
+        return;
+      }
       if (_isCategoryNameTaken(name, parentId, catId)) {
         _toast('同层已存在同名分类，请换一个名称', 'warning');
         return;
       }
       if (!ExpenseDB.updateCategory(catId, { name, icon, parentId })) {
-        _toast('分类修改失败，请检查浏览器存储空间', 'warning');
+        const readStatus = ExpenseDB.getCoreReadStatus();
+        if (readStatus.ok && !ExpenseDB.getActiveCategory(catId)) {
+          _toast('该分类已在其他页面删除，无法继续编辑，分类列表已刷新', 'warning');
+          _renderCategoryManagerOverlay();
+          return;
+        }
+        const latestValidation = ExpenseDB.validateCategoryParent(catId, parentId);
+        if (!latestValidation.valid && latestValidation.code !== 'READ_FAILURE') {
+          _showCategoryParentValidationError(latestValidation);
+          _refreshEditCategoryParentControl(parentSelect, parentHint, catId, parentId);
+          return;
+        }
+        _toast('分类修改失败，操作已停止且原数据未覆盖。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
         return;
       }
       _toast(`已保存分类「${name}」`, 'success');
@@ -1424,8 +1621,7 @@ const ExpenseApp = (() => {
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">所属一级分类</label>
           <select class="input" id="new-cat-parent">
-            <option value="">-- 新建一级分类 --</option>
-            ${parents.map(p => `<option value="${ExpenseData.escapeHtml(p.id)}">${ExpenseData.escapeHtml(p.icon)} ${ExpenseData.escapeHtml(p.name)}</option>`).join('')}
+            ${_categoryParentOptionsHtml(parents, null, '-- 新建一级分类 --')}
           </select>
         </div>
         <div>
@@ -1445,18 +1641,37 @@ const ExpenseApp = (() => {
       </div>
     `;
 
+    const parentSelect = document.getElementById('new-cat-parent');
     document.getElementById('new-cat-save').addEventListener('click', () => {
       const name = document.getElementById('new-cat-name').value.trim();
       if (!name) { _toast('请输入分类名称', 'warning'); return; }
       const icon = document.getElementById('new-cat-icon').value.trim() || '📌';
-      const parentId = document.getElementById('new-cat-parent').value || null;
+      const parentId = parentSelect.value || null;
+      const parentValidation = ExpenseDB.validateCategoryParent(null, parentId);
+      if (!parentValidation.valid) {
+        _showCategoryParentValidationError(parentValidation);
+        if (parentValidation.code !== 'READ_FAILURE') {
+          const latestParents = ExpenseDB.getParentCategories();
+          parentSelect.innerHTML = _categoryParentOptionsHtml(latestParents, parentId, '-- 新建一级分类 --');
+          if (!latestParents.some(parent => parent.id === parentId)) parentSelect.value = '';
+        }
+        return;
+      }
       if (_isCategoryNameTaken(name, parentId)) {
         _toast('同层已存在同名分类，请换一个名称', 'warning');
         return;
       }
 
       if (!ExpenseDB.addCategory({ name, icon, parentId })) {
-        _toast('分类添加失败，请检查浏览器存储空间', 'warning');
+        const latestValidation = ExpenseDB.validateCategoryParent(null, parentId);
+        if (!latestValidation.valid && latestValidation.code !== 'READ_FAILURE') {
+          _showCategoryParentValidationError(latestValidation);
+          const latestParents = ExpenseDB.getParentCategories();
+          parentSelect.innerHTML = _categoryParentOptionsHtml(latestParents, parentId, '-- 新建一级分类 --');
+          if (!latestParents.some(parent => parent.id === parentId)) parentSelect.value = '';
+          return;
+        }
+        _toast('分类添加失败，操作已停止且原数据未覆盖。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
         return;
       }
       _toast(`已添加分类「${name}」`, 'success');
@@ -1496,7 +1711,7 @@ const ExpenseApp = (() => {
       }).then(ok => {
         if (!ok) return;
         if (!ExpenseDB.deleteExpense(_editingExpenseId)) {
-          _toast('删除失败，这笔记录仍然保留', 'warning');
+          _toast('删除失败，这笔记录仍然保留。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
           return;
         }
         _invalidateHabitStatsCache();
@@ -1586,23 +1801,44 @@ const ExpenseApp = (() => {
     const exportBtn = document.getElementById('home-export-btn');
     if (exportBtn) {
       exportBtn.addEventListener('click', async () => {
-        const data = ExpenseDB.exportAll();
+        let data = ExpenseDB.exportAll();
+        let recoveryOnly = false;
+        if (!data) {
+          data = ExpenseDB.exportRecoveryCopy();
+          if (!data) {
+            _toast('无法完整读取本地账本，未生成备份且原数据未改动。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
+            return;
+          }
+          recoveryOnly = true;
+        }
         const json = JSON.stringify(data, null, 2);
         const now = new Date();
         const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-        const filename = `expense-tracker-backup-${ts}.json`;
+        const filename = recoveryOnly
+          ? `expense-tracker-recovery-${ts}.json`
+          : `expense-tracker-backup-${ts}.json`;
 
         // 手机端：使用系统分享面板（可分享到微信/邮件/备忘录等）
         if (navigator.share && navigator.canShare) {
           const blob = new Blob([json], { type: 'application/json' });
           const file = new File([blob], filename, { type: 'application/json' });
-          const shareData = { title: '消费轨迹备份', files: [file] };
+          const shareData = { title: recoveryOnly ? '消费轨迹只读救援副本' : '消费轨迹备份', files: [file] };
           if (navigator.canShare(shareData)) {
             try {
               await navigator.share(shareData);
-              ExpenseDB.recordBackupTime();
+              if (recoveryOnly) {
+                _toast(`已分享只读救援副本（${data.expenses.length} 条记录）。此文件不能直接恢复，请妥善保存`, 'warning', { duration: 7000 });
+                return;
+              }
+              const backupTimeSaved = ExpenseDB.recordBackupTime();
               _updateBackupBadge();
-              _toast(`已分享 ${data.expenses.length} 条记录`, 'success');
+              _toast(
+                backupTimeSaved
+                  ? `已分享 ${data.expenses.length} 条记录`
+                  : `已分享 ${data.expenses.length} 条记录，但无法记录备份时间`,
+                backupTimeSaved ? 'success' : 'warning',
+                backupTimeSaved ? {} : { duration: 5000 },
+              );
               return;
             } catch (e) {
               // 用户取消分享，不提示错误，降级到下载
@@ -1619,9 +1855,19 @@ const ExpenseApp = (() => {
         a.download = filename;
         a.click();
         URL.revokeObjectURL(url);
-        ExpenseDB.recordBackupTime();
+        if (recoveryOnly) {
+          _toast(`已导出只读救援副本（${data.expenses.length} 条记录）。此文件不能直接恢复，请妥善保存`, 'warning', { duration: 7000 });
+          return;
+        }
+        const backupTimeSaved = ExpenseDB.recordBackupTime();
         _updateBackupBadge();
-        _toast(`已导出 ${data.expenses.length} 条记录`, 'success');
+        _toast(
+          backupTimeSaved
+            ? `已导出 ${data.expenses.length} 条记录`
+            : `已导出 ${data.expenses.length} 条记录，但无法记录备份时间`,
+          backupTimeSaved ? 'success' : 'warning',
+          backupTimeSaved ? {} : { duration: 5000 },
+        );
       });
     }
 
@@ -1665,7 +1911,14 @@ const ExpenseApp = (() => {
           const result = ExpenseDB.importAll(data);
           if (result.success) {
             _invalidateHabitStatsCache();  // 数据整体被替换，缓存作废
-            _toast(result.message, 'success');
+            if (_formState.categoryId && !ExpenseDB.getActiveCategory(_formState.categoryId)) {
+              _formState.categoryId = '';
+              ExpenseCategories.clearSelection();
+            }
+            _renderAddCategories();
+            _renderMerchantSuggestions();
+            _updateSaveState();
+            _toast(result.warning || result.message, result.warning ? 'warning' : 'success', result.warning ? { duration: 6000 } : {});
             _updateBackupBadge();
             importArea.style.display = 'none';
             importTextarea.value = '';
@@ -1673,7 +1926,7 @@ const ExpenseApp = (() => {
             if (typeof ExpenseList !== 'undefined') ExpenseList.render();
             if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
           } else {
-            _toast(result.message, 'warning');
+            _toast(result.message, 'warning', { duration: 6000 });
           }
         });
       });
@@ -1720,7 +1973,7 @@ const ExpenseApp = (() => {
      ----------------------------------------------------------------- */
   function openBudgetSettings() { _openBudgetOverlay(); }
   function openEditExpense(expenseId) { _openEditOverlay(expenseId); }
-  function showToast(msg, type) { _toast(msg, type); }
+  function showToast(msg, type, options) { _toast(msg, type, options); }
   function getCurrentView() { return _currentView; }
 
   /* -----------------------------------------------------------------
@@ -1740,14 +1993,11 @@ const ExpenseApp = (() => {
     // 存储当前编辑的记录 ID（供删除按钮使用，只绑定一次）
     _editingExpenseId = expenseId;
 
-    const cat = ExpenseDB.getCategory(expense.categoryId);
-    const parents = ExpenseDB.getParentCategories();
-
     body.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:16px">
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">金额 ¥</label>
-          <input type="number" class="input" id="edit-amount" value="${ExpenseData.escapeHtml(expense.amount)}" step="0.01" min="0.01">
+          <input type="number" class="input" id="edit-amount" value="${ExpenseData.escapeHtml(expense.amount)}" step="0.01" min="0.01" max="99999999.99" inputmode="decimal">
         </div>
         <div>
           <label style="font-weight:600;display:block;margin-bottom:6px">分类</label>
@@ -1827,39 +2077,61 @@ const ExpenseApp = (() => {
       });
     });
 
-    // 保存按钮（每次打开覆盖层时重新创建，无需担心事件泄漏）
-    document.getElementById('edit-btn-save').addEventListener('click', () => {
-      const amountVal = parseFloat(document.getElementById('edit-amount').value);
-      if (!amountVal || amountVal <= 0) {
-        _toast('请输入有效金额', 'warning');
-        return;
-      }
-      // v194：与新增记账一致，分类必选——防止账单被误存为「未分类」
-      const categoryId = document.getElementById('edit-category').value;
-      if (!categoryId) {
-        _toast('请选择分类', 'warning');
-        return;
-      }
-
+    function readEditDraft() {
+      const amountRaw = document.getElementById('edit-amount').value;
       const pmBtn = body.querySelector('[data-edit-pm].chip--active');
       const necessityBtn = body.querySelector('[data-edit-necessity].chip--active');
-      // v194：日期/时间被清空时补当前值，避免产生空日期账单
-      const dateVal = document.getElementById('edit-date').value || ExpenseDB.today();
-      const timeVal = document.getElementById('edit-time').value || ExpenseDB.now();
-
-      const updated = ExpenseDB.updateExpense(expenseId, {
-        amount:        amountVal,
-        categoryId:    categoryId,
+      return {
+        draft: {
+        amount:        amountRaw === String(expense.amount) ? expense.amount : amountRaw,
+        categoryId:    document.getElementById('edit-category').value,
         location:      document.getElementById('edit-location').value,
         paymentMethod: pmBtn ? pmBtn.dataset.editPm : '',
         necessity:     necessityBtn ? necessityBtn.dataset.editNecessity : '',
         note:          document.getElementById('edit-note').value,
-        date:          dateVal,
-        time:          timeVal,
+        date:          document.getElementById('edit-date').value,
+        time:          document.getElementById('edit-time').value,
+        },
+        amountUnchanged: amountRaw === String(expense.amount),
+      };
+    }
+
+    function validateEditDraft() {
+      const current = readEditDraft();
+      return ExpenseDB.validateExpenseDraft(current.draft, {
+        allowHistoricalCategoryId: expense.categoryId,
+        allowLegacyMoney: current.amountUnchanged,
       });
+    }
+
+    function showEditValidationError(validation) {
+      const error = validation && validation.error;
+      if (!error) return;
+      const fieldMap = {
+        amount: 'edit-amount',
+        categoryId: 'edit-category',
+        date: 'edit-date',
+        time: 'edit-time',
+      };
+      const invalidElement = fieldMap[error.field] && document.getElementById(fieldMap[error.field]);
+      if (invalidElement) invalidElement.focus();
+      _toast(error.message, 'warning');
+    }
+
+    function persistEdit(expectedCents) {
+      const validation = validateEditDraft();
+      if (!validation.ok) {
+        showEditValidationError(validation);
+        return;
+      }
+      if (expectedCents != null && validation.cents !== expectedCents) {
+        _toast('金额已变更，请重新确认', 'warning');
+        return;
+      }
+      const updated = ExpenseDB.updateExpense(expenseId, validation.value);
 
       if (!updated) {
-        _toast('修改保存失败，请检查浏览器存储空间', 'warning');
+        _toast('修改保存失败，操作已停止且原数据未覆盖。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
         return;
       }
       _invalidateHabitStatsCache();
@@ -1869,6 +2141,42 @@ const ExpenseApp = (() => {
       if (typeof ExpenseList !== 'undefined') ExpenseList.render();
       ExpenseHome.render();
       if (typeof ExpenseStats !== 'undefined') ExpenseStats.render();
+    }
+
+    // 保存按钮（每次打开覆盖层时重新创建，无需担心事件泄漏）
+    document.getElementById('edit-btn-save').addEventListener('click', () => {
+      const validation = validateEditDraft();
+      if (!validation.ok) {
+        showEditValidationError(validation);
+        return;
+      }
+      const amountChanged = !Object.is(validation.value.amount, expense.amount);
+      if (amountChanged && validation.cents >= _LARGE_AMOUNT_THRESHOLD_CENTS) {
+        const confirmedCents = validation.cents;
+        const amountText = validation.value.amount.toLocaleString('zh-CN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
+        _confirmDialog({
+          title: '确认修改为大额支出？',
+          message: `将把这笔支出修改为 ¥${amountText}。`,
+          confirmText: '确认修改',
+        }).then(ok => {
+          if (!ok) return;
+          const latest = validateEditDraft();
+          if (!latest.ok) {
+            showEditValidationError(latest);
+            return;
+          }
+          if (latest.cents !== confirmedCents) {
+            _toast('金额已变更，请重新确认', 'warning');
+            return;
+          }
+          persistEdit(confirmedCents);
+        });
+        return;
+      }
+      persistEdit(validation.cents);
     });
 
     _openEditSheet();
@@ -1878,6 +2186,12 @@ const ExpenseApp = (() => {
   function _buildCategoryOptions(selectedId) {
     const parents = ExpenseDB.getParentCategories();
     let html = '<option value="">-- 请选择 --</option>';
+    const historicalCategory = ExpenseDB.getCategory(selectedId);
+    if (historicalCategory && !ExpenseDB.getActiveCategory(selectedId)) {
+      html += `<option value="${ExpenseData.escapeHtml(historicalCategory.id)}" selected>${ExpenseData.escapeHtml(historicalCategory.icon)} ${ExpenseData.escapeHtml(historicalCategory.name)}（已删除，仅保留历史）</option>`;
+    } else if (selectedId && !historicalCategory) {
+      html += `<option value="${ExpenseData.escapeHtml(selectedId)}" selected>原分类已不存在（仅保留历史引用）</option>`;
+    }
     parents.forEach(p => {
       html += `<option value="${ExpenseData.escapeHtml(p.id)}" ${p.id === selectedId ? 'selected' : ''}>${ExpenseData.escapeHtml(p.icon)} ${ExpenseData.escapeHtml(p.name)}</option>`;
       const children = ExpenseDB.getChildCategories(p.id);

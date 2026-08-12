@@ -52,12 +52,17 @@ const ExpenseList = (() => {
 
     // 分类（选中一级 = 自动包含所有子分类）
     if (_filters.categoryIds.length > 0) {
-      const allCatIds = new Set();
-      _filters.categoryIds.forEach(cid => {
-        allCatIds.add(cid);
-        ExpenseDB.getChildCategories(cid).forEach(c => allCatIds.add(c.id));
+      const selectedIds = new Set(_filters.categoryIds);
+      const parentIdByCategory = new Map();
+      result = result.filter(expense => {
+        if (selectedIds.has(expense.categoryId)) return true;
+        if (!parentIdByCategory.has(expense.categoryId)) {
+          const category = ExpenseDB.getCategory(expense.categoryId);
+          parentIdByCategory.set(expense.categoryId, category && category.parentId ? category.parentId : null);
+        }
+        const parentId = parentIdByCategory.get(expense.categoryId);
+        return Boolean(parentId && selectedIds.has(parentId));
       });
-      result = result.filter(e => allCatIds.has(e.categoryId));
     }
 
     // 地点

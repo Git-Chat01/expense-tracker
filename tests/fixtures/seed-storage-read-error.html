@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>隔离存储故障测试</title>
+</head>
+<body>
+  <button id="seed-error" type="button">写入合成故障并打开应用</button>
+  <script>
+    document.getElementById('seed-error').addEventListener('click', () => {
+      localStorage.setItem('expense_tracker_expenses', '{"broken":');
+      location.href = '/';
+    });
+  </script>
+</body>
+</html>
