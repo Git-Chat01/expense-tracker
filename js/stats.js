@@ -719,10 +719,12 @@ const ExpenseStats = (() => {
       allItems[i].style.marginRight = '';  // 重置内联 margin
     }
 
-    // FIRST: 记录所有项目当前位置
-    var firsts = [];
+    // FIRST: 记录所有项目当前位置。按元素身份存 Map——
+    // DOM 重排只是移动同一批节点（insertBefore 不重建元素），元素引用不变，
+    // INVERT 阶段必须按身份配对，不能按数组索引（顺序已变，索引对应的是别的行）。
+    var firsts = new Map();
     for (var f = 0; f < allItems.length; f++) {
-      firsts.push(allItems[f].getBoundingClientRect().top);
+      firsts.set(allItems[f], allItems[f].getBoundingClientRect().top);
     }
 
     // 改变 DOM 顺序
@@ -759,9 +761,11 @@ const ExpenseStats = (() => {
       lasts.push(newItems[l].getBoundingClientRect().top);
     }
 
-    // INVERT: 用 transform 补偿位移差
+    // INVERT: 用 transform 补偿位移差（按元素身份从 firsts 取旧位置）
     for (var k = 0; k < newItems.length; k++) {
-      var delta = firsts[k] - lasts[k];
+      var firstTop = firsts.get(newItems[k]);
+      if (firstTop === undefined) continue;  // 防御：不是本批记录的节点不参与动画
+      var delta = firstTop - lasts[k];
       if (Math.abs(delta) > 0.5) {
         newItems[k].style.transition = 'none';
         newItems[k].style.transform = 'translateY(' + delta + 'px)';
@@ -813,9 +817,9 @@ const ExpenseStats = (() => {
     }, { passive: true });
   }
 
-  /** hex 颜色转 rgba，复用 ExpenseData.hexToRgb 避免重复实现 */
+  /** hex 颜色转 rgba，复用 ExpenseData.hexToRgb 避免重复实现；非法色值兜底中性灰 */
   function _hexToRgba(hex, alpha) {
-    return `rgba(${ExpenseData.hexToRgb(hex)},${alpha})`;
+    return `rgba(${ExpenseData.hexToRgb(hex) || '150,150,150'},${alpha})`;
   }
 
   /** 将选中/取消效果应用到环形图上（选中扇区外扩 + 其余微微变淡） */

@@ -70,12 +70,16 @@ const ExpenseHome = (() => {
   function render() {
     if (!_$date) _cacheDom();
 
+    // 一次渲染只读一次全量账单：getExpenses 每次都是全量 parse+排序，
+    // 旧链路 _renderToday/_renderMonth/_lastMonthTotal/_renderRecent 各自再读一遍（共 4 次）。
+    const expenses = ExpenseDB.getExpenses();
+
     _renderHeader();
-    _renderToday();
-    _renderMonth();
+    _renderToday(expenses);
+    _renderMonth(expenses);
     _renderBudgetSummary();
     _renderAlerts();
-    _renderRecent();
+    _renderRecent(expenses);
   }
 
   /* -----------------------------------------------------------------
@@ -93,10 +97,9 @@ const ExpenseHome = (() => {
   /* -----------------------------------------------------------------
      今日消费 + 较昨日对比（涨红跌蓝）
      ----------------------------------------------------------------- */
-  function _renderToday() {
+  function _renderToday(expenses) {
     const today = ExpenseDB.today();
     const yesterday = _yesterdayStr();
-    const expenses = ExpenseDB.getExpenses();
     const todayExpenses = expenses.filter(e => e.date === today);
     const total = todayExpenses.reduce((sum, e) => sum + e.amount, 0);
 
@@ -133,9 +136,8 @@ const ExpenseHome = (() => {
   /* -----------------------------------------------------------------
      本月消费 + 上月对比（归入辅助信息带）
      ----------------------------------------------------------------- */
-  function _renderMonth() {
+  function _renderMonth(expenses) {
     const currentYM = ExpenseDB.yearMonth();
-    const expenses = ExpenseDB.getExpenses();
     const monthExpenses = expenses.filter(e => e.date.startsWith(currentYM));
     const monthTotal = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
 
@@ -144,7 +146,7 @@ const ExpenseHome = (() => {
 
     // 较上月对比
     if (_$monthDiff) {
-      const lastMonthTotal = _lastMonthTotal();
+      const lastMonthTotal = _lastMonthTotal(expenses);
       const MIN_BASE = 10; // 上月 < ¥10 视为无效基准，不计算百分比
       if (lastMonthTotal >= MIN_BASE) {
         if (_$monthComparison) _$monthComparison.hidden = false;
@@ -413,8 +415,7 @@ const ExpenseHome = (() => {
   /* -----------------------------------------------------------------
      最近 5 条记录
      ----------------------------------------------------------------- */
-  function _renderRecent() {
-    const expenses = ExpenseDB.getExpenses();
+  function _renderRecent(expenses) {
     const recent = expenses.slice(0, 3);
 
     if (recent.length === 0) {
@@ -487,10 +488,9 @@ const ExpenseHome = (() => {
     return '<span class="home-overview__currency">¥</span>' + amount;
   }
 
-  /** 上月总消费 */
-  function _lastMonthTotal() {
+  /** 上月总消费（expenses 由调用方传入，避免再次全量读取） */
+  function _lastMonthTotal(expenses) {
     const lastYM = _prevYearMonth();
-    const expenses = ExpenseDB.getExpenses();
     return expenses
       .filter(e => e.date.startsWith(lastYM))
       .reduce((sum, e) => sum + e.amount, 0);
