@@ -16,12 +16,30 @@ const ExpenseDB = (() => {
     budget:     'expense_tracker_budget',
     settings:   'expense_tracker_settings',
   };
+  /* 备份与逃生类 key：不参与核心数据读写，但清空数据时必须一并清除，
+     避免"已清空"后仍有明文消费数据残留（隐私 + 语义完整性） */
+  const BACKUP_KEYS = {
+    preImport:   'expense_tracker_pre_import_backup',
+    lastBackup:  'expense_tracker_last_backup',
+    forceImport: 'expense_tracker_force_import_backup',
+  };
   const MAX_MONEY_CENTS = 9_999_999_999;
   const _STRICT_EXPORT_VERSION = 4;
   const _LEGACY_MONEY_EXPORT_VERSION = 3;
+  /** updateExpense 允许更新的字段白名单（其余键拒绝，防止 schema 外字段落库） */
+  const _EXPENSE_UPDATE_FIELDS = ['amount', 'categoryId', 'date', 'time', 'location', 'paymentMethod', 'necessity', 'note'];
   let _writeBlockedByReadFailure = false;
   let _writeBlockedByCategoryGraphFailure = false;
   let _writeBlockedByDomainFailure = false;
+
+  /* -----------------------------------------------------------------
+     只读路径的已解析缓存：以 localStorage 原始字符串为 key，
+     内容未变时跳过重复 JSON.parse（统计页按分类循环汇总时收益明显）。
+     写路径全部走 _readForMutation（不缓存），写成功后主动清空缓存，
+     因此不存在"写失败但缓存被污染"的失效缺口。
+     ----------------------------------------------------------------- */
+  const _readCache = new Map();
+  function _invalidateReadCache() { _readCache.clear(); }
 
   /* -----------------------------------------------------------------
      通用工具：生成唯一 ID
@@ -288,15 +306,21 @@ const ExpenseDB = (() => {
     const normalizedCategories = {};
     const categoryCents = {};
     for (const [categoryId, rawAmount] of Object.entries(sourceCategories)) {
-      if (_UNSAFE_OBJECT_KEYS.has(categoryId) || (allowedIds && !allowedIds.has(categoryId))) {
+      if (_UNSAFE_OBJECT_KEYS.has(categoryId)) {
         return _validationError('BUDGET_CATEGORY_INVALID', '分类预算引用了不存在或已删除的分类', `categories.${categoryId}`);
       }
+      const referencesMissingCategory = allowedIds && !allowedIds.has(categoryId);
       let result = validateMoney(rawAmount, {
         allowEmpty: true,
         allowZero: true,
         label: `「${categoryId}」预算`,
         field: `categories.${categoryId}`,
       });
+      if (referencesMissingCategory && (!result.ok || result.cents !== 0)) {
+        // 墓碑/历史分类只允许以 0 显式清除存量预算条目（走删除分支）；
+        // 不允许为已删除分类设置新预算值。
+        return _validationError('BUDGET_CATEGORY_INVALID', '分类预算引用了不存在或已删除的分类', `categories.${categoryId}`);
+      }
       if (!result.ok
           && options.allowLegacyMoney === true
           && _isLegacyMoneyPolicyValue(rawAmount, true)
@@ -384,7 +408,26 @@ const ExpenseDB = (() => {
   }
 
   function _read(key) {
-    return _readWithStatus(key).value;
+    // 先取原始字符串做缓存比对；getItem 本身失败时退回 _readWithStatus 统一处理。
+    let raw = null;
+    try {
+      raw = localStorage.getItem(key);
+    } catch (e) {
+      return _readWithStatus(key).value;
+    }
+    if (raw !== null) {
+      const cached = _readCache.get(key);
+      if (cached && cached.raw === raw) {
+        // 浅拷贝返回：调用方 sort/filter/push 不会污染缓存
+        // （元素对象仍共享引用；只读 API 约定不修改元素本身）。
+        return Array.isArray(cached.value) ? cached.value.slice() : { ...cached.value };
+      }
+    }
+    const result = _readWithStatus(key);
+    if (result.ok && result.exists) {
+      _readCache.set(key, { raw, value: result.value });
+    }
+    return result.value;
   }
 
   function _validateStoredDomainForKey(key, value) {
@@ -437,9 +480,45 @@ const ExpenseDB = (() => {
     }
     try {
       localStorage.setItem(key, JSON.stringify(data));
+      _invalidateReadCache();
       return true;
     } catch (e) {
       console.error(`[ExpenseDB] 写入 "${key}" 失败:`, e);
+      return false;
+    }
+  }
+
+  /* -----------------------------------------------------------------
+     写锁逃生通道（2026-08-12 修复"锁死无出路"高危问题）
+
+     fail-closed 写锁保护数据不被覆盖，但必须给用户留恢复路径：
+     1. exportRawRecoveryCopy —— 读失败时按原始字符串导出，保全数据；
+     2. importAll(data, { forceRecovery: true }) —— 二次确认后强制覆盖，
+        写入前先把四个 key 的原始字符串备份到 forceImport 逃生 key；
+     3. _resetWriteBlockFlags —— 仅在两处调用：强制恢复全部写成功后
+        （数据已被校验过，健康）、clearAll 后（用户明确选择清空）。
+     正常写入路径永不调用它，写锁的防线地位不变。
+     ----------------------------------------------------------------- */
+
+  /** 复位全部写锁。仅限数据已恢复健康（强制恢复成功 / clearAll）时调用。 */
+  function _resetWriteBlockFlags() {
+    _writeBlockedByReadFailure = false;
+    _writeBlockedByCategoryGraphFailure = false;
+    _writeBlockedByDomainFailure = false;
+  }
+
+  /**
+   * 绕过写锁的恢复专用写入：仅强制恢复/回滚路径使用。
+   * 与 _write 的区别是不做 JSON 序列化——回滚时要逐字节写回原始字符串。
+   * 调用前提：目标原始数据已先备份到逃生 key（见 importAll forceRecovery 分支）。
+   */
+  function _writeForRecovery(key, rawValue) {
+    try {
+      localStorage.setItem(key, rawValue);
+      _invalidateReadCache();
+      return true;
+    } catch (e) {
+      console.error(`[ExpenseDB] 恢复写入 "${key}" 失败:`, e);
       return false;
     }
   }
@@ -532,8 +611,12 @@ const ExpenseDB = (() => {
     const idx = list.findIndex(e => e.id === id);
     if (idx === -1) return null;
 
-    // 合并更新，但保护 id 和 createdAt 不被覆盖
-    const { id: _id, createdAt: _createdAt, ...safeUpdates } = updates;
+    // 合并更新：只接受白名单字段。id/createdAt 天然被排除（保护不可覆盖），
+    // 未知键也不再随 rest 解构混入落库（否则本地存储出现 schema 外字段）。
+    const safeUpdates = {};
+    for (const key of _EXPENSE_UPDATE_FIELDS) {
+      if (key in updates) safeUpdates[key] = updates[key];
+    }
     const original = list[idx];
     const candidate = { ...original, ...safeUpdates };
     const validation = validateExpenseDraft(candidate, {
@@ -751,8 +834,17 @@ const ExpenseDB = (() => {
       const parentId = patch.parentId || null;
       if (!_validateCategoryParentInList(list, id, parentId).valid) return false;
     }
-    if (typeof patch.name === 'string' && patch.name.trim()) target.name = patch.name.trim();
-    if (typeof patch.icon === 'string') target.icon = patch.icon.trim() || '📌';
+    // 显式提供的字段必须校验，非法直接拒绝——不能静默跳过再返回成功，
+    // 否则 UI 弹"修改成功"而实际什么都没改（信任破坏）。
+    if (patch.name !== undefined) {
+      if (typeof patch.name !== 'string' || !patch.name.trim()) return false;
+      target.name = patch.name.trim();
+    }
+    if (patch.icon !== undefined) {
+      if (typeof patch.icon !== 'string') return false;
+      // 空 icon 兜底 '📌'：与 addCategory 的产品约定一致（清空图标框 = 要默认图标）
+      target.icon = patch.icon.trim() || '📌';
+    }
     if (patch.parentId !== undefined) target.parentId = _normalizeCategoryParentId(patch.parentId);
     if (!_isValidStoredCategoryGraph(list)) return false;
     return _write(KEYS.categories, list);
@@ -914,18 +1006,24 @@ const ExpenseDB = (() => {
 
   function _sumExpenseAmounts(expenses) {
     let totalCents = 0;
+    let legacyFloatTotal = 0;
     for (const expense of expenses) {
       const money = validateMoney(expense.amount);
       if (!money.ok) {
         // 旧版曾允许超精度/超上限的有限正数；只读展示仍保留旧行为，绝不取整或回填。
-        return expenses.reduce((sum, item) => sum + item.amount, 0);
+        // 混合求和：legacy 记录按原值浮点加，正常记录保持"分"精度——
+        // 一条脏数据只影响其自身，不再拉低整月汇总精度。
+        if (typeof expense.amount === 'number' && Number.isFinite(expense.amount)) {
+          legacyFloatTotal += expense.amount;
+        }
+        continue;
       }
       totalCents += money.cents;
       if (!Number.isSafeInteger(totalCents)) {
         return expenses.reduce((sum, item) => sum + item.amount, 0);
       }
     }
-    return totalCents / 100;
+    return legacyFloatTotal + (totalCents / 100);
   }
 
   /**
@@ -938,13 +1036,15 @@ const ExpenseDB = (() => {
     const ym = month || yearMonth();
     const expenses = _read(KEYS.expenses) || [];
 
-    // 收集该分类 ID 及所有子分类 ID
+    // 收集该分类 ID 及所有子分类 ID；Set 查找避免"子分类数 × 记录数"的 O(n²) includes
     const categories = _read(KEYS.categories) || [];
-    const childIds = categories.filter(c => c.parentId === categoryId).map(c => c.id);
-    const allIds = [categoryId, ...childIds];
+    const idSet = new Set([categoryId]);
+    for (const c of categories) {
+      if (c.parentId === categoryId) idSet.add(c.id);
+    }
 
     return _sumExpenseAmounts(
-      expenses.filter(e => allIds.includes(e.categoryId) && e.date.startsWith(ym))
+      expenses.filter(e => idSet.has(e.categoryId) && e.date.startsWith(ym))
     );
   }
 
@@ -979,7 +1079,10 @@ const ExpenseDB = (() => {
    * @returns {Object}
    */
   function getSettings() {
-    return _read(KEYS.settings) || { currency: '¥', theme: 'light' };
+    const stored = _read(KEYS.settings);
+    // 合法但为空的存储对象（历史版本可能写过 {}）也要补默认值，
+    // 否则下游读 currency/theme 拿到 undefined。
+    return { currency: '¥', theme: 'light', ...(stored && typeof stored === 'object' ? stored : {}) };
   }
 
   /**
@@ -990,7 +1093,16 @@ const ExpenseDB = (() => {
     const readResult = _readForMutation(KEYS.settings, { currency: '¥', theme: 'light' });
     if (!readResult.ok) return false;
     const current = readResult.value;
-    return _write(KEYS.settings, { ...current, ...settings });
+    // 只接受白名单字段：拒绝 schema 外键混入本地存储，
+    // 否则导出→导入往返会丢字段，本地与备份文件内容不一致。
+    // 白名单 = currency/theme + 各模块已确认使用的三个扩展字段。
+    const whitelisted = {};
+    if (typeof settings.currency === 'string') whitelisted.currency = settings.currency;
+    if (typeof settings.theme === 'string') whitelisted.theme = settings.theme;
+    if (Array.isArray(settings.pinnedQuickCategoryIds)) whitelisted.pinnedQuickCategoryIds = settings.pinnedQuickCategoryIds;
+    if (typeof settings.monthlyReportRead === 'string') whitelisted.monthlyReportRead = settings.monthlyReportRead;
+    if (typeof settings.onboardingSeen === 'boolean') whitelisted.onboardingSeen = settings.onboardingSeen;
+    return _write(KEYS.settings, { ...current, ...whitelisted });
   }
 
   /* =================================================================
@@ -1098,6 +1210,33 @@ const ExpenseDB = (() => {
     };
   }
 
+  /**
+   * 读失败场景的原始救援导出：不做 JSON 解析、不做结构校验，
+   * 把四个核心 key 的原始字符串原样打包，供人工修复参考。
+   * 该文件明确不可直接导入（缺少 expenses/categories 数组，importAll 会拒绝），
+   * 只用于在核心数据损坏时保全所有原始字节。
+   * @returns {Object|null} { rawOnly: true, raw: { 键名: 原始字符串|null } }
+   */
+  function exportRawRecoveryCopy() {
+    try {
+      const raw = {};
+      for (const key of Object.values(KEYS)) {
+        raw[key] = localStorage.getItem(key); // null 表示该键不存在
+      }
+      return {
+        version: _STRICT_EXPORT_VERSION,
+        rawOnly: true,
+        recoveryOnly: true,
+        recoveryReason: 'READ_FAILURE',
+        raw,
+        exportedAt: new Date().toISOString(),
+      };
+    } catch (e) {
+      console.error('[ExpenseDB] 原始救援导出失败:', e);
+      return null;
+    }
+  }
+
   function getCoreReadStatus() {
     const snapshotResult = _readCoreSnapshot();
     if (snapshotResult.ok) return { ok: true, code: null };
@@ -1118,7 +1257,8 @@ const ExpenseDB = (() => {
     return { ok: false, code: 'READ_FAILURE', message: '无法安全读取本地账本，写入已暂停' };
   }
 
-  const _IMPORT_VERSION = 4;
+  // 可导入版本上限 = 当前严格导出版本（单一事实来源，改导出格式时只动 _STRICT_EXPORT_VERSION）
+  const _IMPORT_VERSION = _STRICT_EXPORT_VERSION;
   const _UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
   const _VALID_PAYMENT_METHODS = new Set(['', 'wechat', 'alipay', 'bankcard', 'cash', 'other']);
   const _VALID_NECESSITY_VALUES = new Set(['', 'need', 'want', 'impulse']);
@@ -1163,13 +1303,16 @@ const ExpenseDB = (() => {
     return Number.isFinite(timestamp) && new Date(timestamp).toISOString() === value;
   }
 
-  function _cloneSafeJson(value) {
+  function _cloneSafeJson(value, depth = 0) {
+    // 递归深度上限：恶意/损坏备份若含数万层嵌套，无上限递归会栈溢出抛 RangeError。
+    // 真实备份数据深度不超过 6（settings.theme 等叶子字段），32 层足够宽松。
+    if (depth > 32) return undefined;
     if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
     if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
     if (Array.isArray(value)) {
       const items = [];
       for (const item of value) {
-        const cloned = _cloneSafeJson(item);
+        const cloned = _cloneSafeJson(item, depth + 1);
         if (cloned === undefined) return undefined;
         items.push(cloned);
       }
@@ -1179,7 +1322,7 @@ const ExpenseDB = (() => {
       const result = {};
       for (const [key, item] of Object.entries(value)) {
         if (_UNSAFE_OBJECT_KEYS.has(key)) continue;
-        const cloned = _cloneSafeJson(item);
+        const cloned = _cloneSafeJson(item, depth + 1);
         if (cloned === undefined) return undefined;
         result[key] = cloned;
       }
@@ -1351,31 +1494,74 @@ const ExpenseDB = (() => {
   }
 
   /**
+   * 强制恢复模式的回滚：把写入过的 key 逐字节恢复为原始字符串。
+   * rawSnapshot 中值为 null 表示该 key 原本不存在，回滚为删除。
+   */
+  function _restoreImportSnapshotRaw(rawSnapshot, writtenKeys) {
+    let restored = true;
+    for (const key of writtenKeys) {
+      const rawValue = rawSnapshot[KEYS[key]];
+      const keyRestored = rawValue === null
+        ? _remove(KEYS[key])
+        : _writeForRecovery(KEYS[key], rawValue);
+      if (!keyRestored) restored = false;
+    }
+    return restored;
+  }
+
+  /**
    * 从备份文件导入数据
    * 执行前需确认：会完全替换当前数据，不可撤销
    * @param {Object} data - exportAll 产出的 JSON 对象
-   * @returns {{ success: boolean, message: string, counts: object }}
+   * @param {Object} [options] - { forceRecovery: true } 时跳过当前数据读取，
+   *   用于核心数据损坏无法读取的恢复场景（UI 必须二次确认）
+   * @returns {{ success: boolean, message: string, counts: object, needsForceRecovery?: boolean }}
    */
-  function importAll(data) {
+  function importAll(data, options = {}) {
+    const forceRecovery = options.forceRecovery === true;
     const validation = _validateImport(data);
     if (!validation.success) return validation;
     const normalized = validation.data;
 
-    // 同时保留内存快照和持久备份：持久备份无法创建时不冒险覆盖原数据。
-    const snapshotResult = _readCoreSnapshot();
-    if (!snapshotResult.ok) {
-      return {
-        success: false,
-        message: '导入失败：无法安全读取当前数据，操作已停止。请保留页面并检查已有备份',
-        counts: null,
-      };
-    }
-    const snapshot = snapshotResult.data;
-    try {
-      localStorage.setItem('expense_tracker_pre_import_backup', JSON.stringify(_createExportData(snapshot)));
-    } catch (error) {
-      console.error('[ExpenseDB] 创建导入前备份失败:', error);
-      return { success: false, message: '导入失败：无法创建恢复前备份，请检查浏览器存储空间', counts: null };
+    let snapshot = null;    // 正常模式：内存快照（含 exists 标记）
+    let rawSnapshot = null; // 强制恢复模式：四个 key 的原始字符串快照
+
+    if (!forceRecovery) {
+      // 同时保留内存快照和持久备份：持久备份无法创建时不冒险覆盖原数据。
+      const snapshotResult = _readCoreSnapshot();
+      if (!snapshotResult.ok) {
+        return {
+          success: false,
+          message: '导入失败：无法安全读取当前数据，操作已停止。请保留页面并检查已有备份',
+          needsForceRecovery: true,
+          counts: null,
+        };
+      }
+      snapshot = snapshotResult;
+      try {
+        localStorage.setItem(BACKUP_KEYS.preImport, JSON.stringify(_createExportData(snapshot.data)));
+      } catch (error) {
+        console.error('[ExpenseDB] 创建导入前备份失败:', error);
+        return { success: false, message: '导入失败：无法创建恢复前备份，请检查浏览器存储空间', counts: null };
+      }
+    } else {
+      // 强制恢复：写入前把四个 key 的原始字符串备份到独立逃生 key。
+      // 逃生备份必须成功，否则宁可中止也不覆盖（数据安全红线）。
+      try {
+        const raw = {};
+        for (const key of Object.values(KEYS)) raw[key] = localStorage.getItem(key);
+        localStorage.setItem(BACKUP_KEYS.forceImport, JSON.stringify({
+          raw,
+          exportedAt: new Date().toISOString(),
+        }));
+        rawSnapshot = raw;
+      } catch (error) {
+        console.error('[ExpenseDB] 创建强制恢复逃生备份失败:', error);
+        return { success: false, message: '强制恢复已中止：无法创建逃生备份，请检查浏览器存储空间', counts: null };
+      }
+      // 逃生备份落盘后解锁写入。若写入中途失败，回滚写回的损坏数据
+      // 会在下次读取时重新触发写锁——防线自恢复，无需手动重新置位。
+      _resetWriteBlockFlags();
     }
 
     const writes = [
@@ -1390,7 +1576,9 @@ const ExpenseDB = (() => {
         writtenKeys.push(key);
         continue;
       }
-      const restored = _restoreImportSnapshot(snapshot, snapshotResult.exists, writtenKeys);
+      const restored = forceRecovery
+        ? _restoreImportSnapshotRaw(rawSnapshot, writtenKeys)
+        : _restoreImportSnapshot(snapshot.data, snapshot.exists, writtenKeys);
       return {
         success: false,
         message: restored
@@ -1399,6 +1587,9 @@ const ExpenseDB = (() => {
         counts: null,
       };
     }
+
+    // 全部写入成功：数据已通过 _validateImport 校验、状态健康，复位写锁（幂等）。
+    _resetWriteBlockFlags();
 
     // 核心数据已经恢复成功；元数据写入失败时保留成功结果，但必须向 UI 暴露警告。
     const backupTimeSaved = _recordBackup();
@@ -1422,7 +1613,7 @@ const ExpenseDB = (() => {
    */
   function _recordBackup() {
     try {
-      localStorage.setItem('expense_tracker_last_backup', new Date().toISOString());
+      localStorage.setItem(BACKUP_KEYS.lastBackup, new Date().toISOString());
       return true;
     } catch (_) {
       return false;
@@ -1434,7 +1625,12 @@ const ExpenseDB = (() => {
    * @returns {string|null} ISO 时间字符串
    */
   function getLastBackupTime() {
-    return localStorage.getItem('expense_tracker_last_backup') || null;
+    try {
+      return localStorage.getItem(BACKUP_KEYS.lastBackup) || null;
+    } catch (e) {
+      console.error('[ExpenseDB] 读取备份时间失败:', e);
+      return null;
+    }
   }
 
   /**
@@ -1445,10 +1641,15 @@ const ExpenseDB = (() => {
   }
 
   /**
-   * 清空全部数据（危险操作）
+   * 清空全部数据（危险操作）。
+   * 一并清除备份/逃生 key：否则"已清空"后消费数据仍以明文 JSON 残留，
+   * 既违背清空语义，也是隐私泄漏点。清空后写锁复位——空数据是健康状态。
    */
   function clearAll() {
-    Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+    Object.values(KEYS).forEach(k => _remove(k));
+    Object.values(BACKUP_KEYS).forEach(k => _remove(k));
+    _invalidateReadCache();
+    _resetWriteBlockFlags();
   }
 
   /* =================================================================
@@ -1519,6 +1720,7 @@ const ExpenseDB = (() => {
     // Data management
     exportAll,
     exportRecoveryCopy,
+    exportRawRecoveryCopy,
     importAll,
     getCoreReadStatus,
     getLastBackupTime,

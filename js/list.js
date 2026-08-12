@@ -115,7 +115,16 @@ const ExpenseList = (() => {
       return;
     }
 
-    // 按日期分组
+    // 金额排序不做日期分组：用户选「金额↓/↑」期望的是全局排行榜，
+    // 分组会打乱金额顺序（跨日期时便宜记录会排在昂贵记录上方，与所选排序矛盾）。
+    // 平铺模式下每条记录在 meta 里补上日期，弥补失去的组头信息。
+    if (_filters.sortBy === 'amount') {
+      container.innerHTML = expenses.map(e => _renderItem(e, { showDate: true })).join('');
+      _bindItemClicks(container);
+      return;
+    }
+
+    // 按日期分组（仅日期排序走分组视图）
     const groups = new Map();
     expenses.forEach(e => {
       if (!groups.has(e.date)) groups.set(e.date, []);
@@ -125,8 +134,12 @@ const ExpenseList = (() => {
     let html = '';
     const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
 
-    // 按日期降序排列分组（最新的日期在前）
-    const sortedDates = Array.from(groups.keys()).sort((a, b) => b.localeCompare(a));
+    // 分组方向跟随所选排序：日期↑时组头也升序，与列表顺序保持一致
+    const sortedDates = Array.from(groups.keys()).sort(
+      _filters.sortOrder === 'asc'
+        ? (a, b) => a.localeCompare(b)
+        : (a, b) => b.localeCompare(a),
+    );
 
     for (const date of sortedDates) {
       const items = groups.get(date);
@@ -149,8 +162,11 @@ const ExpenseList = (() => {
     }
 
     container.innerHTML = html;
+    _bindItemClicks(container);
+  }
 
-    // 绑定点击事件
+  /** 给渲染好的列表绑定点击（打开编辑面板）；分组与平铺两种视图共用 */
+  function _bindItemClicks(container) {
     container.querySelectorAll('.list-item').forEach(el => {
       el.addEventListener('click', () => {
         const id = el.dataset.id;
@@ -174,8 +190,8 @@ const ExpenseList = (() => {
     return html + ExpenseData.escapeHtml(text.slice(lastIndex));
   }
 
-  /** 渲染单条记录 */
-  function _renderItem(expense) {
+  /** 渲染单条记录；options.showDate=true 时在 meta 开头补日期（金额排序平铺视图用） */
+  function _renderItem(expense, options) {
     const cat = ExpenseDB.getCategory(expense.categoryId);
     const name = cat ? cat.name : '未分类';
     const icon = ExpenseCategories.getIconMarkup(cat);
@@ -190,6 +206,11 @@ const ExpenseList = (() => {
 
     // 元数据只保留能帮助回忆这笔记录的信息，不再堆叠装饰性 Emoji。
     const metaParts = [];
+    // 平铺视图没有日期组头，日期信息放 meta 最前
+    if (options && options.showDate && expense.date) {
+      const [, dm, dd] = expense.date.split('-').map(Number);
+      if (dm) metaParts.push(`${dm}月${dd}日`);
+    }
     // 时间放最前：账单是时间线上的事件，与首页「最近消费」及主流记账 App 的阅读习惯一致
     if (expense.time) metaParts.push(ExpenseData.escapeHtml(expense.time));
     if (expense.location) metaParts.push(ExpenseData.escapeHtml(expense.location));

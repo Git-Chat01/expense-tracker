@@ -3,7 +3,7 @@
    PWA 离线缓存：首次访问后，无网络也能打开
    ================================================================ */
 
-const APP_VERSION = '220';
+const APP_VERSION = '221';
 const CACHE_NAME = 'expense-tracker-v' + APP_VERSION;
 const RELEASE_STATE_CACHE = 'expense-tracker-release-state';
 const RELEASE_STATE_URL = new URL(
@@ -40,6 +40,14 @@ const CORE_PRE_CACHE = [
   'js/onboarding.js',
   'js/app.js',
   'js/app-v217.js',
+  'js/toast.js',
+  'js/confirm-dialog.js',
+  'js/ui-utils.js',
+  'js/habit-predictor.js',
+  'js/budget-overlay.js',
+  'js/category-manager.js',
+  'js/edit-expense.js',
+  'js/backup-manager.js',
   'js/budget-impact-v214.js',
   'js/update-flow-v216.js',
   'js/vendor-chart.umd-4.4.7.min.js',
@@ -154,13 +162,19 @@ self.addEventListener('fetch', (event) => {
       // 网络请求成功 → 更新缓存，返回最新内容
       if (response && response.status === 200) {
         const clone = response.clone();
+        // 剥掉 ?v= 版本查询串再存：读取匹配用 ignoreSearch:true，
+        // 若按带查询串的原始 URL 存，同一文件会按不同 ?v= 值堆积多份副本（缓存膨胀）。
+        const cacheKey = event.request.url.split('?')[0];
         caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, clone);
+          cache.put(cacheKey, clone);
         });
+        return response;
       }
-      return response;
+      // 非 200（5xx/404/跨域 opaque 等）：视为网络异常，走缓存回退。
+      // 若直接返回错误响应，在线用户会看到错误页而无法使用可用的缓存版本。
+      throw new Error('SW: bad network response ' + (response ? response.status : '(none)'));
     }).catch(() => {
-      // 网络不可用 → 使用缓存
+      // 网络不可用或响应异常 → 使用缓存
       return caches.open(CACHE_NAME).then((cache) => cache.match(event.request, { ignoreSearch: true })).then((cached) => {
         if (cached) return cached;
         // HTML 请求特殊回退

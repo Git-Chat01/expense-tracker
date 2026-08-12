@@ -107,6 +107,12 @@ const ExpenseData = (() => {
 
 
   /* =================================================================
+     大额消费确认阈值（单位：分）
+     新增与编辑写入前，金额 ≥ 此阈值需二次确认；主控制器与编辑覆盖层共用
+     ================================================================= */
+  const LARGE_AMOUNT_THRESHOLD_CENTS = 1_000_000;  // ¥10,000
+
+  /* =================================================================
      必要性选项（增强版）
      color 与 common.css 的 --color-need/want/impulse 令牌一致，
      作为记账页/编辑弹层/统计图的唯一颜色来源
@@ -147,6 +153,9 @@ const ExpenseData = (() => {
      供 app.js 和 stats.js 共用，避免重复定义
      ================================================================= */
   function hexToRgb(hex) {
+    // 严格校验 #RRGGBB 格式：非法输入返回 null（由调用方决定兜底色），
+    // 避免 parseInt 产出 'NaN,NaN,NaN' 注入 css rgb() 值导致样式静默失效。
+    if (typeof hex !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(hex)) return null;
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
@@ -186,6 +195,7 @@ const ExpenseData = (() => {
     PRESET_TAGS,
     DEFAULT_BUDGET,
     PAYMENT_METHODS,
+    LARGE_AMOUNT_THRESHOLD_CENTS,
     NECESSITY_OPTIONS,
     VALUE_RATINGS,
     EMOTIONS,
