@@ -111,7 +111,7 @@ const ExpenseOnboarding = (() => {
   function _finish() {
     if (!ExpenseDB.saveSettings({ onboardingSeen: true })) {
       if (typeof ExpenseApp !== 'undefined') {
-        ExpenseApp.showToast('设置保存失败，请检查浏览器存储空间', 'warning');
+        ExpenseApp.showToast('设置保存失败，操作已停止且原设置未覆盖。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
       }
       return;
     }

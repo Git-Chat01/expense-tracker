@@ -16,6 +16,12 @@ const ExpenseDB = (() => {
     budget:     'expense_tracker_budget',
     settings:   'expense_tracker_settings',
   };
+  const MAX_MONEY_CENTS = 9_999_999_999;
+  const _STRICT_EXPORT_VERSION = 4;
+  const _LEGACY_MONEY_EXPORT_VERSION = 3;
+  let _writeBlockedByReadFailure = false;
+  let _writeBlockedByCategoryGraphFailure = false;
+  let _writeBlockedByDomainFailure = false;
 
   /* -----------------------------------------------------------------
      通用工具：生成唯一 ID
@@ -34,15 +40,346 @@ const ExpenseDB = (() => {
   /* -----------------------------------------------------------------
      通用工具：读/写 localStorage，带 JSON 序列化
      ----------------------------------------------------------------- */
+  function _isValidStoredExpense(expense) {
+    return _isPlainObject(expense)
+      && _isNonEmptyString(expense.id)
+      && Number.isFinite(expense.amount)
+      && expense.amount > 0
+      && _isNonEmptyString(expense.categoryId)
+      && _isValidDate(expense.date)
+      && (expense.time == null || _isValidTime(expense.time))
+      && (expense.location == null || typeof expense.location === 'string')
+      && (expense.paymentMethod == null || typeof expense.paymentMethod === 'string')
+      && (expense.necessity === undefined || _VALID_NECESSITY_VALUES.has(expense.necessity))
+      && (expense.note == null || typeof expense.note === 'string')
+      && (expense.createdAt == null || _isValidIsoTimestamp(expense.createdAt));
+  }
+
+  function _validationError(code, message, field) {
+    return {
+      ok: false,
+      cents: null,
+      value: null,
+      error: {
+        code,
+        message,
+        ...(field ? { field } : {}),
+      },
+    };
+  }
+
+  function _moneyMessage(code, label, allowZero) {
+    if (code === 'MONEY_REQUIRED') return allowZero ? `${label}不能为空` : `请输入大于 ¥0.00 的${label}`;
+    if (code === 'MONEY_NOT_FINITE' || code === 'MONEY_INVALID_FORMAT') return `${label}格式不正确，请输入普通数字`;
+    if (code === 'MONEY_NEGATIVE') return `${label}不能为负数；不设置请留空或输入 0`;
+    if (code === 'MONEY_NON_POSITIVE') return `请输入大于 ¥0.00 的${label}`;
+    if (code === 'MONEY_PRECISION') return `${label}最多保留两位小数`;
+    if (code === 'MONEY_LIMIT') return `${label}不能超过 ¥99,999,999.99`;
+    return `${label}无效`;
+  }
+
+  /**
+   * 将“元”严格解析为整数分。字符串不接受科学计数法或尾随字符；
+   * number 只容忍 IEEE-754 带来的极小二进制误差，不会把三位小数四舍五入。
+   */
+  function validateMoney(raw, options = {}) {
+    const allowEmpty = options.allowEmpty === true || options.allowBlank === true;
+    const allowZero = options.allowZero === true;
+    const label = options.label || '金额';
+    const field = options.field || 'amount';
+
+    if (typeof raw === 'string') {
+      const text = raw.trim();
+      if (text === '') {
+        if (allowEmpty) return { ok: true, cents: 0, value: 0, error: null };
+        return _validationError('MONEY_REQUIRED', _moneyMessage('MONEY_REQUIRED', label, allowZero), field);
+      }
+      if (text.startsWith('-')) {
+        return _validationError('MONEY_NEGATIVE', _moneyMessage('MONEY_NEGATIVE', label, allowZero), field);
+      }
+      const decimalMatch = text.match(/^(?:\d+(?:\.(\d*))?|\.(\d+))$/);
+      if (!decimalMatch) {
+        return _validationError('MONEY_INVALID_FORMAT', _moneyMessage('MONEY_INVALID_FORMAT', label, allowZero), field);
+      }
+      const fraction = decimalMatch[1] ?? decimalMatch[2] ?? '';
+      if (fraction.length > 2) {
+        return _validationError('MONEY_PRECISION', _moneyMessage('MONEY_PRECISION', label, allowZero), field);
+      }
+      const normalizedText = text.startsWith('.') ? `0${text}` : text;
+      const [wholeText, fractionText = ''] = normalizedText.split('.');
+      const whole = Number(wholeText);
+      if (!Number.isSafeInteger(whole)) {
+        return _validationError('MONEY_LIMIT', _moneyMessage('MONEY_LIMIT', label, allowZero), field);
+      }
+      const cents = (whole * 100) + Number(fractionText.padEnd(2, '0') || 0);
+      if (!Number.isSafeInteger(cents) || cents > MAX_MONEY_CENTS) {
+        return _validationError('MONEY_LIMIT', _moneyMessage('MONEY_LIMIT', label, allowZero), field);
+      }
+      if (cents === 0 && !allowZero) {
+        return _validationError('MONEY_NON_POSITIVE', _moneyMessage('MONEY_NON_POSITIVE', label, allowZero), field);
+      }
+      return { ok: true, cents, value: cents / 100, error: null };
+    }
+
+    if (typeof raw !== 'number') {
+      return _validationError('MONEY_INVALID_FORMAT', _moneyMessage('MONEY_INVALID_FORMAT', label, allowZero), field);
+    }
+    if (!Number.isFinite(raw)) {
+      return _validationError('MONEY_NOT_FINITE', _moneyMessage('MONEY_NOT_FINITE', label, allowZero), field);
+    }
+    if (raw < 0) {
+      return _validationError('MONEY_NEGATIVE', _moneyMessage('MONEY_NEGATIVE', label, allowZero), field);
+    }
+    const scaled = raw * 100;
+    const cents = Math.round(scaled);
+    const tolerance = Math.max(1e-7, Math.abs(scaled) * Number.EPSILON * 8);
+    if (Math.abs(scaled - cents) > tolerance) {
+      return _validationError('MONEY_PRECISION', _moneyMessage('MONEY_PRECISION', label, allowZero), field);
+    }
+    if (!Number.isSafeInteger(cents) || cents > MAX_MONEY_CENTS) {
+      return _validationError('MONEY_LIMIT', _moneyMessage('MONEY_LIMIT', label, allowZero), field);
+    }
+    if (cents === 0 && !allowZero) {
+      return _validationError('MONEY_NON_POSITIVE', _moneyMessage('MONEY_NON_POSITIVE', label, allowZero), field);
+    }
+    return { ok: true, cents, value: cents / 100, error: null };
+  }
+
+  function _isLegacyMoneyPolicyValue(value, allowZero) {
+    return typeof value === 'number'
+      && Number.isFinite(value)
+      && (allowZero ? value >= 0 : value > 0);
+  }
+
+  function _expenseValidationError(code, message, field) {
+    return _validationError(code, message, field);
+  }
+
+  function _readCategoryIdsForValidation(options) {
+    if (options && options.categoryIds) {
+      return {
+        ok: true,
+        ids: new Set(Array.from(options.categoryIds, String)),
+        activeIds: options.activeCategoryIds
+          ? new Set(Array.from(options.activeCategoryIds, String))
+          : null,
+      };
+    }
+    const categoryResult = _readWithStatus(KEYS.categories);
+    if (!categoryResult.ok) return { ok: false, ids: new Set(), activeIds: new Set() };
+    const categories = categoryResult.exists ? categoryResult.value : [];
+    return {
+      ok: true,
+      ids: new Set(categories.map(category => category.id)),
+      activeIds: new Set(categories.filter(_isCategoryActive).map(category => category.id)),
+    };
+  }
+
+  function validateExpenseDraft(input, options = {}) {
+    if (!_isPlainObject(input)) {
+      return _expenseValidationError('EXPENSE_INVALID_TYPE', '账单数据格式不正确', 'expense');
+    }
+
+    let money = validateMoney(input.amount, { label: '金额', field: 'amount' });
+    let legacyMoney = false;
+    if (!money.ok
+        && options.allowLegacyMoney === true
+        && _isLegacyMoneyPolicyValue(input.amount, false)
+        && (money.error.code === 'MONEY_PRECISION' || money.error.code === 'MONEY_LIMIT')) {
+      money = { ok: true, cents: null, value: input.amount, error: null };
+      legacyMoney = true;
+    }
+    if (!money.ok) return money;
+
+    if (!_isNonEmptyString(input.categoryId)) {
+      return _expenseValidationError('EXPENSE_CATEGORY_INVALID', '请选择消费分类', 'categoryId');
+    }
+    if (options.skipCategoryValidation !== true) {
+      const categoryLookup = _readCategoryIdsForValidation(options);
+      if (!categoryLookup.ok) {
+        return _expenseValidationError('EXPENSE_CATEGORY_INVALID', '无法安全读取分类数据', 'categoryId');
+      }
+      const allowHistoricalCategory = options.allowHistoricalCategoryId === input.categoryId;
+      const categorySet = options.allowHistoricalCategories === true
+        ? categoryLookup.ids
+        : (categoryLookup.activeIds || categoryLookup.ids);
+      if (!allowHistoricalCategory && !categorySet.has(input.categoryId)) {
+        return _expenseValidationError('EXPENSE_CATEGORY_INVALID', '所选分类已被删除或失效，请重新选择', 'categoryId');
+      }
+    }
+
+    if (input.date === '') {
+      return _expenseValidationError('EXPENSE_DATE_INVALID', '请选择记账日期', 'date');
+    }
+    if (!_isValidDate(input.date)) {
+      return _expenseValidationError('EXPENSE_DATE_INVALID', '记账日期无效，请重新选择', 'date');
+    }
+
+    const time = input.time == null ? '' : input.time;
+    if (!_isValidTime(time)) {
+      return _expenseValidationError('EXPENSE_TIME_INVALID', '记账时间无效，请重新选择', 'time');
+    }
+    const paymentMethod = input.paymentMethod === undefined ? '' : input.paymentMethod;
+    if (typeof paymentMethod !== 'string' || !_VALID_PAYMENT_METHODS.has(paymentMethod)) {
+      return _expenseValidationError('EXPENSE_PAYMENT_METHOD_INVALID', '支付方式无效，请重新选择', 'paymentMethod');
+    }
+    const necessity = input.necessity === undefined ? '' : input.necessity;
+    if (typeof necessity !== 'string' || !_VALID_NECESSITY_VALUES.has(necessity)) {
+      return _expenseValidationError('EXPENSE_NECESSITY_INVALID', '价值评定无效，请重新选择', 'necessity');
+    }
+    const location = input.location == null ? '' : input.location;
+    const note = input.note == null ? '' : input.note;
+    if (typeof location !== 'string' || typeof note !== 'string') {
+      return _expenseValidationError('EXPENSE_TEXT_INVALID', '地点或备注格式不正确', 'note');
+    }
+
+    return {
+      ok: true,
+      cents: money.cents,
+      value: {
+        amount: money.value,
+        categoryId: input.categoryId,
+        date: input.date,
+        time,
+        location,
+        paymentMethod,
+        necessity,
+        note,
+      },
+      error: null,
+      legacyMoney,
+    };
+  }
+
+  function validateBudgetDraft(input, options = {}) {
+    if (!_isPlainObject(input)) {
+      return _validationError('BUDGET_INVALID_TYPE', '预算数据格式不正确', 'budget');
+    }
+    const monthly = validateMoney(input.monthlyTotal ?? '', {
+      allowEmpty: true,
+      allowZero: true,
+      label: '月度总预算',
+      field: 'monthlyTotal',
+    });
+    let monthlyResult = monthly;
+    let legacyMoney = false;
+    if (!monthlyResult.ok
+        && options.allowLegacyMoney === true
+        && _isLegacyMoneyPolicyValue(input.monthlyTotal, true)
+        && (monthlyResult.error.code === 'MONEY_PRECISION' || monthlyResult.error.code === 'MONEY_LIMIT')) {
+      monthlyResult = { ok: true, cents: null, value: input.monthlyTotal, error: null };
+      legacyMoney = true;
+    }
+    if (!monthlyResult.ok) return monthlyResult;
+
+    const sourceCategories = input.categories == null ? {} : input.categories;
+    if (!_isPlainObject(sourceCategories)) {
+      return _validationError('BUDGET_INVALID_TYPE', '分类预算格式不正确', 'categories');
+    }
+    const categoryLookup = options.skipCategoryValidation === true
+      ? { ok: true, ids: null, activeIds: null }
+      : _readCategoryIdsForValidation(options);
+    if (!categoryLookup.ok) return _validationError('BUDGET_CATEGORY_INVALID', '无法安全读取分类数据', 'categories');
+    const allowedIds = options.skipCategoryValidation === true
+      ? null
+      : (options.allowHistoricalCategories === true
+        ? categoryLookup.ids
+        : (categoryLookup.activeIds || categoryLookup.ids));
+    const normalizedCategories = {};
+    const categoryCents = {};
+    for (const [categoryId, rawAmount] of Object.entries(sourceCategories)) {
+      if (_UNSAFE_OBJECT_KEYS.has(categoryId) || (allowedIds && !allowedIds.has(categoryId))) {
+        return _validationError('BUDGET_CATEGORY_INVALID', '分类预算引用了不存在或已删除的分类', `categories.${categoryId}`);
+      }
+      let result = validateMoney(rawAmount, {
+        allowEmpty: true,
+        allowZero: true,
+        label: `「${categoryId}」预算`,
+        field: `categories.${categoryId}`,
+      });
+      if (!result.ok
+          && options.allowLegacyMoney === true
+          && _isLegacyMoneyPolicyValue(rawAmount, true)
+          && (result.error.code === 'MONEY_PRECISION' || result.error.code === 'MONEY_LIMIT')) {
+        result = { ok: true, cents: null, value: rawAmount, error: null };
+        legacyMoney = true;
+      }
+      if (!result.ok) return result;
+      normalizedCategories[categoryId] = result.value;
+      categoryCents[categoryId] = result.cents;
+    }
+    return {
+      ok: true,
+      cents: {
+        monthlyTotal: monthlyResult.cents,
+        categories: categoryCents,
+      },
+      value: {
+        monthlyTotal: monthlyResult.value,
+        categories: normalizedCategories,
+      },
+      error: null,
+      legacyMoney,
+    };
+  }
+
+  function _normalizeCategoryParentId(parentId) {
+    return !parentId || parentId === 'null' ? null : parentId;
+  }
+
+  function _isValidStoredCategory(category) {
+    return _isPlainObject(category)
+      && _isNonEmptyString(category.id)
+      && !_UNSAFE_OBJECT_KEYS.has(category.id)
+      && _isNonEmptyString(category.name)
+      && (category.icon == null || typeof category.icon === 'string')
+      && (category.parentId == null || _isNonEmptyString(category.parentId))
+      && (category.isPreset == null || typeof category.isPreset === 'boolean')
+      && (category.order == null || Number.isFinite(category.order))
+      && (category.deletedAt == null || _isValidIsoTimestamp(category.deletedAt));
+  }
+
+  function _isValidStoredCategoryGraph(categories) {
+    if (!Array.isArray(categories) || !categories.every(_isValidStoredCategory)) return false;
+    const categoryMap = new Map();
+    for (const category of categories) {
+      if (categoryMap.has(category.id)) return false;
+      categoryMap.set(category.id, category);
+    }
+    for (const category of categories) {
+      const parentId = _normalizeCategoryParentId(category.parentId);
+      if (!parentId) continue;
+      if (parentId === category.id) return false;
+      const parent = categoryMap.get(parentId);
+      if (!parent || _normalizeCategoryParentId(parent.parentId)) return false;
+      if (_isCategoryActive(category) && !_isCategoryActive(parent)) return false;
+    }
+    return true;
+  }
+
+  function _isValidStoredStructure(key, value) {
+    if (key === KEYS.expenses) return Array.isArray(value) && value.every(_isValidStoredExpense);
+    if (key === KEYS.categories) return Array.isArray(value) && value.every(_isValidStoredCategory);
+    if (key === KEYS.budget) {
+      return _isPlainObject(value)
+        && (value.categories === undefined || _isPlainObject(value.categories));
+    }
+    if (key === KEYS.settings) return _isPlainObject(value);
+    return true;
+  }
+
   function _readWithStatus(key) {
     try {
       const raw = localStorage.getItem(key);
-      if (raw === null) return { ok: true, value: null };
+      if (raw === null) return { ok: true, exists: false, value: null };
       if (raw.trim() === '') throw new SyntaxError('存储内容为空字符串');
-      return { ok: true, value: JSON.parse(raw) };
+      const value = JSON.parse(raw);
+      if (!_isValidStoredStructure(key, value)) throw new TypeError('存储结构无效');
+      return { ok: true, exists: true, value };
     } catch (e) {
+      _writeBlockedByReadFailure = true;
       console.error(`[ExpenseDB] 读取 "${key}" 失败:`, e);
-      return { ok: false, value: null };
+      return { ok: false, exists: false, value: null };
     }
   }
 
@@ -50,7 +387,54 @@ const ExpenseDB = (() => {
     return _readWithStatus(key).value;
   }
 
+  function _validateStoredDomainForKey(key, value) {
+    if (key === KEYS.expenses) {
+      for (const expense of value) {
+        const result = validateExpenseDraft(expense, {
+          allowLegacyMoney: true,
+          skipCategoryValidation: true,
+        });
+        if (!result.ok) return result;
+      }
+    }
+    if (key === KEYS.budget) {
+      return validateBudgetDraft(value, {
+        allowLegacyMoney: true,
+        skipCategoryValidation: true,
+      });
+    }
+    return { ok: true, value, error: null };
+  }
+
+  /** 写操作专用读取：只有键不存在时才使用默认值，读取异常必须显式失败。 */
+  function _readForMutation(key, defaultValue) {
+    const result = _readWithStatus(key);
+    if (!result.ok) return result;
+    if (key === KEYS.categories && result.exists && !_isValidStoredCategoryGraph(result.value)) {
+      _writeBlockedByCategoryGraphFailure = true;
+      console.error('[ExpenseDB] 分类关系图无效，已停止写入');
+      return { ok: false, exists: true, value: null };
+    }
+    if (result.exists) {
+      const domainResult = _validateStoredDomainForKey(key, result.value);
+      if (!domainResult.ok) {
+        _writeBlockedByDomainFailure = true;
+        console.error(`[ExpenseDB] "${key}" 领域数据无效，已停止写入:`, domainResult.error);
+        return { ok: false, exists: true, value: null };
+      }
+    }
+    return {
+      ok: true,
+      exists: result.exists,
+      value: result.exists ? result.value : defaultValue,
+    };
+  }
+
   function _write(key, data) {
+    if (_writeBlockedByReadFailure || _writeBlockedByCategoryGraphFailure || _writeBlockedByDomainFailure) {
+      console.error(`[ExpenseDB] 已因核心数据读取失败阻止写入 "${key}"`);
+      return false;
+    }
     try {
       localStorage.setItem(key, JSON.stringify(data));
       return true;
@@ -111,19 +495,22 @@ const ExpenseDB = (() => {
    * @returns {Object|null} 保存后的完整记录，写入失败返回 null
    */
   function addExpense(expense) {
-    const list = _read(KEYS.expenses) || [];
+    const validation = validateExpenseDraft(expense);
+    if (!validation.ok) return null;
+    const normalized = validation.value;
+    const categoryResult = _readForMutation(KEYS.categories, []);
+    if (!categoryResult.ok
+        || !categoryResult.value.some(category => category.id === normalized.categoryId && _isCategoryActive(category))) {
+      return null;
+    }
+    const readResult = _readForMutation(KEYS.expenses, []);
+    if (!readResult.ok) return null;
+    const list = readResult.value;
 
     // 补全默认值，保证数据结构完整
     const record = {
       id:           _generateId(),
-      amount:       Number(expense.amount) || 0,
-      categoryId:   expense.categoryId || '',
-      date:         expense.date || today(),
-      time:         expense.time || now(),
-      location:     expense.location || '',
-      paymentMethod:expense.paymentMethod || '',
-      necessity:    expense.necessity || '',   // 价值评定：need/want/impulse，空串=未评估
-      note:         expense.note || '',
+      ...normalized,
       createdAt:    new Date().toISOString(),
     };
 
@@ -138,13 +525,38 @@ const ExpenseDB = (() => {
    * @returns {Object|null} 更新后的记录，找不到返回 null
    */
   function updateExpense(id, updates) {
-    const list = _read(KEYS.expenses) || [];
+    if (!_isPlainObject(updates)) return null;
+    const readResult = _readForMutation(KEYS.expenses, []);
+    if (!readResult.ok) return null;
+    const list = readResult.value;
     const idx = list.findIndex(e => e.id === id);
     if (idx === -1) return null;
 
     // 合并更新，但保护 id 和 createdAt 不被覆盖
     const { id: _id, createdAt: _createdAt, ...safeUpdates } = updates;
-    list[idx] = { ...list[idx], ...safeUpdates };
+    const original = list[idx];
+    const candidate = { ...original, ...safeUpdates };
+    const validation = validateExpenseDraft(candidate, {
+      allowHistoricalCategoryId: original.categoryId,
+      allowLegacyMoney: candidate.amount === original.amount,
+    });
+    if (!validation.ok) return null;
+
+    const changesCategory = candidate.categoryId !== original.categoryId;
+    if (changesCategory) {
+      const categoryResult = _readForMutation(KEYS.categories, []);
+      if (!categoryResult.ok
+          || !categoryResult.value.some(category => category.id === candidate.categoryId && _isCategoryActive(category))) {
+        return null;
+      }
+    }
+
+    list[idx] = {
+      ...candidate,
+      ...validation.value,
+      id: original.id,
+      createdAt: original.createdAt,
+    };
     return _write(KEYS.expenses, list) ? list[idx] : null;
   }
 
@@ -154,7 +566,9 @@ const ExpenseDB = (() => {
    * @returns {boolean} 是否删除成功
    */
   function deleteExpense(id) {
-    const list = _read(KEYS.expenses) || [];
+    const readResult = _readForMutation(KEYS.expenses, []);
+    if (!readResult.ok) return false;
+    const list = readResult.value;
     const filtered = list.filter(e => e.id !== id);
     if (filtered.length === list.length) return false;
     return _write(KEYS.expenses, filtered);
@@ -173,14 +587,23 @@ const ExpenseDB = (() => {
      Categories — 消费分类 CRUD
      ================================================================= */
 
+  function _isCategoryActive(category) {
+    return Boolean(category) && !category.deletedAt;
+  }
+
+  function _isTopLevelCategory(category) {
+    return _isCategoryActive(category) && !_normalizeCategoryParentId(category.parentId);
+  }
+
   /**
    * 获取全部分类（平铺数组，parentId 建立父子关系）
    * @returns {Array}
    */
   function getCategories() {
     const list = _read(KEYS.categories) || [];
-    list.sort((a, b) => (a.order || 0) - (b.order || 0));
-    return list;
+    return list
+      .filter(_isCategoryActive)
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
   }
 
   /**
@@ -194,13 +617,24 @@ const ExpenseDB = (() => {
   }
 
   /**
+   * 根据 ID 获取仍可用于新记账/分类管理的活动分类。
+   * getCategory() 刻意保留墓碑查询能力，供历史账单显示原分类名称。
+   * @param {string} id
+   * @returns {Object|null}
+   */
+  function getActiveCategory(id) {
+    const category = getCategory(id);
+    return _isCategoryActive(category) ? category : null;
+  }
+
+  /**
    * 获取一级分类（parentId 为 null）
    * @returns {Array}
    */
   function getParentCategories() {
     const list = _read(KEYS.categories) || [];
     return list
-      .filter(c => !c.parentId || c.parentId === 'null')
+      .filter(_isTopLevelCategory)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
   }
 
@@ -212,8 +646,43 @@ const ExpenseDB = (() => {
   function getChildCategories(parentId) {
     const list = _read(KEYS.categories) || [];
     return list
-      .filter(c => c.parentId === parentId)
+      .filter(c => _isCategoryActive(c) && c.parentId === parentId)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
+  }
+
+  function _validateCategoryParentInList(list, categoryId, parentId) {
+    const normalizedParentId = _normalizeCategoryParentId(parentId);
+    const hasChildren = Boolean(categoryId) && list.some(c => c.parentId === categoryId);
+    if (!normalizedParentId) return { valid: true, code: null, hasChildren };
+    if (categoryId && normalizedParentId === categoryId) {
+      return { valid: false, code: 'SELF_PARENT', hasChildren };
+    }
+    if (hasChildren) {
+      return { valid: false, code: 'CATEGORY_HAS_CHILDREN', hasChildren };
+    }
+    const parent = list.find(c => c.id === normalizedParentId);
+    if (!_isCategoryActive(parent)) {
+      return { valid: false, code: 'PARENT_UNAVAILABLE', hasChildren };
+    }
+    if (!_isTopLevelCategory(parent)) {
+      return { valid: false, code: 'PARENT_NOT_TOP_LEVEL', hasChildren };
+    }
+    return { valid: true, code: null, hasChildren };
+  }
+
+  /** 保存前重新验证父级，避免跨标签页产生孤儿、三层或环。 */
+  function validateCategoryParent(categoryId, parentId) {
+    const readResult = _readWithStatus(KEYS.categories);
+    if (!readResult.ok
+        || (readResult.exists && !_isValidStoredCategoryGraph(readResult.value))) {
+      if (readResult.ok) _writeBlockedByCategoryGraphFailure = true;
+      return { valid: false, code: 'READ_FAILURE', hasChildren: false };
+    }
+    return _validateCategoryParentInList(
+      readResult.exists ? readResult.value : [],
+      categoryId || null,
+      parentId || null,
+    );
   }
 
   /**
@@ -222,32 +691,46 @@ const ExpenseDB = (() => {
    * @returns {Object|null} 写入失败返回 null
    */
   function addCategory(category) {
-    const list = _read(KEYS.categories) || [];
+    const readResult = _readForMutation(KEYS.categories, []);
+    if (!readResult.ok) return null;
+    const list = readResult.value;
+    const id = category.id || _generateId();
+    const parentId = category.parentId || null;
+    if (list.some(item => item.id === id)) return null;
+    if (!_validateCategoryParentInList(list, id, parentId).valid) return null;
     const record = {
-      id:       category.id || _generateId(),
+      id,
       name:     category.name,
       icon:     category.icon || '📌',
-      parentId: category.parentId || null,
+      parentId,
       isPreset: false,
       order:    list.length,
     };
     list.push(record);
+    if (!_isValidStoredCategoryGraph(list)) return null;
     return _write(KEYS.categories, list) ? record : null;
   }
 
   /**
-   * 删除自定义分类（预设分类不可删）
-   * 级联删除其子分类：若不删，子分类会挂在已删除的父级 id 下，
-   * 分类列表只渲染顶级分类，这些子分类将永久无法管理（孤儿分类）。
-   * 注意：账单按 categoryId 引用分类，删除后相关账单显示「未分类」，账单数据本身不受影响。
+   * 软删除自定义分类（预设分类不可删）。分类记录作为墓碑保留，
+   * 让历史账单 categoryId 与应用自己导出的备份始终可恢复；UI getter 会隐藏墓碑。
+   * 删除父分类时一并标记其直接子分类，但不改写任何历史账单。
    * @param {string} id
    * @returns {boolean}
    */
   function deleteCategory(id) {
-    const list = _read(KEYS.categories) || [];
+    const readResult = _readForMutation(KEYS.categories, []);
+    if (!readResult.ok) return false;
+    const list = readResult.value;
     const target = list.find(c => c.id === id);
-    if (!target || target.isPreset) return false;
-    return _write(KEYS.categories, list.filter(c => c.id !== id && c.parentId !== id));
+    if (!_isCategoryActive(target) || target.isPreset) return false;
+    const children = list.filter(c => _isCategoryActive(c) && c.parentId === id);
+    if (children.some(child => child.isPreset)) return false;
+    const deletedAt = new Date().toISOString();
+    target.deletedAt = deletedAt;
+    children.forEach(child => { child.deletedAt = deletedAt; });
+    if (!_isValidStoredCategoryGraph(list)) return false;
+    return _write(KEYS.categories, list);
   }
 
   /**
@@ -259,12 +742,19 @@ const ExpenseDB = (() => {
    * @returns {boolean} 写入失败返回 false
    */
   function updateCategory(id, patch) {
-    const list = _read(KEYS.categories) || [];
+    const readResult = _readForMutation(KEYS.categories, []);
+    if (!readResult.ok) return false;
+    const list = readResult.value;
     const target = list.find(c => c.id === id);
-    if (!target || target.isPreset) return false;
+    if (!_isCategoryActive(target) || target.isPreset) return false;
+    if (patch.parentId !== undefined) {
+      const parentId = patch.parentId || null;
+      if (!_validateCategoryParentInList(list, id, parentId).valid) return false;
+    }
     if (typeof patch.name === 'string' && patch.name.trim()) target.name = patch.name.trim();
     if (typeof patch.icon === 'string') target.icon = patch.icon.trim() || '📌';
-    if (patch.parentId !== undefined) target.parentId = patch.parentId || null;
+    if (patch.parentId !== undefined) target.parentId = _normalizeCategoryParentId(patch.parentId);
+    if (!_isValidStoredCategoryGraph(list)) return false;
     return _write(KEYS.categories, list);
   }
 
@@ -272,9 +762,13 @@ const ExpenseDB = (() => {
    * 初始化分类数据（仅在无数据时写入预设）
    */
   function initCategories(presets) {
-    const existing = _read(KEYS.categories);
+    const readResult = _readForMutation(KEYS.categories, []);
+    if (!readResult.ok) return false;
+    const safePresets = Array.isArray(presets) ? presets.map(preset => ({ ...preset })) : null;
+    if (!_isValidStoredCategoryGraph(safePresets)) return false;
+    const existing = readResult.value;
     if (existing && existing.length > 0) return true;
-    return _write(KEYS.categories, presets);
+    return _write(KEYS.categories, safePresets);
   }
 
   /**
@@ -283,17 +777,21 @@ const ExpenseDB = (() => {
    * 这样后续更新图标/名称时不会丢失用户的消费数据
    */
   function syncPresetCategories(presets) {
-    const existing = _read(KEYS.categories) || [];
+    const readResult = _readForMutation(KEYS.categories, []);
+    if (!readResult.ok) return false;
+    const safePresets = Array.isArray(presets) ? presets.map(preset => ({ ...preset })) : null;
+    if (!_isValidStoredCategoryGraph(safePresets)) return false;
+    const existing = readResult.value;
     if (existing.length === 0) {
       // 无数据 → 直接写入全部预设
-      return _write(KEYS.categories, presets);
+      return _write(KEYS.categories, safePresets);
     }
 
     // 以预设数据为准，合并更新
     const existingMap = new Map(existing.map(c => [c.id, c]));
     let changed = false;
 
-    presets.forEach(preset => {
+    safePresets.forEach(preset => {
       const curr = existingMap.get(preset.id);
       if (!curr) {
         // 新预设分类 → 追加
@@ -313,6 +811,7 @@ const ExpenseDB = (() => {
 
     if (changed) {
       existing.sort((a, b) => (a.order || 0) - (b.order || 0));
+      if (!_isValidStoredCategoryGraph(existing)) return false;
       return _write(KEYS.categories, existing);
     }
     return true;
@@ -328,6 +827,16 @@ const ExpenseDB = (() => {
    */
   function getBudget() {
     return _read(KEYS.budget) || { monthlyTotal: 0, categories: {} };
+  }
+
+  function _remove(key) {
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch (e) {
+      console.error(`[ExpenseDB] 删除 "${key}" 失败:`, e);
+      return false;
+    }
   }
 
   /**
@@ -376,8 +885,47 @@ const ExpenseDB = (() => {
    * 保存预算配置
    * @param {Object} budget
    */
-  function saveBudget(budget) {
-    return _write(KEYS.budget, budget);
+  function saveBudget(budget, options = {}) {
+    const categoryResult = _readForMutation(KEYS.categories, []);
+    if (!categoryResult.ok) return false;
+    const activeCategoryIds = new Set(categoryResult.value.filter(_isCategoryActive).map(category => category.id));
+    const allCategoryIds = new Set(categoryResult.value.map(category => category.id));
+    const validation = validateBudgetDraft(budget, {
+      categoryIds: allCategoryIds,
+      activeCategoryIds,
+    });
+    if (!validation.ok) return false;
+
+    const readResult = _readForMutation(KEYS.budget, { monthlyTotal: 0, categories: {} });
+    if (!readResult.ok) return false;
+    const replaceCategories = options.mode === 'reset' || options.replaceCategories === true;
+    const nextCategories = replaceCategories
+      ? {}
+      : { ...(readResult.value.categories || {}) };
+    for (const [categoryId, amount] of Object.entries(validation.value.categories)) {
+      if (amount > 0) nextCategories[categoryId] = amount;
+      else delete nextCategories[categoryId];
+    }
+    return _write(KEYS.budget, {
+      monthlyTotal: validation.value.monthlyTotal,
+      categories: nextCategories,
+    });
+  }
+
+  function _sumExpenseAmounts(expenses) {
+    let totalCents = 0;
+    for (const expense of expenses) {
+      const money = validateMoney(expense.amount);
+      if (!money.ok) {
+        // 旧版曾允许超精度/超上限的有限正数；只读展示仍保留旧行为，绝不取整或回填。
+        return expenses.reduce((sum, item) => sum + item.amount, 0);
+      }
+      totalCents += money.cents;
+      if (!Number.isSafeInteger(totalCents)) {
+        return expenses.reduce((sum, item) => sum + item.amount, 0);
+      }
+    }
+    return totalCents / 100;
   }
 
   /**
@@ -391,12 +939,13 @@ const ExpenseDB = (() => {
     const expenses = _read(KEYS.expenses) || [];
 
     // 收集该分类 ID 及所有子分类 ID
-    const childIds = getChildCategories(categoryId).map(c => c.id);
+    const categories = _read(KEYS.categories) || [];
+    const childIds = categories.filter(c => c.parentId === categoryId).map(c => c.id);
     const allIds = [categoryId, ...childIds];
 
-    return expenses
-      .filter(e => allIds.includes(e.categoryId) && e.date.startsWith(ym))
-      .reduce((sum, e) => sum + e.amount, 0);
+    return _sumExpenseAmounts(
+      expenses.filter(e => allIds.includes(e.categoryId) && e.date.startsWith(ym))
+    );
   }
 
   /**
@@ -407,9 +956,7 @@ const ExpenseDB = (() => {
   function getMonthTotal(month) {
     const ym = month || yearMonth();
     const expenses = _read(KEYS.expenses) || [];
-    return expenses
-      .filter(e => e.date.startsWith(ym))
-      .reduce((sum, e) => sum + e.amount, 0);
+    return _sumExpenseAmounts(expenses.filter(e => e.date.startsWith(ym)));
   }
 
   /**
@@ -420,9 +967,7 @@ const ExpenseDB = (() => {
   function getDayTotal(date) {
     const d = date || today();
     const expenses = _read(KEYS.expenses) || [];
-    return expenses
-      .filter(e => e.date === d)
-      .reduce((sum, e) => sum + e.amount, 0);
+    return _sumExpenseAmounts(expenses.filter(e => e.date === d));
   }
 
   /* =================================================================
@@ -442,7 +987,9 @@ const ExpenseDB = (() => {
    * @param {Object} settings
    */
   function saveSettings(settings) {
-    const current = getSettings();
+    const readResult = _readForMutation(KEYS.settings, { currency: '¥', theme: 'light' });
+    if (!readResult.ok) return false;
+    const current = readResult.value;
     return _write(KEYS.settings, { ...current, ...settings });
   }
 
@@ -454,28 +1001,143 @@ const ExpenseDB = (() => {
    * 导出全部数据（备份用）
    * @returns {Object}
    */
-  function exportAll() {
+  function _readCoreSnapshot() {
+    if (_writeBlockedByReadFailure || _writeBlockedByCategoryGraphFailure || _writeBlockedByDomainFailure) {
+      return { ok: false, data: null, exists: null };
+    }
+    const expenseResult = _readForMutation(KEYS.expenses, []);
+    const categoryResult = _readForMutation(KEYS.categories, []);
+    const budgetResult = _readForMutation(KEYS.budget, { monthlyTotal: 0, categories: {} });
+    const settingsResult = _readForMutation(KEYS.settings, {});
+    if (!expenseResult.ok || !categoryResult.ok || !budgetResult.ok || !settingsResult.ok) {
+      return { ok: false, data: null };
+    }
     return {
-      version:    2,                       // 数据格式版本，用于未来兼容
-      expenses:   _read(KEYS.expenses) || [],
-      categories: _read(KEYS.categories) || [],
-      budget:     _read(KEYS.budget) || { monthlyTotal: 0, categories: {} },
-      settings:   _read(KEYS.settings) || {},
+      ok: true,
+      data: {
+        expenses: expenseResult.value,
+        categories: categoryResult.value,
+        budget: budgetResult.value,
+        settings: settingsResult.value,
+      },
+      exists: {
+        expenses: expenseResult.exists,
+        categories: categoryResult.exists,
+        budget: budgetResult.exists,
+        settings: settingsResult.exists,
+      },
+    };
+  }
+
+  function _snapshotUsesLegacyMoneyPolicy(snapshot) {
+    for (const expense of snapshot.expenses) {
+      const result = validateMoney(expense.amount);
+      if (!result.ok
+          && _isLegacyMoneyPolicyValue(expense.amount, false)
+          && (result.error.code === 'MONEY_PRECISION' || result.error.code === 'MONEY_LIMIT')) {
+        return true;
+      }
+    }
+    const budgetValues = [
+      snapshot.budget && snapshot.budget.monthlyTotal != null ? snapshot.budget.monthlyTotal : 0,
+      ...Object.values((snapshot.budget && snapshot.budget.categories) || {}),
+    ];
+    return budgetValues.some(value => {
+      const result = validateMoney(value, { allowZero: true });
+      return !result.ok
+        && _isLegacyMoneyPolicyValue(value, true)
+        && (result.error.code === 'MONEY_PRECISION' || result.error.code === 'MONEY_LIMIT');
+    });
+  }
+
+  function _createExportData(snapshot) {
+    return {
+      version:    _snapshotUsesLegacyMoneyPolicy(snapshot)
+        ? _LEGACY_MONEY_EXPORT_VERSION
+        : _STRICT_EXPORT_VERSION,
+      expenses:   snapshot.expenses,
+      categories: snapshot.categories,
+      budget:     snapshot.budget,
+      settings:   snapshot.settings,
       exportedAt: new Date().toISOString(),
     };
   }
 
-  const _IMPORT_VERSION = 2;
-  const _UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+  function exportAll() {
+    const snapshotResult = _readCoreSnapshot();
+    return snapshotResult.ok ? _createExportData(snapshotResult.data) : null;
+  }
 
-  function _importError(message) {
-    return { success: false, message: `无效的备份文件：${message}`, counts: null };
+  /**
+   * 旧版分类关系异常时导出原样救援副本。它明确不可直接导入，
+   * 只用于在人工修复前保全所有可解析的原始数据。
+   */
+  function exportRecoveryCopy() {
+    if (_writeBlockedByReadFailure) return null;
+    const expenseResult = _readWithStatus(KEYS.expenses);
+    const categoryResult = _readWithStatus(KEYS.categories);
+    const budgetResult = _readWithStatus(KEYS.budget);
+    const settingsResult = _readWithStatus(KEYS.settings);
+    if (!expenseResult.ok || !categoryResult.ok || !budgetResult.ok || !settingsResult.ok) return null;
+    const snapshot = {
+      expenses: expenseResult.exists ? expenseResult.value : [],
+      categories: categoryResult.exists ? categoryResult.value : [],
+      budget: budgetResult.exists ? budgetResult.value : { monthlyTotal: 0, categories: {} },
+      settings: settingsResult.exists ? settingsResult.value : {},
+    };
+    const graphInvalid = !_isValidStoredCategoryGraph(snapshot.categories);
+    const expenseDomain = _validateStoredDomainForKey(KEYS.expenses, snapshot.expenses);
+    const budgetDomain = _validateStoredDomainForKey(KEYS.budget, snapshot.budget);
+    const domainInvalid = !expenseDomain.ok || !budgetDomain.ok;
+    if (!graphInvalid && !domainInvalid) return null;
+    return {
+      ..._createExportData(snapshot),
+      version: _LEGACY_MONEY_EXPORT_VERSION,
+      recoveryOnly: true,
+      recoveryReason: graphInvalid ? 'CATEGORY_GRAPH_INVALID' : 'DOMAIN_DATA_INVALID',
+    };
+  }
+
+  function getCoreReadStatus() {
+    const snapshotResult = _readCoreSnapshot();
+    if (snapshotResult.ok) return { ok: true, code: null };
+    if (_writeBlockedByCategoryGraphFailure && !_writeBlockedByReadFailure) {
+      return {
+        ok: false,
+        code: 'CATEGORY_GRAPH_INVALID',
+        message: '检测到旧版分类层级异常，写入已暂停',
+      };
+    }
+    if (_writeBlockedByDomainFailure && !_writeBlockedByReadFailure) {
+      return {
+        ok: false,
+        code: 'DOMAIN_DATA_INVALID',
+        message: '检测到旧版账单或预算字段异常，写入已暂停',
+      };
+    }
+    return { ok: false, code: 'READ_FAILURE', message: '无法安全读取本地账本，写入已暂停' };
+  }
+
+  const _IMPORT_VERSION = 4;
+  const _UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'prototype', 'constructor']);
+  const _VALID_PAYMENT_METHODS = new Set(['', 'wechat', 'alipay', 'bankcard', 'cash', 'other']);
+  const _VALID_NECESSITY_VALUES = new Set(['', 'need', 'want', 'impulse']);
+
+  function _importError(message, code = 'IMPORT_INVALID') {
+    return {
+      success: false,
+      message: `无效的备份文件：${message}`,
+      counts: null,
+      error: { code, message },
+    };
   }
 
   function _isPlainObject(value) {
     if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
     const prototype = Object.getPrototypeOf(value);
-    return prototype === Object.prototype || prototype === null;
+    // 同源 iframe / VM 传入的普通对象拥有不同 realm 的 Object.prototype；
+    // 其原型本身仍直接继承 null。类实例则会多一层原型链，继续拒绝。
+    return prototype === null || Object.getPrototypeOf(prototype) === null;
   }
 
   function _isNonEmptyString(value) {
@@ -528,6 +1190,9 @@ const ExpenseDB = (() => {
 
   function _validateImport(data) {
     if (!_isPlainObject(data)) return _importError('数据格式错误');
+    if (data.recoveryOnly === true) {
+      return _importError('这是只读救援副本，不能直接恢复；请保留文件并联系维护人员处理');
+    }
     if (data.version != null
         && (!Number.isInteger(data.version) || data.version < 1 || data.version > _IMPORT_VERSION)) {
       return _importError(data.version > _IMPORT_VERSION ? '备份版本过新，请先更新应用' : '版本号错误');
@@ -536,7 +1201,7 @@ const ExpenseDB = (() => {
       return _importError('导出时间格式错误');
     }
     if (!Array.isArray(data.expenses)) return _importError('缺少消费记录');
-    if (!Array.isArray(data.categories) || data.categories.length === 0) return _importError('缺少分类数据');
+    if (!Array.isArray(data.categories)) return _importError('缺少分类数据');
 
     const categoryIds = new Set();
     const categories = [];
@@ -548,78 +1213,99 @@ const ExpenseDB = (() => {
           || (category.icon != null && typeof category.icon !== 'string')
           || (category.parentId != null && !_isNonEmptyString(category.parentId))
           || (category.isPreset != null && typeof category.isPreset !== 'boolean')
-          || (category.order != null && !Number.isFinite(category.order))) {
+          || (category.order != null && !Number.isFinite(category.order))
+          || (category.deletedAt != null && !_isValidIsoTimestamp(category.deletedAt))) {
         return _importError('分类数据格式错误');
       }
       if (categoryIds.has(category.id)) return _importError('存在重复的分类 ID');
       categoryIds.add(category.id);
-      categories.push({
+      const normalizedCategory = {
         id: category.id,
         name: category.name,
         icon: category.icon || '📌',
-        parentId: category.parentId || null,
+        parentId: _normalizeCategoryParentId(category.parentId),
         isPreset: category.isPreset === true,
         order: Number.isFinite(category.order) ? category.order : categories.length,
-      });
+      };
+      if (category.deletedAt) normalizedCategory.deletedAt = category.deletedAt;
+      categories.push(normalizedCategory);
     }
 
     const categoryMap = new Map(categories.map(category => [category.id, category]));
     for (const category of categories) {
       if (!category.parentId) continue;
       const parent = categoryMap.get(category.parentId);
-      if (!parent || parent.parentId) return _importError('分类层级引用无效');
+      if (!parent || _normalizeCategoryParentId(parent.parentId)) return _importError('分类层级引用无效');
+      if (!category.deletedAt && parent.deletedAt) return _importError('活动分类不能引用已删除的父分类');
     }
 
+    const legacyFormat = data.version == null || data.version < _STRICT_EXPORT_VERSION;
+    let legacyMoneyFound = false;
     const expenseIds = new Set();
     const expenses = [];
-    for (const expense of data.expenses) {
+    for (let expenseIndex = 0; expenseIndex < data.expenses.length; expenseIndex += 1) {
+      const expense = data.expenses[expenseIndex];
       if (!_isPlainObject(expense)
           || !_isNonEmptyString(expense.id)
           || _UNSAFE_OBJECT_KEYS.has(expense.id)
-          || !Number.isFinite(expense.amount)
-          || expense.amount <= 0
-          || !_isNonEmptyString(expense.categoryId)
-          || !categoryIds.has(expense.categoryId)
-          || !_isValidDate(expense.date)
-          || (expense.time != null && !_isValidTime(expense.time))
-          || (expense.location != null && typeof expense.location !== 'string')
-          || (expense.paymentMethod != null && typeof expense.paymentMethod !== 'string')
-          || (expense.note != null && typeof expense.note !== 'string')
           || (expense.createdAt != null && !_isValidIsoTimestamp(expense.createdAt))) {
-        return _importError('消费记录格式或分类引用错误');
+        return _importError(`第 ${expenseIndex + 1} 条消费记录格式错误`, 'EXPENSE_INVALID_TYPE');
+      }
+      if (typeof expense.amount !== 'number') {
+        return _importError(`第 ${expenseIndex + 1} 条消费记录金额格式不正确`, 'MONEY_INVALID_FORMAT');
       }
       if (expenseIds.has(expense.id)) return _importError('存在重复的消费记录 ID');
-      expenseIds.add(expense.id);
-      expenses.push({
-        id: expense.id,
+      const validation = validateExpenseDraft({
         amount: expense.amount,
         categoryId: expense.categoryId,
         date: expense.date,
-        time: expense.time || '',
-        location: expense.location || '',
-        paymentMethod: expense.paymentMethod || '',
-        note: expense.note || '',
+        time: expense.time == null ? '' : expense.time,
+        location: expense.location == null ? '' : expense.location,
+        paymentMethod: expense.paymentMethod == null ? '' : expense.paymentMethod,
+        necessity: expense.necessity === undefined ? '' : expense.necessity,
+        note: expense.note == null ? '' : expense.note,
+      }, {
+        categoryIds,
+        activeCategoryIds: categoryIds,
+        allowHistoricalCategories: true,
+        allowLegacyMoney: legacyFormat,
+      });
+      if (!validation.ok) {
+        return _importError(`第 ${expenseIndex + 1} 条消费记录：${validation.error.message}`, validation.error.code);
+      }
+      if (validation.legacyMoney) legacyMoneyFound = true;
+      expenseIds.add(expense.id);
+      expenses.push({
+        id: expense.id,
+        ...validation.value,
         createdAt: expense.createdAt || new Date().toISOString(),
       });
     }
 
     const sourceBudget = data.budget == null ? { monthlyTotal: 0, categories: {} } : data.budget;
-    if (!_isPlainObject(sourceBudget)
-        || !Number.isFinite(Number(sourceBudget.monthlyTotal || 0))
-        || Number(sourceBudget.monthlyTotal || 0) < 0
-        || (sourceBudget.categories != null && !_isPlainObject(sourceBudget.categories))) {
-      return _importError('预算数据格式错误');
+    if (!_isPlainObject(sourceBudget) || (sourceBudget.categories != null && !_isPlainObject(sourceBudget.categories))) {
+      return _importError('预算数据格式错误', 'BUDGET_INVALID_TYPE');
     }
-    const categoryBudgets = {};
+    const monthlyTotal = sourceBudget.monthlyTotal == null ? 0 : sourceBudget.monthlyTotal;
+    if (typeof monthlyTotal !== 'number') {
+      return _importError('月度总预算格式不正确', 'MONEY_INVALID_FORMAT');
+    }
+    const rawCategoryBudgets = {};
     for (const [categoryId, amount] of Object.entries(sourceBudget.categories || {})) {
-      if (_UNSAFE_OBJECT_KEYS.has(categoryId)
-          || !categoryIds.has(categoryId)
-          || !Number.isFinite(amount)
-          || amount < 0) {
-        return _importError('分类预算格式或引用错误');
-      }
-      categoryBudgets[categoryId] = amount;
+      if (typeof amount !== 'number') return _importError('分类预算格式不正确', 'MONEY_INVALID_FORMAT');
+      rawCategoryBudgets[categoryId] = amount;
     }
+    const budgetValidation = validateBudgetDraft({
+      monthlyTotal,
+      categories: rawCategoryBudgets,
+    }, {
+      categoryIds,
+      activeCategoryIds: categoryIds,
+      allowHistoricalCategories: true,
+      allowLegacyMoney: legacyFormat,
+    });
+    if (!budgetValidation.ok) return _importError(budgetValidation.error.message, budgetValidation.error.code);
+    if (budgetValidation.legacyMoney) legacyMoneyFound = true;
 
     const sourceSettings = data.settings == null ? {} : data.settings;
     if (!_isPlainObject(sourceSettings)) return _importError('设置数据格式错误');
@@ -644,16 +1330,22 @@ const ExpenseDB = (() => {
       data: {
         expenses,
         categories,
-        budget: { monthlyTotal: Number(sourceBudget.monthlyTotal || 0), categories: categoryBudgets },
+        budget: budgetValidation.value,
         settings,
       },
+      warning: legacyMoneyFound
+        ? '已按旧版规则原样保留部分超过两位小数或产品上限的历史金额，未做取整或迁移'
+        : null,
     };
   }
 
-  function _restoreImportSnapshot(snapshot, writtenKeys) {
+  function _restoreImportSnapshot(snapshot, existingKeys, writtenKeys) {
     let restored = true;
     for (const key of writtenKeys) {
-      if (!_write(KEYS[key], snapshot[key])) restored = false;
+      const keyRestored = existingKeys[key]
+        ? _write(KEYS[key], snapshot[key])
+        : _remove(KEYS[key]);
+      if (!keyRestored) restored = false;
     }
     return restored;
   }
@@ -670,14 +1362,17 @@ const ExpenseDB = (() => {
     const normalized = validation.data;
 
     // 同时保留内存快照和持久备份：持久备份无法创建时不冒险覆盖原数据。
-    const snapshot = {
-      expenses: _read(KEYS.expenses) || [],
-      categories: _read(KEYS.categories) || [],
-      budget: _read(KEYS.budget) || { monthlyTotal: 0, categories: {} },
-      settings: _read(KEYS.settings) || {},
-    };
+    const snapshotResult = _readCoreSnapshot();
+    if (!snapshotResult.ok) {
+      return {
+        success: false,
+        message: '导入失败：无法安全读取当前数据，操作已停止。请保留页面并检查已有备份',
+        counts: null,
+      };
+    }
+    const snapshot = snapshotResult.data;
     try {
-      localStorage.setItem('expense_tracker_pre_import_backup', JSON.stringify(exportAll()));
+      localStorage.setItem('expense_tracker_pre_import_backup', JSON.stringify(_createExportData(snapshot)));
     } catch (error) {
       console.error('[ExpenseDB] 创建导入前备份失败:', error);
       return { success: false, message: '导入失败：无法创建恢复前备份，请检查浏览器存储空间', counts: null };
@@ -695,7 +1390,7 @@ const ExpenseDB = (() => {
         writtenKeys.push(key);
         continue;
       }
-      const restored = _restoreImportSnapshot(snapshot, writtenKeys);
+      const restored = _restoreImportSnapshot(snapshot, snapshotResult.exists, writtenKeys);
       return {
         success: false,
         message: restored
@@ -705,12 +1400,16 @@ const ExpenseDB = (() => {
       };
     }
 
-    // 记录备份时间
-    _recordBackup();
+    // 核心数据已经恢复成功；元数据写入失败时保留成功结果，但必须向 UI 暴露警告。
+    const backupTimeSaved = _recordBackup();
+    const warnings = [];
+    if (validation.warning) warnings.push(validation.warning);
+    if (!backupTimeSaved) warnings.push('数据已恢复，但无法记录备份时间。请保留本次备份文件');
 
     return {
       success: true,
       message: `导入成功！${normalized.expenses.length} 条记录，${normalized.categories.length} 个分类`,
+      warning: warnings.length ? warnings.join('；') : null,
       counts: {
         expenses: normalized.expenses.length,
         categories: normalized.categories.length,
@@ -795,8 +1494,10 @@ const ExpenseDB = (() => {
     // Categories
     getCategories,
     getCategory,
+    getActiveCategory,
     getParentCategories,
     getChildCategories,
+    validateCategoryParent,
     addCategory,
     updateCategory,
     deleteCategory,
@@ -817,10 +1518,18 @@ const ExpenseDB = (() => {
 
     // Data management
     exportAll,
+    exportRecoveryCopy,
     importAll,
+    getCoreReadStatus,
     getLastBackupTime,
     recordBackupTime,
     clearAll,
+
+    // Shared domain validation
+    validateMoney,
+    validateExpenseDraft,
+    validateBudgetDraft,
+    MAX_MONEY_CENTS,
 
     // Date utilities
     today,

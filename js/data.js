@@ -167,13 +167,15 @@ const ExpenseData = (() => {
   function initPresetData() {
     // syncPresetCategories：已有数据时只更新预设的 icon/name，不删不改用户自定义
     // 保证后续更新图标/名称后，老用户刷新即可生效，数据毫发无损
-    ExpenseDB.syncPresetCategories(PRESET_CATEGORIES);
+    if (!ExpenseDB.syncPresetCategories(PRESET_CATEGORIES)) return false;
 
     // 预算：仅在不存在时写入默认值
     const budget = ExpenseDB.getBudget();
-    if (!budget || (budget.monthlyTotal === undefined)) {
-      ExpenseDB.saveBudget(DEFAULT_BUDGET);
+    if (!budget) return false;
+    if (budget.monthlyTotal === undefined) {
+      if (!ExpenseDB.saveBudget(DEFAULT_BUDGET)) return false;
     }
+    return ExpenseDB.getCoreReadStatus().ok;
   }
 
   /* =================================================================

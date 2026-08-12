@@ -538,7 +538,7 @@ const ExpenseStats = (() => {
         <div class="stats-ranking-item">
           <span class="stats-ranking-item__rank">${i + 1}</span>
           <span class="stats-ranking-item__icon">${ExpenseCategories.getIconMarkup(c.category)}</span>
-          <span class="stats-ranking-item__name">${c.name}</span>
+          <span class="stats-ranking-item__name">${ExpenseData.escapeHtml(c.name)}</span>
           <span class="stats-ranking-item__amount">¥${Math.round(c.total).toLocaleString()}</span>
         </div>`).join('');
   }

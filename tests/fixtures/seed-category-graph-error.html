@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>隔离分类关系故障测试</title>
+</head>
+<body>
+  <button id="seed-error" type="button">写入合成分类关系故障并打开应用</button>
+  <script>
+    document.getElementById('seed-error').addEventListener('click', () => {
+      const categories = [
+        { id: 'legacy-root', name: '旧一级', icon: '📁', parentId: null, isPreset: false, order: 0 },
+        { id: 'legacy-child', name: '旧二级', icon: '📂', parentId: 'legacy-root', isPreset: false, order: 1 },
+        { id: 'legacy-third', name: '旧三级', icon: '📄', parentId: 'legacy-child', isPreset: false, order: 2 },
+      ];
+      const expenses = [{
+        id: 'legacy-expense', amount: 23.45, categoryId: 'legacy-third',
+        date: '2026-08-11', time: '08:30', location: '', paymentMethod: 'cash',
+        necessity: 'need', note: '旧层级账单', createdAt: '2026-08-11T12:30:00.000Z',
+      }];
+      localStorage.setItem('expense_tracker_categories', JSON.stringify(categories));
+      localStorage.setItem('expense_tracker_expenses', JSON.stringify(expenses));
+      localStorage.setItem('expense_tracker_budget', JSON.stringify({ monthlyTotal: 0, categories: {} }));
+      localStorage.setItem('expense_tracker_settings', JSON.stringify({ onboardingSeen: true }));
+      location.href = '/';
+    });
+  </script>
+</body>
+</html>

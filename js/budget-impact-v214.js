@@ -17,10 +17,9 @@ const ExpenseBudgetImpact = (() => {
   var _elements = {};
 
   function _toCents(value) {
-    var number = Number(value);
-    if (!Number.isFinite(number)) return null;
-    var cents = Math.round((number + Number.EPSILON) * 100);
-    return Number.isSafeInteger(cents) ? cents : null;
+    if (typeof ExpenseDB === 'undefined' || typeof ExpenseDB.validateMoney !== 'function') return null;
+    var result = ExpenseDB.validateMoney(value, { allowZero: true });
+    return result.ok ? result.cents : null;
   }
 
   function _isValidDate(value) {
@@ -77,6 +76,7 @@ const ExpenseBudgetImpact = (() => {
     var monthTotals = Object.create(null);
     var categoryTotals = Object.create(null);
     var budgetCategories = Object.create(null);
+    var invalidMoney = false;
 
     categories.forEach(function (category) {
       if (!category || category.id === undefined || category.id === null) return;
@@ -86,7 +86,10 @@ const ExpenseBudgetImpact = (() => {
     expenses.forEach(function (expense) {
       if (!expense || !/^\d{4}-\d{2}-\d{2}$/.test(String(expense.date || ''))) return;
       var cents = _toCents(expense.amount);
-      if (cents === null || cents <= 0) return;
+      if (cents === null || cents <= 0) {
+        invalidMoney = true;
+        return;
+      }
 
       var yearMonth = String(expense.date).slice(0, 7);
       monthTotals[yearMonth] = (monthTotals[yearMonth] || 0) + cents;
@@ -105,20 +108,28 @@ const ExpenseBudgetImpact = (() => {
         safety += 1;
       }
     });
+    if (invalidMoney) return { ok: false };
 
     var budget = snapshot.budget && typeof snapshot.budget === 'object'
       ? snapshot.budget
       : { monthlyTotal: 0, categories: {} };
-    var monthlyBudgetCents = _toCents(budget.monthlyTotal);
-    if (monthlyBudgetCents === null || monthlyBudgetCents <= 0) monthlyBudgetCents = 0;
+    var monthlyBudgetCents = budget.monthlyTotal == null || budget.monthlyTotal === ''
+      ? 0
+      : _toCents(budget.monthlyTotal);
+    if (monthlyBudgetCents === null || monthlyBudgetCents < 0) return { ok: false };
 
     var rawCategoryBudgets = budget.categories && typeof budget.categories === 'object'
       ? budget.categories
       : {};
     Object.keys(rawCategoryBudgets).forEach(function (categoryId) {
       var cents = _toCents(rawCategoryBudgets[categoryId]);
-      if (cents !== null && cents > 0) budgetCategories[String(categoryId)] = cents;
+      if (cents === null || cents < 0) {
+        invalidMoney = true;
+        return;
+      }
+      if (cents > 0) budgetCategories[String(categoryId)] = cents;
     });
+    if (invalidMoney) return { ok: false };
 
     return {
       ok: true,
@@ -222,8 +233,7 @@ const ExpenseBudgetImpact = (() => {
   }
 
   function _calculateWithBaseline(formState, baseline, todayOverride) {
-    var amount = parseFloat(formState && formState.amountRaw);
-    var amountCents = _toCents(amount);
+    var amountCents = _toCents(formState && formState.amountRaw);
     if (amountCents === null || amountCents <= 0) {
       return { visible: false, reason: 'invalid-amount' };
     }
@@ -374,8 +384,8 @@ const ExpenseBudgetImpact = (() => {
     if (!_elements.root) return;
 
     var formState = _readFormState();
-    var amount = parseFloat(formState.amountRaw);
-    if (!Number.isFinite(amount) || amount <= 0) {
+    var amountCents = _toCents(formState.amountRaw);
+    if (amountCents === null || amountCents <= 0) {
       // 保存、清空或切页都会回到空金额；下次输入时重建，确保包含最新账单。
       invalidate();
       _render({ visible: false, reason: 'invalid-amount' });

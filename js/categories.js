@@ -79,6 +79,10 @@ const ExpenseCategories = (() => {
     return ExpenseData.escapeHtml(value);
   }
 
+  function _getActiveCategory(id) {
+    return id ? ExpenseDB.getActiveCategory(id) : null;
+  }
+
   function _categoryIconMarkup(category) {
     const iconData = category && Object.prototype.hasOwnProperty.call(_CATEGORY_ICON_DATA, category.id)
       ? _CATEGORY_ICON_DATA[category.id]
@@ -125,7 +129,7 @@ const ExpenseCategories = (() => {
 
   function openPicker() {
     if (_selectedCategoryId) {
-      const selected = ExpenseDB.getCategory(_selectedCategoryId);
+      const selected = _getActiveCategory(_selectedCategoryId);
       _expandedParentId = selected && selected.parentId ? selected.parentId : null;
     }
     _setPickerOpen(true);
@@ -164,7 +168,7 @@ const ExpenseCategories = (() => {
     const pinnedIds = _getPinnedQuickCategoryIds();
     const addCategory = (id) => {
       if (!id || ids.includes(id)) return;
-      const category = ExpenseDB.getCategory(id);
+      const category = _getActiveCategory(id);
       if (category) ids.push(id);
     };
 
@@ -173,7 +177,7 @@ const ExpenseCategories = (() => {
     // 最近 60 笔按频率与新近程度综合排序；保留末级分类能让入口始终一键完成选择。
     const scores = new Map();
     ExpenseDB.getExpenses().slice(0, 60).forEach((expense, index) => {
-      if (!ExpenseDB.getCategory(expense.categoryId)) return;
+      if (!_getActiveCategory(expense.categoryId)) return;
       const recencyWeight = Math.max(1, 8 - Math.floor(index / 8));
       scores.set(expense.categoryId, (scores.get(expense.categoryId) || 0) + recencyWeight);
     });
@@ -184,7 +188,7 @@ const ExpenseCategories = (() => {
 
     // 横向快捷带可展示更多常用分类，首屏仍只露出约四项，向左滑动即可继续查看。
     return ids.slice(0, 10).map((id) => {
-      const category = ExpenseDB.getCategory(id);
+      const category = _getActiveCategory(id);
       return category ? { ...category, isQuickPinned: pinnedIds.includes(id) } : null;
     }).filter(Boolean);
   }
@@ -193,11 +197,18 @@ const ExpenseCategories = (() => {
     const settings = ExpenseDB.getSettings();
     const ids = Array.isArray(settings.pinnedQuickCategoryIds) ? settings.pinnedQuickCategoryIds : [];
     return [...new Set(ids)]
-      .filter(id => Boolean(ExpenseDB.getCategory(id)))
+      .filter(id => Boolean(_getActiveCategory(id)))
       .slice(0, _MAX_PINNED_QUICK_CATEGORIES);
   }
 
   function _toggleQuickCategoryPin(categoryId, containerId, subContainerId) {
+    if (!_getActiveCategory(categoryId)) {
+      renderGrid(containerId, subContainerId, _onSelectStored);
+      if (typeof ExpenseApp !== 'undefined') {
+        ExpenseApp.showToast('该分类已被删除，固定列表已刷新', 'warning');
+      }
+      return;
+    }
     const pinnedIds = _getPinnedQuickCategoryIds();
     const existingIndex = pinnedIds.indexOf(categoryId);
 
@@ -210,7 +221,9 @@ const ExpenseCategories = (() => {
     }
 
     if (!ExpenseDB.saveSettings({ pinnedQuickCategoryIds: pinnedIds })) {
-      if (typeof ExpenseApp !== 'undefined') ExpenseApp.showToast('固定分类失败，请检查浏览器存储空间', 'warning');
+      if (typeof ExpenseApp !== 'undefined') {
+        ExpenseApp.showToast('固定分类失败，操作已停止且原设置未覆盖。请勿清理浏览器数据，重新打开后重试', 'warning', { duration: 6000 });
+      }
       return;
     }
     renderGrid(containerId, subContainerId, _onSelectStored);
@@ -258,6 +271,12 @@ const ExpenseCategories = (() => {
   }
 
   function _selectCategory(catId, containerId, subContainerId) {
+    if (!_getActiveCategory(catId)) {
+      clearSelection();
+      renderGrid(containerId, subContainerId, _onSelectStored);
+      if (_onSelectStored) _onSelectStored(null);
+      return;
+    }
     _selectedCategoryId = catId;
     _expandedParentId = null;
     _collapsed = true;
@@ -299,14 +318,22 @@ const ExpenseCategories = (() => {
     _subContainerId = subContainerId;
     _bindPickerControls();
 
+    if (_selectedCategoryId && !_getActiveCategory(_selectedCategoryId)) {
+      clearSelection();
+      if (_onSelectStored) _onSelectStored(null);
+    }
+    if (_expandedParentId && !_getActiveCategory(_expandedParentId)) {
+      _expandedParentId = null;
+    }
+
     const summary = document.getElementById('add-category-summary');
     if (_selectedCategoryId) {
-      const cat = ExpenseDB.getCategory(_selectedCategoryId);
+      const cat = _getActiveCategory(_selectedCategoryId);
       if (cat && summary) {
         const iconEl = document.getElementById('add-category-summary-icon');
         const textEl = document.getElementById('add-category-summary-text');
         if (cat.parentId) {
-          const parent = ExpenseDB.getCategory(cat.parentId);
+          const parent = _getActiveCategory(cat.parentId);
           if (iconEl) iconEl.innerHTML = _categoryIconMarkup(cat);
           if (textEl) textEl.textContent = (parent ? parent.name + ' > ' : '') + cat.name;
         } else {
@@ -337,11 +364,11 @@ const ExpenseCategories = (() => {
     }
 
     const parents = ExpenseDB.getParentCategories();
-    const selectedCat = ExpenseDB.getCategory(_selectedCategoryId);
+    const selectedCat = _getActiveCategory(_selectedCategoryId);
 
     // 有子分类时进入二级选择态：隐藏冗长的大类网格，把下一步直接放到抽屉可视区。
     if (_expandedParentId) {
-      const parent = ExpenseDB.getCategory(_expandedParentId);
+      const parent = _getActiveCategory(_expandedParentId);
       const children = ExpenseDB.getChildCategories(_expandedParentId);
       if (parent && children.length > 0) {
         grid.style.display = 'none';
@@ -417,27 +444,33 @@ const ExpenseCategories = (() => {
      选中/清除选中
      ----------------------------------------------------------------- */
   function getSelectedId() {
+    if (_selectedCategoryId && !_getActiveCategory(_selectedCategoryId)) clearSelection();
     return _selectedCategoryId;
   }
 
   function getSelectedCategory() {
     if (!_selectedCategoryId) return null;
-    return ExpenseDB.getCategory(_selectedCategoryId);
+    return _getActiveCategory(_selectedCategoryId);
   }
 
   function setSelected(catId, options = {}) {
+    const cat = _getActiveCategory(catId);
+    if (!cat) {
+      clearSelection();
+      return false;
+    }
     _selectedCategoryId = catId;
     if (options.collapse) {
       _collapsed = true;
       _setPickerOpen(false);
       _expandedParentId = null;
-      return;
+      return true;
     }
     // 如果选中的是子分类，自动展开父级
-    const cat = ExpenseDB.getCategory(catId);
     if (cat && cat.parentId) {
       _expandedParentId = cat.parentId;
     }
+    return true;
   }
 
   function clearSelection() {

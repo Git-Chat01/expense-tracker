@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#0F5966">
   <meta name="mobile-web-app-capable" content="yes">
@@ -23,6 +24,7 @@
   <link rel="stylesheet" href="css/list.css?v=175">
   <link rel="stylesheet" href="css/stats.css?v=194">
   <link rel="stylesheet" href="css/onboarding.css?v=176">
+  <link rel="stylesheet" href="css/monthly-report-v220.css">
 </head>
 <body>
 
@@ -170,7 +172,7 @@
 
     <!-- 首页底部版本位：新版本等待时原地切换为更新说明卡 -->
     <div id="app-version-slot" class="app-version-slot">
-      <div id="app-version" class="app-version" data-version="219" aria-label="当前应用版本">v20260811-219</div>
+      <div id="app-version" class="app-version" data-version="220" aria-label="当前应用版本">v20260812-220</div>
       <section id="sw-update-bar" class="sw-update-bar" aria-labelledby="sw-update-bar-title" aria-live="polite" hidden>
         <button type="button" class="sw-update-bar__head" id="sw-update-bar-head" aria-expanded="false" aria-controls="sw-update-bar-detail">
           <svg class="sw-update-bar__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-15.5-6.2L3 8.3M3 3v5.3h5.3M3 12a9 9 0 0 0 15.5 6.2l2.5-2.5M21 21v-5.3h-5.3"/></svg>
@@ -419,6 +421,20 @@
         </div>
       </div>
 
+      <!-- 月度报告入口：必须保持 .stats-overview 与 #stats-dynamic 的兄弟位——
+           放进 #stats-dynamic 内会被 _renderEmptyDynamic 替换掉（stats.js:234） -->
+      <button type="button" class="mr-entry" id="mr-entry" hidden aria-label="查看月度报告">
+        <span class="mr-entry__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-3-9 2 2 4-4"/></svg>
+        </span>
+        <span class="mr-entry__text">
+          <span class="mr-entry__title">月度报告</span>
+          <span class="mr-entry__sub">这个月花钱方式的一页诊断书</span>
+        </span>
+        <span class="mr-entry__badge" id="mr-entry-badge" hidden>新</span>
+        <svg class="mr-entry__chevron" viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 18 6-6-6-6"/></svg>
+      </button>
+
       <!-- 动态区域（图表 + 排行，由 stats.js 控制） -->
       <div id="stats-dynamic">
         <!-- 分类占比 -->
@@ -482,6 +498,19 @@
       <span class="page-overlay__title">预算设置</span>
     </div>
     <div class="page-overlay__body" id="overlay-budget-body">
+      <!-- JS 动态渲染 -->
+    </div>
+  </div>
+
+  <!-- ==============================================================
+       覆盖层：月度报告
+       ============================================================== -->
+  <div class="page-overlay" id="overlay-monthly-report">
+    <div class="page-overlay__header">
+      <button class="page-overlay__back" id="overlay-monthly-report-back">←</button>
+      <span class="page-overlay__title">月度报告</span>
+    </div>
+    <div class="page-overlay__body" id="overlay-monthly-report-body">
       <!-- JS 动态渲染 -->
     </div>
   </div>
@@ -574,12 +603,12 @@
 <script src="js/categories.js?v=195"></script>
 <script src="js/list.js?v=194"></script>
 <script src="js/stats.js?v=194"></script>
+<script src="js/monthly-report-v220.js"></script>
 <script src="js/onboarding.js?v=194"></script>
 <script src="js/app-v217.js"></script>
 <script src="js/budget-impact-v214.js"></script>
 
-<!-- Chart.js CDN（统计模块依赖） -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js">
-</script>
+<!-- Chart.js 固定同源版本（统计模块依赖，可离线使用） -->
+<script src="js/vendor-chart.umd-4.4.7.min.js"></script>
 </body>
 </html>
