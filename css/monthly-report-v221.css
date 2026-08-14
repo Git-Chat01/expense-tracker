@@ -1,0 +1,855 @@
+/* ================================================================
+   月度报告 v221
+   方向：平静的编辑式财务诊断单
+   范围：mr- 前缀与月报覆盖层，不改变全局布局和数据行为
+   ================================================================ */
+
+/* —— 统计页入口 —— */
+.mr-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  min-height: 72px;
+  margin: 0 0 var(--space-lg);
+  padding: var(--space-lg) var(--space-xl);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.mr-entry:active {
+  transform: scale(0.99);
+}
+
+.mr-entry__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+}
+
+.mr-entry__icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.mr-entry__text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mr-entry__title {
+  font-size: var(--font-size-lg);
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.mr-entry__sub {
+  overflow-wrap: anywhere;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+
+.mr-entry__badge {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-xs);
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.mr-entry__chevron {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  color: var(--color-text-tertiary);
+}
+
+/* —— 月报覆盖层与触控目标 —— */
+#overlay-monthly-report .page-overlay__header {
+  padding-block: 14px;
+}
+
+#overlay-monthly-report .page-overlay__back {
+  width: 44px;
+  height: 44px;
+  margin: -6px 0 -6px -6px;
+  touch-action: manipulation;
+}
+
+#overlay-monthly-report-body {
+  overscroll-behavior-y: contain;
+  padding-bottom: calc(var(--space-xxxl) * 2 + var(--safe-area-bottom));
+}
+
+.mr-entry:focus-visible,
+.mr-period__nav:focus-visible,
+.mr-chip:focus-visible,
+#overlay-monthly-report .page-overlay__back:focus-visible {
+  outline: 3px solid rgba(15, 89, 102, 0.28);
+  outline-offset: 2px;
+}
+
+/* —— 月份导航：安静但可操作 —— */
+.mr-period {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin: 0 0 var(--space-lg);
+}
+
+.mr-period__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--font-size-xl);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.mr-period__nav:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.mr-period__nav:disabled {
+  box-shadow: none;
+  opacity: 0.34;
+  cursor: default;
+}
+
+.mr-period__center {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+}
+
+.mr-period__label {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.mr-period__until {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+}
+
+.mr-period__now {
+  display: flex;
+  justify-content: center;
+  margin: calc(var(--space-sm) * -1) 0 var(--space-lg);
+}
+
+.mr-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px var(--space-lg);
+  border: 1px solid rgba(15, 89, 102, 0.34);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-primary-dark);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* —— 核心概览：全页唯一主视觉 —— */
+.mr-skeleton {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0 0 var(--space-md);
+  overflow: hidden;
+  border: 1px solid rgba(8, 68, 78, 0.24);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.mr-skeleton__cell {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: 14px var(--space-lg);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.mr-skeleton__cell--total {
+  grid-column: 1 / -1;
+  padding: var(--space-xl);
+  background: var(--color-primary-dark);
+  color: var(--color-text-inverse);
+}
+
+.mr-skeleton__cell--metric + .mr-skeleton__cell--metric {
+  border-left: 1px solid var(--color-divider);
+}
+
+.mr-skeleton__topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.mr-skeleton__label {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+}
+
+.mr-skeleton__cell--total .mr-skeleton__label {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.mr-skeleton__trend {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  justify-content: end;
+  gap: 1px var(--space-xs);
+  min-width: 0;
+  margin-left: auto;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--color-text-inverse);
+  line-height: 1.3;
+  text-align: right;
+}
+
+.mr-skeleton__trend-label {
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 10px;
+}
+
+.mr-skeleton__change {
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.mr-skeleton__change-context {
+  grid-column: 1 / -1;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.mr-skeleton__change--up,
+.mr-skeleton__change--down {
+  color: var(--color-text-inverse);
+}
+
+.mr-skeleton__value {
+  max-width: 100%;
+  margin: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: clamp(16px, 5.2vw, 22px);
+  font-weight: 700;
+  line-height: 1.18;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.mr-skeleton__cell--total .mr-skeleton__value {
+  margin-top: var(--space-sm);
+  color: var(--color-text-inverse);
+  font-size: clamp(24px, 8.5vw, 36px);
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.mr-skeleton__unit {
+  margin-left: 3px;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* —— 一句话结论：轻提示，不与概览争夺视觉重点 —— */
+.mr-opening,
+.mr-opening--calm {
+  margin: 0 0 var(--space-sm);
+  padding: var(--space-md) 14px;
+  border: 1px solid rgba(15, 89, 102, 0.14);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--color-primary-light);
+  color: var(--color-text-primary);
+}
+
+.mr-opening__label {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+}
+
+.mr-opening__text {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  line-height: 1.58;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+/* —— 章节：用编辑式留白和分隔线取代卡片堆叠 —— */
+.mr-section {
+  margin: 0;
+  padding: var(--space-xl) 0;
+  border: 0;
+  border-top: 1px solid var(--color-divider);
+  border-radius: 0;
+  background: transparent;
+}
+
+.mr-section__title {
+  margin: 0 0 14px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+
+.mr-section--secondary .mr-section__title {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+}
+
+.mr-empty {
+  margin: 0;
+  padding: 2px 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+/* —— 重点发现 / 更多观察 —— */
+.mr-section--findings {
+  counter-reset: mr-finding;
+}
+
+.mr-diagnosis,
+.mr-insight {
+  padding: 16px 0;
+  border-top: 1px solid var(--color-divider);
+}
+
+.mr-section__title + .mr-diagnosis,
+.mr-section__title + .mr-insight {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.mr-diagnosis {
+  counter-increment: mr-finding;
+}
+
+.mr-diagnosis__title,
+.mr-insight__title {
+  margin: 0 0 7px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.mr-diagnosis__title {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.mr-diagnosis__title::before {
+  content: '0' counter(mr-finding);
+  flex: none;
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  font-weight: 750;
+  letter-spacing: 0.04em;
+}
+
+.mr-diagnosis__explain,
+.mr-insight__explain {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-md);
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.mr-diagnosis__explain,
+.mr-diagnosis__note,
+.mr-diagnosis__prescriptions {
+  margin-left: 29px;
+}
+
+.mr-diagnosis__note,
+.mr-insight__note {
+  margin-top: var(--space-sm);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: #FBF3E5;
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.mr-diagnosis__prescriptions,
+.mr-insight__prescriptions {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 11px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(15, 89, 102, 0.065);
+  list-style: none;
+}
+
+.mr-diagnosis__prescriptions li,
+.mr-insight__prescriptions li {
+  position: relative;
+  padding-left: 20px;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.mr-diagnosis__prescriptions li::before,
+.mr-insight__prescriptions li::before {
+  content: '✓';
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: var(--color-success);
+  font-weight: 750;
+}
+
+/* —— 分类结构：首行名称与金额，次行进度与占比 —— */
+.mr-ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mr-ranking__item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'rank name amount'
+    'rank bar pct';
+  align-items: center;
+  min-width: 0;
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--color-divider);
+  column-gap: var(--space-sm);
+  row-gap: 7px;
+}
+
+.mr-ranking__item:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.mr-ranking__item:last-child {
+  padding-bottom: 0;
+}
+
+.mr-ranking__rank {
+  display: inline-flex;
+  grid-area: rank;
+  align-items: center;
+  align-self: start;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: var(--radius-round);
+  background: var(--color-divider);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: 650;
+}
+
+.mr-ranking__name {
+  grid-area: name;
+  min-width: 0;
+  max-width: none;
+  overflow: visible;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.mr-ranking__bar {
+  display: block;
+  grid-area: bar;
+  width: 100%;
+  min-width: 0;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-divider);
+}
+
+.mr-ranking__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+.mr-ranking__pct {
+  grid-area: pct;
+  width: auto;
+  min-width: 34px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.mr-ranking__amount {
+  grid-area: amount;
+  align-self: start;
+  min-width: 0;
+  padding-top: 1px;
+  color: var(--color-text-primary);
+  font-size: clamp(12px, 3.5vw, 14px);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.mr-delta {
+  margin-top: var(--space-lg);
+  padding: 10px 12px;
+  border-left: 3px solid rgba(195, 75, 61, 0.5);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: #F8ECE9;
+  color: var(--color-danger-dark);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+/* —— 订阅与固定支出 —— */
+.mr-sub {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mr-sub__item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: var(--font-size-md);
+  line-height: 1.45;
+}
+
+.mr-sub__item:first-child {
+  padding-top: 0;
+}
+
+.mr-sub__name {
+  min-width: 0;
+  color: var(--color-text-primary);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.mr-sub__amount {
+  flex: none;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mr-sub__amount em {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+  font-style: normal;
+  font-weight: 400;
+}
+
+.mr-sub__total {
+  margin: var(--space-md) 0 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.mr-sub__hint {
+  margin: var(--space-md) 0 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #FBF3E5;
+  color: var(--color-warning);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+/* —— 预算健康度 —— */
+.mr-budget__bar {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-divider);
+}
+
+.mr-budget__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-success);
+  transition: width var(--transition-normal);
+}
+
+.mr-budget__fill--over {
+  background: var(--color-danger);
+}
+
+.mr-budget__status {
+  margin: var(--space-md) 0 0;
+  font-size: var(--font-size-md);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.mr-budget__status--over {
+  color: var(--color-danger-dark);
+  font-weight: 600;
+}
+
+.mr-budget__status--ok {
+  color: var(--color-success);
+  font-weight: 550;
+}
+
+/* —— 下月行动：结束页唯一的浅色行动面 —— */
+.mr-section--actions {
+  padding-top: var(--space-xxl);
+}
+
+.mr-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 0;
+  padding: 4px var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-light);
+  list-style: none;
+}
+
+.mr-action {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: 14px 0;
+  border-top: 1px solid rgba(15, 89, 102, 0.12);
+}
+
+.mr-action:first-child {
+  border-top: 0;
+}
+
+.mr-action__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-round);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  font-size: var(--font-size-sm);
+  font-weight: 750;
+}
+
+.mr-action__text {
+  margin: 1px 0 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-md);
+  line-height: 1.58;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+.mr-nudge {
+  margin: var(--space-lg) 0 0;
+  padding: var(--space-md) 0 0;
+  border: 0;
+  border-top: 1px dashed var(--color-border);
+  border-radius: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  line-height: 1.55;
+  text-align: left;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+}
+
+@media (hover: hover) {
+  .mr-entry:hover {
+    border-color: rgba(15, 89, 102, 0.24);
+    box-shadow: var(--shadow-md);
+  }
+
+  .mr-period__nav:hover:not(:disabled),
+  .mr-chip:hover {
+    border-color: rgba(15, 89, 102, 0.34);
+    background: var(--color-primary-light);
+  }
+}
+
+@media (max-width: 359px) {
+  #overlay-monthly-report-body {
+    padding-inline: var(--space-md);
+  }
+
+  .mr-period {
+    gap: var(--space-sm);
+  }
+
+  .mr-skeleton__cell--total {
+    padding: var(--space-lg);
+  }
+
+  .mr-skeleton__cell--metric {
+    padding: var(--space-md);
+  }
+
+  .mr-skeleton__topline {
+    align-items: center;
+  }
+
+  .mr-skeleton__trend {
+    padding-inline: 8px;
+  }
+
+  .mr-diagnosis__explain,
+  .mr-diagnosis__note,
+  .mr-diagnosis__prescriptions {
+    margin-left: 0;
+  }
+
+  .mr-ranking__amount {
+    font-size: 12px;
+  }
+}
+
+@media (min-width: 400px) {
+  #overlay-monthly-report-body {
+    padding-inline: var(--space-xl);
+  }
+
+  .mr-skeleton__cell--total {
+    padding: var(--space-xxl);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mr-entry,
+  .mr-period__nav,
+  .mr-budget__fill {
+    transition: none;
+  }
+}
