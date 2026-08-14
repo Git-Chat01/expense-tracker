@@ -34,7 +34,7 @@ class MemoryStorage {
 function loadReport(storagePath) {
   const storageSource = fs.readFileSync(path.join(__dirname, '..', storagePath), 'utf8');
   const dataSource = fs.readFileSync(path.join(__dirname, '..', 'js/data.js'), 'utf8');
-  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v220.js'), 'utf8');
+  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v221.js'), 'utf8');
   const storage = new MemoryStorage();
   const context = vm.createContext({
     console: { error() {}, warn() {}, log() {} },
@@ -49,7 +49,7 @@ function loadReport(storagePath) {
       + '  initPresetJson: () => JSON.stringify(ExpenseData.initPresetData()),\n'
       + '};',
     context,
-    { filename: `${storagePath}+monthly-report-v220.js` },
+    { filename: `${storagePath}+monthly-report-v221.js` },
   );
 
   return {

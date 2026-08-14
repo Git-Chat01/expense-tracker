@@ -53,7 +53,7 @@ function makeEl(id) {
 function loadRender() {
   const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js/storage-v214.js'), 'utf8');
   const dataSource = fs.readFileSync(path.join(__dirname, '..', 'js/data.js'), 'utf8');
-  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v220.js'), 'utf8');
+  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v221.js'), 'utf8');
   const storage = new MemoryStorage();
 
   const elements = new Map();
@@ -99,7 +99,7 @@ function loadRender() {
       + '  initPresetJson: () => JSON.stringify(ExpenseData.initPresetData()),\n'
       + '};',
     context,
-    { filename: 'storage+data+monthly-report-v220.js' },
+    { filename: 'storage+data+monthly-report-v221.js' },
   );
 
   return {
@@ -192,10 +192,25 @@ test('openReport 渲染完整骨架（样本充足 → 诊断 + 行动）', () =
   const body = runner.el('overlay-monthly-report-body').innerHTML;
 
   assert.match(body, /2026年8月/);            // 月份条
-  assert.match(body, /总支出/);               // ② 核心骨架
-  assert.match(body, /这个月哪里不对劲/);     // ③ 诊断区
+  assert.match(body, /总支出/);               // ② 核心概览
+  assert.match(body, /重点发现/);             // ③ 诊断区
   assert.match(body, /钱都花在哪了/);         // ④ 分类结构
-  assert.match(body, /下个月可以这样做/);     // ⑧ 行动建议
+  assert.match(body, /下月行动/);             // ⑧ 行动建议
+  assert.match(body, /mr-skeleton__trend/);   // 环比并入总支出主区域
+  assert.equal((body.match(/class="mr-skeleton__cell/g) || []).length, 3); // 主区域 + 两个等宽指标
+  assert.ok(body.indexOf('mr-skeleton') < body.indexOf('mr-opening')); // 先看数据，再看一句话结论
+  assert.match(body, /为什么这么说/);         // 首条结论下接解释，不重复原标题
+  const opening = body.match(/<p class="mr-opening__text">([^<]+)<\/p>/);
+  assert.ok(opening);
+  assert.equal(body.split(opening[1]).length - 1, 1); // 开场结论不在首条诊断重复
+  const actions = Array.from(
+    body.matchAll(/<p class="mr-action__text">([^<]+)<\/p>/g),
+    match => match[1],
+  );
+  assert.ok(actions.length > 0);
+  actions.forEach(text => {
+    assert.equal(body.split(text).length - 1, 1); // 行动建议不在诊断处方重复
+  });
   assert.doesNotMatch(body, /多记几个月/);    // 样本充足不出现降级文案
 });
 
@@ -207,8 +222,53 @@ test('样本量不足：只客观陈述，不做诊断', () => {
   runner.openReport('2026-08');
   const body = runner.el('overlay-monthly-report-body').innerHTML;
   assert.match(body, /多记几个月能看出更准的规律/);
-  // ③ 区保留标题但只有客观陈述，不出现诊断卡
+  assert.equal((body.match(/多记几个月/g) || []).length, 1);
+  // 客观结论已在“一句话”中说明，不再追加重复的重点发现章节
+  assert.doesNotMatch(body, /重点发现/);
   assert.doesNotMatch(body, /mr-diagnosis/);
+});
+
+test('样本充足但无诊断：保留中性开场，不渲染空的重点发现章节', () => {
+  const runner = loadRender();
+  seed(runner, fill('cat-housing', 100, 15, {
+    date: '2026-08-03',
+    createdAt: '2026-08-03T12:00:00.000Z',
+  }));
+  runner.init();
+
+  runner.openReport('2026-08');
+  const body = runner.el('overlay-monthly-report-body').innerHTML;
+  assert.match(body, /这是你的第一份月报/);
+  assert.doesNotMatch(body, /mr-section--findings/);
+});
+
+test('订阅提示已含合计与占比时，不再重复显示汇总数字', () => {
+  const runner = loadRender();
+  seed(runner, fill('cat-subscription', 80, 3).concat(fill('cat-food', 100, 15)));
+  runner.init();
+
+  runner.openReport('2026-08');
+  const body = runner.el('overlay-monthly-report-body').innerHTML;
+  assert.match(body, /订阅每月固定扣款合计 ¥240（占总支出 \d+%）/);
+  assert.equal((body.match(/合计 ¥240/g) || []).length, 1);
+  assert.doesNotMatch(body, /mr-sub__total/);
+});
+
+test('订阅占比较低时，保留普通合计且不显示行动提示', () => {
+  const runner = loadRender();
+  seed(runner, fill('cat-subscription', 5, 1, {
+    date: '2026-08-03',
+    createdAt: '2026-08-03T12:00:00.000Z',
+  }).concat(fill('cat-food', 100, 15, {
+    date: '2026-08-03',
+    createdAt: '2026-08-03T12:00:00.000Z',
+  })));
+  runner.init();
+
+  runner.openReport('2026-08');
+  const body = runner.el('overlay-monthly-report-body').innerHTML;
+  assert.match(body, /mr-sub__total/);
+  assert.doesNotMatch(body, /mr-sub__hint/);
 });
 
 test('空月份：渲染空骨架不报错', () => {
