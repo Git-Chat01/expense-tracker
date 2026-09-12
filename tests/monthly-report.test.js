@@ -34,11 +34,16 @@ class MemoryStorage {
 function loadReport(storagePath) {
   const storageSource = fs.readFileSync(path.join(__dirname, '..', storagePath), 'utf8');
   const dataSource = fs.readFileSync(path.join(__dirname, '..', 'js/data.js'), 'utf8');
-  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v221.js'), 'utf8');
+  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v223.js'), 'utf8');
   const storage = new MemoryStorage();
   const context = vm.createContext({
     console: { error() {}, warn() {}, log() {} },
     localStorage: storage,
+    // 固定样例月份，避免运行日期改变当前月语义。
+    Date: class extends Date {
+      constructor(...args) { super(...(args.length ? args : ['2026-08-12T12:00:00'])); }
+      static now() { return new Date('2026-08-12T12:00:00').getTime(); }
+    },
   });
 
   vm.runInContext(
@@ -49,7 +54,7 @@ function loadReport(storagePath) {
       + '  initPresetJson: () => JSON.stringify(ExpenseData.initPresetData()),\n'
       + '};',
     context,
-    { filename: `${storagePath}+monthly-report-v221.js` },
+    { filename: `${storagePath}+monthly-report-v223.js` },
   );
 
   return {

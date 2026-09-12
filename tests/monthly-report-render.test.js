@@ -53,7 +53,7 @@ function makeEl(id) {
 function loadRender() {
   const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js/storage-v214.js'), 'utf8');
   const dataSource = fs.readFileSync(path.join(__dirname, '..', 'js/data.js'), 'utf8');
-  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v221.js'), 'utf8');
+  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v223.js'), 'utf8');
   const storage = new MemoryStorage();
 
   const elements = new Map();
@@ -85,6 +85,11 @@ function loadRender() {
   const context = vm.createContext({
     console: { error() {}, warn() {}, log() {} },
     localStorage: storage,
+    // 固定样例月份，避免运行日期改变当前月语义。
+    Date: class extends Date {
+      constructor(...args) { super(...(args.length ? args : ['2026-08-12T12:00:00'])); }
+      static now() { return new Date('2026-08-12T12:00:00').getTime(); }
+    },
     document: documentStub,
     window: { scrollY: 0, scrollTo() {} },
   });
@@ -99,7 +104,7 @@ function loadRender() {
       + '  initPresetJson: () => JSON.stringify(ExpenseData.initPresetData()),\n'
       + '};',
     context,
-    { filename: 'storage+data+monthly-report-v221.js' },
+    { filename: 'storage+data+monthly-report-v223.js' },
   );
 
   return {
@@ -198,11 +203,9 @@ test('openReport 渲染完整骨架（样本充足 → 诊断 + 行动）', () =
   assert.match(body, /下月行动/);             // ⑧ 行动建议
   assert.match(body, /mr-skeleton__trend/);   // 环比并入总支出主区域
   assert.equal((body.match(/class="mr-skeleton__cell/g) || []).length, 3); // 主区域 + 两个等宽指标
-  assert.ok(body.indexOf('mr-skeleton') < body.indexOf('mr-opening')); // 先看数据，再看一句话结论
-  assert.match(body, /为什么这么说/);         // 首条结论下接解释，不重复原标题
-  const opening = body.match(/<p class="mr-opening__text">([^<]+)<\/p>/);
-  assert.ok(opening);
-  assert.equal(body.split(opening[1]).length - 1, 1); // 开场结论不在首条诊断重复
+  assert.doesNotMatch(body, /为什么这么说/); // 发现条目表达完整结论
+  assert.doesNotMatch(body, /mr-opening__text/); // 有发现时不重复摘要
+  assert.ok(body.indexOf('mr-skeleton__value') < body.indexOf('mr-skeleton__trend'));
   const actions = Array.from(
     body.matchAll(/<p class="mr-action__text">([^<]+)<\/p>/g),
     match => match[1],

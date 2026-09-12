@@ -3,7 +3,7 @@
    PWA 离线缓存：首次访问后，无网络也能打开
    ================================================================ */
 
-const APP_VERSION = '222';
+const APP_VERSION = '223';
 const CACHE_NAME = 'expense-tracker-v' + APP_VERSION;
 const RELEASE_STATE_CACHE = 'expense-tracker-release-state';
 const RELEASE_STATE_URL = new URL(
@@ -27,7 +27,7 @@ const CORE_PRE_CACHE = [
   'css/list.css',
   'css/stats.css',
   'css/onboarding.css',
-  'css/monthly-report-v221.css',
+  'css/monthly-report-v223.css',
   'js/storage.js',
   'js/storage-v214.js',
   'js/data.js',
@@ -36,7 +36,7 @@ const CORE_PRE_CACHE = [
   'js/categories.js',
   'js/list.js',
   'js/stats.js',
-  'js/monthly-report-v221.js',
+  'js/monthly-report-v223.js',
   'js/onboarding.js',
   'js/app.js',
   'js/app-v217.js',
