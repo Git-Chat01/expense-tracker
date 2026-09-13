@@ -1,0 +1,65 @@
+/* 仅统一账单和统计控件，不影响记账页已确认的尺寸与滚动。 */
+#list-filter-bar { flex-wrap: wrap; overflow: visible; gap: 6px; }
+#list-filter-bar .chip, .stats-period .chip {
+  appearance: none;
+  border: 1px solid transparent;
+  min-height: 44px;
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+#list-filter-bar .chip--active, .stats-period .chip--active {
+  color: var(--color-primary);
+  background: var(--color-primary-light, #eef2ff);
+  font-weight: 600;
+}
+.stats-period { gap: 4px; }
+.stats-period .chip { justify-content: center; text-align: center; flex: 1; padding-inline: 4px; }
+#list-filter-bar button:focus-visible, .stats-period button:focus-visible,
+.list-dropdown button:focus-visible, .stats-payment-details summary:focus-visible,
+#home-import-area :focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+.list-search__toggle, .list-search__close { width: 44px; height: 44px; }
+.list-dropdown button.list-dropdown__item {
+  display: block; width: 100%; min-height: 44px; border: 0;
+  appearance: none; text-align: left; font: inherit; font-size: 14px;
+  color: var(--color-text-secondary); background: transparent; cursor: pointer;
+}
+.list-dropdown button.list-dropdown__item--active { color: var(--color-primary); background: #eef2ff; }
+.list-dropdown input[type="date"], .list-dropdown__date-confirm { min-height: 44px; }
+.stats-chart-wrapper { padding: 12px; }
+.stats-chart-canvas-wrap { width: 210px; max-width: 100%; }
+.stats-chart-canvas-wrap canvas { max-width: 210px; }
+.stats-chart-center__total { font-size: 18px; }
+.stats-chart-legend { margin-top: 8px; box-shadow: none; padding-inline: 0; }
+.stats-chart-section { margin-bottom: 24px; }
+.stats-payment-details { border-radius: 12px; background: var(--color-surface); }
+.stats-payment-details summary {
+  display: flex; align-items: center; gap: 8px; padding: 12px;
+  min-height: 48px; cursor: pointer; list-style: none; font-weight: 600;
+}
+.stats-payment-details summary::-webkit-details-marker { display: none; }
+#stats-payment-summary { margin-left: auto; font-size: 12px; font-weight: 400; color: var(--color-text-secondary); }
+.stats-payment-chevron { transition: transform 150ms ease; }
+.stats-payment-details[open] .stats-payment-chevron { transform: rotate(180deg); }
+.stats-payment-details .stats-chart-wrapper { box-shadow: none; }
+#home-import-area { margin-top: 12px; }
+#home-import-file-btn { width: 100%; min-height: 44px; }
+#home-import-file[hidden] { display: none; }
+.home-import-status { color: var(--color-text-secondary); font-size: 13px; overflow-wrap: anywhere; margin: 8px 0; }
+.home-import-status:empty { display: none; }
+#home-import-paste summary { min-height: 44px; padding: 12px 0; cursor: pointer; font-size: 13px; }
+#home-import-area .btn { min-height: 44px; }
+.home-import-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  #list-filter-bar .chip, .stats-period .chip, .stats-payment-chevron { transition: none; }
+}
+
+#home-import-textarea { width: 100%; resize: vertical; font: 12px var(--font-mono); margin-bottom: 8px; }
