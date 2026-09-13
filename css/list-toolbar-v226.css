@@ -1,0 +1,22 @@
+/* 账单顶部：标题/排序、整行搜索、等宽筛选，共用一组水平边界。 */
+.list-toolbar { padding: 8px var(--space-lg) 0; flex-shrink: 0; }
+.list-toolbar__heading { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin-bottom: 8px; }
+.list-toolbar__heading h1 { margin: 0; font-size: 22px; font-weight: 720; letter-spacing: -.03em; color: var(--color-text-primary); }
+.list-toolbar__sort { min-height: 44px; padding: 0 8px 0 16px; border: 0; background: transparent; color: var(--color-text-secondary); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; border-radius: 8px; }
+.list-toolbar__search { display: flex; align-items: center; gap: 10px; min-height: 48px; padding-left: 14px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); }
+.list-toolbar__search > svg { width: 18px; height: 18px; flex-shrink: 0; color: var(--color-text-tertiary); }
+.list-toolbar svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.list-toolbar__search input { flex: 1; width: 0; min-width: 0; height: 46px; padding: 0 10px 0 0; border: 0; outline: 0; border-radius: 12px; background: transparent; color: var(--color-text-primary); font: inherit; font-size: 16px; appearance: none; }
+.list-toolbar__search input::placeholder { color: var(--color-text-tertiary); font-size: 14px; }
+.list-toolbar__search input::-webkit-search-cancel-button { appearance: none; }
+.list-toolbar__search:focus-within { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-light); }
+.list-toolbar__clear { display: flex; align-items: center; justify-content: center; flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; border-radius: 10px; color: var(--color-text-secondary); cursor: pointer; }
+.list-toolbar__clear[hidden] { display: none; }
+.list-toolbar__clear svg { width: 18px; height: 18px; }
+.list-toolbar #list-filter-bar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 6px 0 8px; margin: 0; border-bottom: 1px solid var(--color-border); }
+.list-toolbar #list-filter-bar .list-filter-group { min-width: 0; }
+.list-toolbar #list-filter-bar .chip { width: 100%; min-height: 44px; justify-content: center; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--color-text-secondary); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.list-toolbar #list-filter-bar .chip--active { color: var(--color-primary); background: var(--color-primary-light); font-weight: 650; }
+.list-toolbar button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.list-toolbar button:active { background: var(--color-primary-light); }
+@media (hover: hover) { .list-toolbar button:hover { background: var(--color-primary-light); color: var(--color-primary); } }

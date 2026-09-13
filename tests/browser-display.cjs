@@ -75,6 +75,18 @@ async function main() {
             .evaluateAll(els => els.map(el => el.getBoundingClientRect().height));
           assert.ok(targets.every(height => height >= 44), '筛选/周期按钮至少44px');
         }
+        if (view === 'list') {
+          const layout = await page.evaluate(() => {
+            const rect = sel => document.querySelector(sel).getBoundingClientRect();
+            const search = rect('.list-toolbar__search'), bar = rect('#list-filter-bar');
+            return { search: [search.left, search.right], bar: [bar.left, bar.right],
+              rows: new Set([...document.querySelectorAll('#list-filter-bar .chip')].map(el => el.getBoundingClientRect().top)).size,
+              labelsFit: [...document.querySelectorAll('#list-filter-bar .chip')].every(el => el.scrollWidth <= el.clientWidth) };
+          });
+          assert.deepEqual(layout.search, layout.bar, '搜索与筛选两端对齐');
+          assert.equal(layout.rows, 1, '五个筛选保持同一行');
+          assert.equal(layout.labelsFit, true, '筛选文案完整显示');
+        }
         if (view === 'stats') {
           assert.equal(await page.locator('.stats-period').evaluate(el => el.scrollWidth <= el.clientWidth), true, '周期按钮应完整显示');
           assert.ok(await page.evaluate(() => Chart.getChart('stats-category-chart').data.datasets[0].data.length > 0));
@@ -95,7 +107,12 @@ async function main() {
       assert.ok(b.bottom <= b.nav);
       await page.locator('#add-more-fields').evaluate(el => { el.open = false; });
     }
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.locator('[data-view="list"]').click();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: path.join(artifacts, 'list-desktop.png') });
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('.list-toolbar').screenshot({ path: path.join(artifacts, 'list-toolbar.png') });
     await page.locator('[data-view="list"]').click();
     assert.match(await page.locator('#list-content').innerText(), /2025年9月13日/);
     // 默认日期分组保留跨年年份；金额排序仍可切换。
@@ -103,7 +120,7 @@ async function main() {
     assert.match(await page.locator('.list-group-header').allInnerTexts().then(v => v.join('\n')), /2025年9月13日/);
 
 
-    await page.locator('#list-search-toggle').click();
+    assert.equal(await page.locator('#list-search-input').isVisible(), true);
     await page.locator('#list-search-input').fill(' 星河咖啡 ');
     assert.equal(await page.locator('.list-item').count(), 1);
     assert.equal(await page.locator('.list-item mark').innerText(), '星河咖啡');
@@ -112,6 +129,10 @@ async function main() {
     await page.locator('[data-filter="necessity"]').click();
     await page.locator('.list-dropdown__item[data-val="impulse"]').click();
     assert.equal(await page.locator('.list-item').count(), 2);
+    await page.locator('#list-search-clear').click();
+    assert.equal(await page.locator('.list-item').count(), 4, '清空搜索保留价值筛选');
+    assert.equal(await page.locator('#list-search-input').inputValue(), '');
+    assert.equal(await page.locator('#list-search-clear').isVisible(), false);
     await page.locator('#list-clear-all').click();
     await page.locator('[data-filter="necessity"]').click();
     await page.locator('.list-dropdown__item[data-val=""]').click();
