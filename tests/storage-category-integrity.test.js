@@ -6,7 +6,7 @@ const vm = require('node:vm');
 
 const STORAGE_SCRIPTS = [
   'js/storage.js',
-  'js/storage-v214.js',
+  'js/storage-v225.js',
 ];
 
 const CATEGORY_STORAGE_KEY = 'expense_tracker_categories';

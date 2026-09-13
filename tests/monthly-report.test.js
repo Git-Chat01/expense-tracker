@@ -11,7 +11,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const STORAGE_SCRIPTS = ['js/storage-v214.js'];
+const STORAGE_SCRIPTS = ['js/storage-v225.js'];
 
 class MemoryStorage {
   constructor() {
