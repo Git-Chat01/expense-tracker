@@ -1,0 +1,21 @@
+/* 局部修复 hidden 被组件 display 覆盖，不改变页面滚动结构。 */
+.home-today[hidden],
+.home-summary__context-item[hidden] {
+  display: none;
+}
+
+/* 日期输入报错留在当前下拉，保留用户输入供修改。 */
+.list-dropdown__date-error {
+  margin: 6px 8px 0;
+  color: var(--color-danger);
+  font-size: 12px;
+}
+.list-dropdown__date-error[hidden] { display: none; }
+
+/* “近7天”明确区间后，窄屏周期按钮仍保持单行。 */
+.stats-period { gap: 6px; }
+.stats-period .chip {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding-inline: 8px;
+}

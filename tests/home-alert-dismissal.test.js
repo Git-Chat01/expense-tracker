@@ -90,13 +90,14 @@ function loadHome(initial) {
     ExpenseCategories: expenseCategories,
   });
 
-  const homeSource = fs.readFileSync(path.join(__dirname, '..', 'js/home.js'), 'utf8');
+  const summarySource = fs.readFileSync(path.join(__dirname, '..', 'js/summary-v224.js'), 'utf8');
+  const homeSource = fs.readFileSync(path.join(__dirname, '..', 'js/home-v224.js'), 'utf8');
   // 钩子代码与模块源码拼接在同一脚本作用域，才能访问顶层 const ExpenseHome
   // （vm 上下文中顶层 const 不会挂到 context 全局对象上）
   vm.runInContext(
-    `${homeSource}\n;globalThis.__homeAlertTest = { render: ExpenseHome.render };`,
+    `${summarySource}\n${homeSource}\n;globalThis.__homeAlertTest = { render: ExpenseHome.render };`,
     context,
-    { filename: 'js/home.js' },
+    { filename: 'js/home-v224.js' },
   );
 
   const render = context.__homeAlertTest.render;
@@ -221,7 +222,7 @@ test('home.js：分类 80% 档忽略后当月不再重复，90% 档为独立提�
   });
 
   home.render();
-  assert.match(alertText(home), /「餐饮」已花 ¥1700/);
+  assert.match(alertText(home), /「餐饮」已花 ¥1,700\.00/);
 
   home.replaceCloseButtons([['cat-food-80', 'warning']]);
   home.render();

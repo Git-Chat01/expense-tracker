@@ -162,7 +162,7 @@ test('js/edit-expense.js：编辑大额确认比较捕获的整数分', () => {
 
 /* ---------------- budget-overlay.js：预算流程 ---------------- */
 test('js/budget-overlay.js：预算保存不用 parseFloat 宽松解析', () => {
-  const source = readSource('js/budget-overlay.js');
+  const source = readSource('js/budget-overlay-v224.js');
   const budgetFlow = sliceBetween(
     source,
     "document.getElementById('budget-btn-save').addEventListener",
@@ -175,7 +175,7 @@ test('js/budget-overlay.js：预算保存不用 parseFloat 宽松解析', () => 
 });
 
 test('js/budget-overlay.js：预算普通保存与重置使用不同持久化模式', () => {
-  const source = readSource('js/budget-overlay.js');
+  const source = readSource('js/budget-overlay-v224.js');
   const budgetSection = sliceBetween(
     source,
     "document.getElementById('budget-btn-save').addEventListener",

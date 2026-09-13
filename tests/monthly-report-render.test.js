@@ -53,7 +53,8 @@ function makeEl(id) {
 function loadRender() {
   const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js/storage-v214.js'), 'utf8');
   const dataSource = fs.readFileSync(path.join(__dirname, '..', 'js/data.js'), 'utf8');
-  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v223.js'), 'utf8');
+  const summarySource = fs.readFileSync(path.join(__dirname, '..', 'js/summary-v224.js'), 'utf8');
+  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v224.js'), 'utf8');
   const storage = new MemoryStorage();
 
   const elements = new Map();
@@ -82,6 +83,7 @@ function loadRender() {
     createElement() { return makeEl('created'); },
   };
 
+  const windowStub = { scrollY: 0, scrollTo(x, y) { this.scrollY = y; } };
   const context = vm.createContext({
     console: { error() {}, warn() {}, log() {} },
     localStorage: storage,
@@ -91,11 +93,11 @@ function loadRender() {
       static now() { return new Date('2026-08-12T12:00:00').getTime(); }
     },
     document: documentStub,
-    window: { scrollY: 0, scrollTo() {} },
+    window: windowStub,
   });
 
   vm.runInContext(
-    `${storageSource}\n${dataSource}\n${reportSource}\n;globalThis.__mrRender = {\n`
+    `${storageSource}\n${dataSource}\n${summarySource}\n${reportSource}\n;globalThis.__mrRender = {\n`
       + '  init: () => ExpenseMonthlyReport.init(),\n'
       + '  openReportJson: (ym) => JSON.stringify(ExpenseMonthlyReport.openReport(ym)),\n'
       + '  closeReport: () => ExpenseMonthlyReport.closeReport(),\n'
@@ -104,7 +106,7 @@ function loadRender() {
       + '  initPresetJson: () => JSON.stringify(ExpenseData.initPresetData()),\n'
       + '};',
     context,
-    { filename: 'storage+data+monthly-report-v223.js' },
+    { filename: 'storage+data+monthly-report-v224.js' },
   );
 
   return {
@@ -122,6 +124,7 @@ function loadRender() {
       cb({ target: { closest(sel) { return sel === selector ? {} : null; } } });
     },
     storage,
+    window: windowStub,
   };
 }
 
@@ -318,4 +321,23 @@ test('历史月不写已读；关闭恢复滚动锁', () => {
 
   // 关闭：覆盖层收起（打开状态由 open 类标记，stub 记录 add/remove 调用即可不崩）
   runner.closeReport();
+});
+
+test('月报切月不覆盖首次打开前的背景滚动位置，重新打开记录新位置', () => {
+  const runner = loadRender();
+  runner.initPreset();
+  runner.init();
+  runner.window.scrollY = 130;
+  runner.openReport('2026-08');
+  // 浏览器锁住 body 后页面滚动位置归零。
+  runner.window.scrollY = 0;
+  runner.clickInBody('[data-mr-prev]');
+  runner.clickInBody('[data-mr-next]');
+  runner.closeReport();
+  assert.equal(runner.window.scrollY, 130);
+  runner.window.scrollY = 260;
+  runner.openReport('2026-08');
+  runner.window.scrollY = 0;
+  runner.closeReport();
+  assert.equal(runner.window.scrollY, 260);
 });
