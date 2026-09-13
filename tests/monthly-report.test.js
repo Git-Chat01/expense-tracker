@@ -34,7 +34,8 @@ class MemoryStorage {
 function loadReport(storagePath) {
   const storageSource = fs.readFileSync(path.join(__dirname, '..', storagePath), 'utf8');
   const dataSource = fs.readFileSync(path.join(__dirname, '..', 'js/data.js'), 'utf8');
-  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v223.js'), 'utf8');
+  const summarySource = fs.readFileSync(path.join(__dirname, '..', 'js/summary-v224.js'), 'utf8');
+  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v224.js'), 'utf8');
   const storage = new MemoryStorage();
   const context = vm.createContext({
     console: { error() {}, warn() {}, log() {} },
@@ -47,14 +48,14 @@ function loadReport(storagePath) {
   });
 
   vm.runInContext(
-    `${storageSource}\n${dataSource}\n${reportSource}\n;globalThis.__mrTest = {\n`
+    `${storageSource}\n${dataSource}\n${summarySource}\n${reportSource}\n;globalThis.__mrTest = {\n`
       + '  analyzeJson: (input) => JSON.stringify(ExpenseMonthlyReport.analyze(JSON.parse(input))),\n'
       + '  buildContextJson: (ym) => JSON.stringify(ExpenseMonthlyReport.buildContext(ym)),\n'
       + '  addExpenseJson: (e) => JSON.stringify(ExpenseDB.addExpense(JSON.parse(e))),\n'
       + '  initPresetJson: () => JSON.stringify(ExpenseData.initPresetData()),\n'
       + '};',
     context,
-    { filename: `${storagePath}+monthly-report-v223.js` },
+    { filename: `${storagePath}+monthly-report-v224.js` },
   );
 
   return {
