@@ -1,0 +1,39 @@
+/* 仅账单页的悬浮返回按钮；不改变现有滚动结构。 */
+.list-back-top {
+  position: fixed;
+  right: max(16px, calc((100vw - var(--app-max-width)) / 2 + 16px));
+  bottom: calc(var(--tab-bar-height) + var(--safe-area-bottom) + 64px);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 48px;
+  height: 52px;
+  padding: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-md);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 150ms ease, background 150ms ease;
+}
+.list-back-top[hidden] { display: none; }
+.list-back-top svg {
+  width: 21px;
+  height: 21px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.list-back-top:active { transform: scale(0.94); background: var(--color-primary-light); }
+.list-back-top:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+@media (hover: hover) { .list-back-top:hover { background: var(--color-primary-light); } }
+@media (prefers-reduced-motion: reduce) { .list-back-top { transition: none; } }
