@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="css/experience-v225.css">
   <link rel="stylesheet" href="css/list-toolbar-v226.css">
   <link rel="stylesheet" href="css/list-back-top-v228.css">
+  <link rel="stylesheet" href="css/audit-fixes-v229.css">
 </head>
 <body>
 
@@ -57,7 +58,7 @@
           <div class="home-summary card">
             <div class="home-summary__top">
               <div>
-                <p class="home-summary__label">本月支出</p>
+                <p class="home-summary__label" id="home-month-label">本月支出</p>
                 <p class="home-summary__amount" id="home-month-amount">¥0</p>
               </div>
             </div>
@@ -95,7 +96,7 @@
             </div>
             <div class="home-budget-brief__body">
               <div class="home-budget-brief__spent">
-                <span>本月已花</span>
+                <span id="home-budget-spent-label">本月已花</span>
                 <div class="home-budget-brief__spent-amount">
                   <strong id="home-budget-summary-spent">¥0</strong>
                   <span id="home-budget-summary-limit">/ ¥0</span>
@@ -103,6 +104,7 @@
               </div>
               <span class="home-budget-brief__status" id="home-budget-summary-status">节奏正常</span>
             </div>
+            <p id="home-budget-prebooked" class="home-budget-prebooked" hidden></p>
             <div class="home-budget-brief__progress-meta">
               <span>预算使用进度</span>
               <strong id="home-budget-summary-percentage">0%</strong>
@@ -182,7 +184,7 @@
 
     <!-- 首页底部版本位：新版本等待时原地切换为更新说明卡 -->
     <div id="app-version-slot" class="app-version-slot">
-      <div id="app-version" class="app-version" data-version="228" aria-label="当前应用版本">v20260914-228</div>
+      <div id="app-version" class="app-version" data-version="229" aria-label="当前应用版本">v20261026-229</div>
       <section id="sw-update-bar" class="sw-update-bar" aria-labelledby="sw-update-bar-title" aria-live="polite" hidden>
         <button type="button" class="sw-update-bar__head" id="sw-update-bar-head" aria-expanded="false" aria-controls="sw-update-bar-detail">
           <svg class="sw-update-bar__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-15.5-6.2L3 8.3M3 3v5.3h5.3M3 12a9 9 0 0 0 15.5 6.2l2.5-2.5M21 21v-5.3h-5.3"/></svg>
@@ -211,7 +213,10 @@
       <!-- 金额与日期：每一笔记录先确认金额，再补充信息 -->
       <header class="add-header">
         <div class="add-header__meta">
-          <p class="add-header__eyebrow">快速记一笔</p>
+          <div class="add-draft-tools">
+            <p class="add-header__eyebrow" id="add-draft-eyebrow">快速记一笔</p>
+            <button id="add-discard-draft" type="button" hidden>清空草稿</button>
+          </div>
           <div class="add-date-row">
             <button class="add-date-quick" id="add-date-quick" type="button" aria-expanded="false" aria-controls="add-date-inputs">
               <span aria-hidden="true">日历</span>
@@ -609,32 +614,32 @@
 <!-- ================================================================
      更新流程使用真实版本路径，避免 CDN 忽略查询参数时混用旧逻辑
      ================================================================ -->
-<script src="js/update-flow-v216.js"></script>
+<script src="js/update-flow-v229.js"></script>
 
 <!-- ================================================================
      JavaScript（按依赖顺序加载）
      ================================================================ -->
-<script src="js/storage-v225.js"></script>
+<script src="js/storage-v229.js"></script>
 <script src="js/data.js?v=221"></script>
 <script src="js/summary-v224.js"></script>
 <script src="js/icons.js?v=200"></script>
-<script src="js/home-v224.js"></script>
+<script src="js/home-v229.js"></script>
 <script src="js/categories.js?v=195"></script>
-<script src="js/list-v226.js"></script>
+<script src="js/list-v229.js"></script>
 <script src="js/list-back-top-v228.js"></script>
 <script src="js/stats-v225.js"></script>
-<script src="js/monthly-report-v224.js"></script>
+<script src="js/monthly-report-v229.js"></script>
 <script src="js/onboarding.js?v=194"></script>
 <!-- 主控制器拆分出的独立模块（审计高危 No.2；运行时互相引用，加载顺序按依赖逻辑排列） -->
 <script src="js/toast.js"></script>
-<script src="js/confirm-dialog.js"></script>
+<script src="js/confirm-dialog-v229.js"></script>
 <script src="js/ui-utils.js"></script>
-<script src="js/habit-predictor.js"></script>
+<script src="js/habit-predictor-v229.js"></script>
 <script src="js/budget-overlay-v224.js"></script>
 <script src="js/category-manager.js"></script>
-<script src="js/edit-expense.js"></script>
-<script src="js/backup-manager-v225.js"></script>
-<script src="js/app-v217.js"></script>
+<script src="js/edit-expense-v229.js"></script>
+<script src="js/backup-manager-v229.js"></script>
+<script src="js/app-v229.js"></script>
 <script src="js/budget-impact-v214.js"></script>
 
 <!-- Chart.js 固定同源版本（统计模块依赖，可离线使用） -->
