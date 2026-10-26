@@ -206,6 +206,7 @@ async function main() {
     await page.locator(`.list-item[data-id="${newId}"]`).click();
     await page.locator('#edit-amount').fill('13.45');
     await page.locator('#edit-btn-save').click();
+    await page.waitForFunction(id => ExpenseDB.getExpense(id).amount === 13.45, newId);
     assert.equal(await page.evaluate(id => ExpenseDB.getExpenses().find(e => e.id === id).amount, newId), 13.45);
     await page.locator('[data-view="home"]').click();
     await page.locator('.home-data-management__summary').click();

@@ -1,0 +1,10 @@
+/* v229 只补局部交互样式，不改变页面滚动根与记账键盘布局。 */
+.add-draft-tools { display: flex; align-items: center; min-height: 44px; flex-shrink: 0; }
+#add-discard-draft { min-height: 44px; padding: 8px 4px; border: 0; background: transparent; color: var(--color-text-secondary); font: inherit; font-size: 12px; cursor: pointer; }
+#add-discard-draft[hidden], #add-draft-eyebrow[hidden], .home-budget-prebooked[hidden], .list-load-more__button[hidden], #edit-reload-latest[hidden], #edit-conflict-status[hidden] { display: none; }
+.list-load-more { padding: 18px 12px 24px; text-align: center; }
+.list-load-more__status { margin: 0 0 10px; font-size: 12px; color: var(--color-text-secondary); }
+.list-load-more__button { min-height: 44px; min-width: 160px; }
+.list-item:focus-visible, #add-discard-draft:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.home-budget-prebooked { margin: 10px 0 0; font-size: 12px; line-height: 1.6; color: var(--color-text-secondary); }
+#home-pre-import-backup { min-height: 44px; }

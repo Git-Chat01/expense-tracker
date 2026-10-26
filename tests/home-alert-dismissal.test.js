@@ -91,13 +91,13 @@ function loadHome(initial) {
   });
 
   const summarySource = fs.readFileSync(path.join(__dirname, '..', 'js/summary-v224.js'), 'utf8');
-  const homeSource = fs.readFileSync(path.join(__dirname, '..', 'js/home-v224.js'), 'utf8');
+  const homeSource = fs.readFileSync(path.join(__dirname, '..', 'js/home-v229.js'), 'utf8');
   // 钩子代码与模块源码拼接在同一脚本作用域，才能访问顶层 const ExpenseHome
   // （vm 上下文中顶层 const 不会挂到 context 全局对象上）
   vm.runInContext(
     `${summarySource}\n${homeSource}\n;globalThis.__homeAlertTest = { render: ExpenseHome.render };`,
     context,
-    { filename: 'js/home-v224.js' },
+    { filename: 'js/home-v229.js' },
   );
 
   const render = context.__homeAlertTest.render;

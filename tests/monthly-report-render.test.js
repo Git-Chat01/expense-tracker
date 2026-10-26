@@ -51,10 +51,10 @@ function makeEl(id) {
 }
 
 function loadRender() {
-  const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js/storage-v225.js'), 'utf8');
+  const storageSource = fs.readFileSync(path.join(__dirname, '..', 'js/storage-v229.js'), 'utf8');
   const dataSource = fs.readFileSync(path.join(__dirname, '..', 'js/data.js'), 'utf8');
   const summarySource = fs.readFileSync(path.join(__dirname, '..', 'js/summary-v224.js'), 'utf8');
-  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v224.js'), 'utf8');
+  const reportSource = fs.readFileSync(path.join(__dirname, '..', 'js/monthly-report-v229.js'), 'utf8');
   const storage = new MemoryStorage();
 
   const elements = new Map();
@@ -106,7 +106,7 @@ function loadRender() {
       + '  initPresetJson: () => JSON.stringify(ExpenseData.initPresetData()),\n'
       + '};',
     context,
-    { filename: 'storage+data+monthly-report-v224.js' },
+    { filename: 'storage+data+monthly-report-v229.js' },
   );
 
   return {

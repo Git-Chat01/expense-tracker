@@ -3,7 +3,7 @@
    PWA 离线缓存：首次访问后，无网络也能打开
    ================================================================ */
 
-const APP_VERSION = '228';
+const APP_VERSION = '229';
 const CACHE_NAME = 'expense-tracker-v' + APP_VERSION;
 const RELEASE_STATE_CACHE = 'expense-tracker-release-state';
 const RELEASE_STATE_URL = new URL(
@@ -32,30 +32,31 @@ const CORE_PRE_CACHE = [
   'css/experience-v225.css',
   'css/list-toolbar-v226.css',
   'css/list-back-top-v228.css',
+  'css/audit-fixes-v229.css',
   'js/storage.js',
-  'js/storage-v225.js',
+  'js/storage-v229.js',
   'js/data.js',
   'js/summary-v224.js',
   'js/icons.js',
-  'js/home-v224.js',
+  'js/home-v229.js',
   'js/categories.js',
-  'js/list-v226.js',
+  'js/list-v229.js',
   'js/list-back-top-v228.js',
   'js/stats-v225.js',
-  'js/monthly-report-v224.js',
+  'js/monthly-report-v229.js',
   'js/onboarding.js',
   'js/app.js',
-  'js/app-v217.js',
+  'js/app-v229.js',
   'js/toast.js',
-  'js/confirm-dialog.js',
+  'js/confirm-dialog-v229.js',
   'js/ui-utils.js',
-  'js/habit-predictor.js',
+  'js/habit-predictor-v229.js',
   'js/budget-overlay-v224.js',
   'js/category-manager.js',
-  'js/edit-expense.js',
-  'js/backup-manager-v225.js',
+  'js/edit-expense-v229.js',
+  'js/backup-manager-v229.js',
   'js/budget-impact-v214.js',
-  'js/update-flow-v216.js',
+  'js/update-flow-v229.js',
   'js/vendor-chart.umd-4.4.7.min.js',
   'manifest.json',
   'icon-192.png',
@@ -113,6 +114,11 @@ self.addEventListener('install', (event) => {
 
 // 用户确认更新后，页面向 waiting 的新版本发送此消息。
 self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'GET_VERSION') {
+    const port = event.ports && event.ports[0];
+    if (port) port.postMessage({ type: 'SW_VERSION', version: APP_VERSION });
+    return;
+  }
   if (event.data === 'skipWaiting') {
     event.waitUntil(
       writeReleaseState('confirmed')
@@ -135,7 +141,7 @@ self.addEventListener('activate', (event) => {
     }).then(() => caches.keys()).then((keys) => {
       return Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME && key !== RELEASE_STATE_CACHE)
+          .filter((key) => /^expense-tracker-v\d+$/.test(key) && key !== CACHE_NAME)
           .map((key) => caches.delete(key))
       );
     }).then(() => {

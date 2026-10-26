@@ -8,8 +8,8 @@ const path = require('node:path');
    主控制器拆分（审计高危 No.2）后，规则随代码迁到各自模块文件，
    本文件按模块分布断言：
    - app.js         拆分前 legacy 快照（保留全量 4 条断言）
-   - app-v217.js    新增记账流程（parseFloat 禁令 / 日期原值 / 大额整数分）
-   - edit-expense.js 编辑流程（同上三条）
+   - app-v229.js    新增记账流程（parseFloat 禁令 / 日期原值 / 大额整数分）
+   - edit-expense-v229.js 编辑流程（同上三条）
    - budget-overlay.js 预算流程（parseFloat 禁令 / 保存与重置模式区分）
    ================================================================= */
 
@@ -90,28 +90,28 @@ for (const appPath of ['js/app.js']) {
   });
 }
 
-/* ---------------- app-v217.js：新增记账流程 ---------------- */
+/* ---------------- app-v229.js：新增记账流程 ---------------- */
 // 拆分后 Toast 已迁至 toast.js，新增流程切片边界改为 _bindOverlays（紧随 _commitSave 之后）
 const ADD_FLOW_END = 'function _bindOverlays()';
 
-test('js/app-v217.js：新增保存不用 parseFloat 宽松解析', () => {
-  const source = readSource('js/app-v217.js');
+test('js/app-v229.js：新增保存不用 parseFloat 宽松解析', () => {
+  const source = readSource('js/app-v229.js');
   const addFlow = sliceBetween(source, 'function _buildAddExpenseDraft()', ADD_FLOW_END);
 
   assert.doesNotMatch(addFlow, /\bparseFloat\s*\(/);
   assert.match(addFlow, /ExpenseDB\.validateExpenseDraft\(_buildAddExpenseDraft\(\)\)/);
 });
 
-test('js/app-v217.js：新增日期原值进入校验器且无 now fallback', () => {
-  const source = readSource('js/app-v217.js');
+test('js/app-v229.js：新增日期原值进入校验器且无 now fallback', () => {
+  const source = readSource('js/app-v229.js');
   const addDraft = sliceBetween(source, 'function _buildAddExpenseDraft()', 'function _showExpenseValidationError');
 
   assert.match(addDraft, /date:\s*_formState\.date/);
   assert.doesNotMatch(addDraft, /date:[^,\n]*(?:\|\||\?\?)[^,\n]*(?:today|now|Date)/i);
 });
 
-test('js/app-v217.js：新增大额确认比较捕获的整数分', () => {
-  const source = readSource('js/app-v217.js');
+test('js/app-v229.js：新增大额确认比较捕获的整数分', () => {
+  const source = readSource('js/app-v229.js');
   const addFlow = sliceBetween(source, 'function _handleSave()', ADD_FLOW_END);
 
   assert.match(addFlow, /const confirmedCents = validation\.cents/);
@@ -121,10 +121,10 @@ test('js/app-v217.js：新增大额确认比较捕获的整数分', () => {
   assert.match(addFlow, /validation\.cents !== expectedCents/);
 });
 
-/* ---------------- edit-expense.js：编辑流程 ---------------- */
+/* ---------------- edit-expense-v229.js：编辑流程 ---------------- */
 // 低危项 A10 将 readEditDraft 等提级为模块级函数（显式参数），断言边界同步更新
-test('js/edit-expense.js：编辑保存不用 parseFloat 宽松解析', () => {
-  const source = readSource('js/edit-expense.js');
+test('js/edit-expense-v229.js：编辑保存不用 parseFloat 宽松解析', () => {
+  const source = readSource('js/edit-expense-v229.js');
   const editFlow = sliceBetween(
     source,
     'function _readEditDraft(body, expense)',
@@ -135,8 +135,8 @@ test('js/edit-expense.js：编辑保存不用 parseFloat 宽松解析', () => {
   assert.match(editFlow, /ExpenseDB\.validateExpenseDraft\(current\.draft/);
 });
 
-test('js/edit-expense.js：编辑日期原值进入校验器且无 now fallback', () => {
-  const source = readSource('js/edit-expense.js');
+test('js/edit-expense-v229.js：编辑日期原值进入校验器且无 now fallback', () => {
+  const source = readSource('js/edit-expense-v229.js');
   const editDraft = sliceBetween(
     source,
     'function _readEditDraft(body, expense)',
@@ -147,12 +147,12 @@ test('js/edit-expense.js：编辑日期原值进入校验器且无 now fallback'
   assert.doesNotMatch(editDraft, /date:[^,\n]*(?:\|\||\?\?)[^,\n]*(?:today|now|Date)/i);
 });
 
-test('js/edit-expense.js：编辑大额确认比较捕获的整数分', () => {
-  const source = readSource('js/edit-expense.js');
+test('js/edit-expense-v229.js：编辑大额确认比较捕获的整数分', () => {
+  const source = readSource('js/edit-expense-v229.js');
   const editFlow = sliceBetween(
     source,
     "document.getElementById('edit-btn-save').addEventListener",
-    '  return { init, open };',
+    '  return { init, open, hasUnsavedDraft };',
   );
 
   assert.match(editFlow, /const confirmedCents = validation\.cents/);
