@@ -31,8 +31,8 @@ function loadList(records = []) {
     ExpenseCategories: { getIconMarkup: () => '' },
   });
   vm.runInContext(read('js/data.js') + '\n' + read('js/summary-v224.js'), context);
-  const source = read(process.env.AUDIT_LIST_SOURCE || 'js/list-v229.js').replace(
-    'return { render, initFilters };',
+  const source = read(process.env.AUDIT_LIST_SOURCE || 'js/list-v230.js').replace(
+    /return \{ render, initFilters(?:, openFromStats, clearContext(?:, hasPendingFilters)?)? \};/,
     'return { render, initFilters, filters: _filters, apply: _applyFilters, active: _renderActiveFilters, item: _renderItem };');
   vm.runInContext(source + ';globalThis.subject=ExpenseList;', context);
   return { api: context.subject, get, db, dateActive: () => dateActive, categoryReads: () => categoryReads };

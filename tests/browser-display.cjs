@@ -128,6 +128,7 @@ async function main() {
     assert.equal(await page.locator('.list-item').count(), 2);
     await page.locator('[data-filter="necessity"]').click();
     await page.locator('.list-dropdown__item[data-val="impulse"]').click();
+    await page.locator('.list-filter-panel__apply').click();
     assert.equal(await page.locator('.list-item').count(), 2);
     await page.locator('#list-search-clear').click();
     assert.equal(await page.locator('.list-item').count(), 4, '清空搜索保留价值筛选');
@@ -136,26 +137,27 @@ async function main() {
     await page.locator('#list-clear-all').click();
     await page.locator('[data-filter="necessity"]').click();
     await page.locator('.list-dropdown__item[data-val=""]').click();
+    await page.locator('.list-filter-panel__apply').click();
     assert.equal(await page.locator('.list-item').count(), 0);
     await page.locator('.filter-chip__remove[data-clear="necessity-"]').click();
     assert.equal(await page.locator('.list-item').count(), 8);
     assert.equal(await page.locator('[data-filter="necessity"]').evaluate(el => el.classList.contains('chip--active')), false);
     await page.locator('[data-filter="sort"]').click();
-    await page.locator('[data-filter="sort"]').click();
+    await page.locator('[data-sort="amount-desc"]').click();
     assert.equal(await page.locator('[data-filter="sort"]').innerText(), '金额↓');
     assert.match(await page.locator('.list-item').first().innerText(), /888.00/);
     await page.reload();
     await page.locator('[data-view="list"]').click();
     assert.equal(await page.locator('[data-filter="sort"]').innerText(), '金额↓');
     await page.locator('[data-filter="sort"]').click();
-    await page.locator('[data-filter="sort"]').click();
+    await page.locator('[data-sort="date-desc"]').click();
     assert.equal(await page.locator('[data-filter="sort"]').innerText(), '日期↓');
 
     await page.locator('[data-filter="date"]').click();
     await page.locator('.list-dropdown__date-from').fill('2026-09-20');
     await page.locator('.list-dropdown__date-to').fill('2026-09-01');
     await page.locator('.list-dropdown__date-confirm').click();
-    assert.equal(await page.locator('.list-dropdown').isVisible(), true);
+    assert.equal(await page.locator('#list-filter-overlay').isVisible(), true);
     assert.match(await page.locator('.list-dropdown__date-error').innerText(), /不能晚于/);
     assert.equal(await page.locator('.list-item').count(), 8);
     await page.screenshot({ path: path.join(artifacts, 'date-error.png') });
@@ -178,7 +180,7 @@ async function main() {
     await page.locator('[data-period="month"]').click();
     await page.locator('#stats-payment-details summary').click();
 
-    assert.match(await page.locator('.stats-chart-center').first().innerText(), /上月同期.*1993%/s);
+    assert.match(await page.locator('#stats-period-comparison').innerText(), /上月同期.*1993%/s);
     await page.locator('[data-period="week"]').click();
     assert.match(await page.locator('#stats-trend-title').innerText(), /近7天/);
     await page.locator('[data-period="month"]').click();
