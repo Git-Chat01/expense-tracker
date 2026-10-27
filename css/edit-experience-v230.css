@@ -1,0 +1,113 @@
+/* 编辑面板采用标题、滚动表单、保存区三段布局；仅作用于编辑层。 */
+#overlay-edit {
+  bottom: var(--edit-viewport-bottom, 0px);
+  max-height: min(80vh, calc(var(--edit-viewport-height, 100dvh) - 8px));
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+#overlay-edit .bottom-sheet__handle-bar,
+#overlay-edit .bottom-sheet__header {
+  flex-shrink: 0;
+}
+
+#overlay-edit .bottom-sheet__header {
+  padding: 6px 16px;
+  gap: 10px;
+}
+
+#overlay-edit-back {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 10px;
+}
+
+#overlay-edit-delete {
+  min-width: 56px;
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--color-danger, #c83232);
+  background: transparent;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+#overlay-edit-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 16px;
+  scroll-padding-block: 12px;
+}
+
+#overlay-edit .edit-sheet-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+#overlay-edit .input {
+  min-height: 44px;
+  min-width: 0;
+  font-size: 16px;
+}
+
+#overlay-edit .edit-datetime-row {
+  display: flex;
+  gap: 12px;
+}
+
+#overlay-edit .edit-datetime-row > div { min-width: 0; }
+
+#overlay-edit .edit-choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#overlay-edit .edit-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 8px 10px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--color-text-primary, #202c35);
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--color-bg, #f5f6f7);
+  box-shadow: none;
+}
+
+#overlay-edit .edit-choice.chip--active {
+  color: var(--color-primary-dark, #08675d);
+  border-color: var(--color-primary, #10b981);
+  background: var(--color-primary-light, #e9f7f2);
+  font-weight: 600;
+}
+
+#overlay-edit .edit-choice-check { visibility: hidden; }
+#overlay-edit .edit-choice.chip--active .edit-choice-check { visibility: visible; }
+
+#overlay-edit-footer {
+  flex: 0 0 auto;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-surface, #fff);
+}
+
+#edit-btn-save { min-height: 48px; }
+
+#overlay-edit button:focus-visible {
+  outline: 2px solid var(--color-primary, #10b981);
+  outline-offset: 2px;
+}
+
+#overlay-edit button:disabled { cursor: wait; opacity: .55; }
+#edit-conflict-status[hidden], #edit-reload-latest[hidden] { display: none; }

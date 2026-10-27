@@ -3,7 +3,7 @@
    PWA 离线缓存：首次访问后，无网络也能打开
    ================================================================ */
 
-const APP_VERSION = '229';
+const APP_VERSION = '230';
 const CACHE_NAME = 'expense-tracker-v' + APP_VERSION;
 const RELEASE_STATE_CACHE = 'expense-tracker-release-state';
 const RELEASE_STATE_URL = new URL(
@@ -33,27 +33,31 @@ const CORE_PRE_CACHE = [
   'css/list-toolbar-v226.css',
   'css/list-back-top-v228.css',
   'css/audit-fixes-v229.css',
+  'css/home-add-experience-v230.css',
+  'css/list-experience-v230.css',
+  'css/stats-experience-v230.css',
+  'css/edit-experience-v230.css',
   'js/storage.js',
   'js/storage-v229.js',
   'js/data.js',
   'js/summary-v224.js',
   'js/icons.js',
-  'js/home-v229.js',
+  'js/home-v230.js',
   'js/categories.js',
-  'js/list-v229.js',
-  'js/list-back-top-v228.js',
-  'js/stats-v225.js',
+  'js/list-v230.js',
+  'js/list-back-top-v230.js',
+  'js/stats-v230.js',
   'js/monthly-report-v229.js',
   'js/onboarding.js',
   'js/app.js',
-  'js/app-v229.js',
+  'js/app-v230.js',
   'js/toast.js',
   'js/confirm-dialog-v229.js',
   'js/ui-utils.js',
   'js/habit-predictor-v229.js',
   'js/budget-overlay-v224.js',
   'js/category-manager.js',
-  'js/edit-expense-v229.js',
+  'js/edit-expense-v230.js',
   'js/backup-manager-v229.js',
   'js/budget-impact-v214.js',
   'js/update-flow-v229.js',

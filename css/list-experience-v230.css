@@ -1,0 +1,89 @@
+/* 账单局部体验：结果汇总随工具栏、多选草稿面板与可完整点击的已选条件。 */
+#view-list #list-summary {
+  position: static;
+  inset: auto;
+  z-index: auto;
+  min-height: 48px;
+  margin: 0 var(--space-lg) 8px;
+  padding: 10px 0;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  justify-content: space-between;
+}
+#view-list .list-toolbar #list-summary { margin: 0 0 8px; }
+#view-list #list-summary-total { font-variant-numeric: tabular-nums; color: var(--color-text-primary); }
+#view-list #list-active-filters { gap: 6px; }
+#view-list #list-active-filters:empty { display: none; }
+#view-list .filter-chip.filter-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 44px;
+  height: auto;
+  width: auto;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  cursor: pointer;
+  text-align: left;
+}
+#view-list .filter-chip.filter-chip__remove > span { min-width: 0; overflow-wrap: anywhere; }
+#view-list .filter-chip .filter-chip__close-icon { flex: 0 0 auto; font-size: 17px; opacity: .7; }
+#view-list .filter-chip__clear-all { min-height: 44px; padding: 8px; font-size: 12px; }
+#view-list .filter-chip:focus-visible,
+#view-list .filter-chip__clear-all:focus-visible,
+#view-list .list-context-bar button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+#view-list .list-context-bar { display: flex; align-items: center; gap: 12px; padding: 0 0 8px; margin-bottom: 8px; border-bottom: 1px solid var(--color-border); }
+#view-list .list-context-bar button { min-height: 44px; flex: 0 0 auto; border: 0; border-radius: 8px; padding: 0 12px; color: var(--color-primary); background: var(--color-primary-light); font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+#view-list .list-context-bar span { min-width: 0; color: var(--color-text-secondary); font-size: 12px; overflow-wrap: anywhere; }
+
+.list-filter-overlay { position: fixed; inset: 0; z-index: 700; display: flex; align-items: flex-end; justify-content: center; isolation: isolate; transform: none; }
+.list-filter-panel__backdrop { position: absolute; inset: 0; background: rgba(20, 35, 36, .36); animation: list-filter-fade-in 160ms ease-out; }
+.list-filter-panel { position: relative; display: flex; flex-direction: column; width: 100%; max-width: 520px; max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); padding-bottom: env(safe-area-inset-bottom, 0px); border-radius: 20px 20px 0 0; background: var(--color-surface); color: var(--color-text-primary); box-shadow: 0 -8px 40px rgba(28, 41, 43, .12); outline: none; overflow: hidden; animation: list-filter-enter 200ms cubic-bezier(.16, 1, .3, 1); }
+.list-filter-panel__header { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px 8px 20px; border-bottom: 1px solid var(--color-border); }
+.list-filter-panel__header h2 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -.02em; }
+.list-filter-panel button { touch-action: manipulation; font: inherit; cursor: pointer; }
+.list-filter-panel__cancel { min-width: 44px; min-height: 44px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--color-text-secondary); font-size: 14px !important; }
+.list-filter-panel__body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px 20px; -webkit-overflow-scrolling: touch; }
+.list-filter-panel__selection { margin: 0 0 12px; color: var(--color-text-secondary); font-size: 12px; }
+.list-filter-panel__options { display: grid; gap: 6px; }
+.list-filter-panel .list-dropdown__item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 48px; padding: 11px 12px; border: 1px solid var(--color-border); border-radius: 10px; background: var(--color-surface); color: var(--color-text-primary); font-size: 14px; text-align: left; transition: background 120ms ease-out, border-color 120ms ease-out; }
+.list-filter-panel__option-label { display: flex; align-items: center; gap: 9px; min-width: 0; overflow-wrap: anywhere; }
+.list-filter-panel__option-label .category-icon { flex: 0 0 auto; }
+.list-filter-panel__check { display: grid; place-items: center; flex: 0 0 20px; width: 20px; height: 20px; border: 1px solid var(--color-border); border-radius: 6px; color: transparent; font-size: 13px; }
+.list-filter-panel .list-dropdown__item[aria-pressed="true"] { color: var(--color-primary); border-color: var(--color-primary); background: var(--color-primary-light); font-weight: 650; }
+.list-filter-panel .list-dropdown__item[aria-pressed="true"] .list-filter-panel__check { color: #fff; border-color: var(--color-primary); background: var(--color-primary); }
+.list-filter-panel__search { display: grid; gap: 8px; margin-bottom: 16px; color: var(--color-text-secondary); font-size: 12px; }
+.list-filter-panel input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 48px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 9px; background: var(--color-surface); color: var(--color-text-primary); font: inherit; font-size: 16px; }
+.list-filter-panel input:focus { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+.list-filter-panel input[aria-invalid="true"] { border-color: var(--color-danger, #B14435); }
+.list-filter-panel__quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 20px; }
+.list-filter-panel__quick .list-dropdown__item { justify-content: center; padding-inline: 6px; }
+.list-filter-panel__dates { display: grid; gap: 16px; }
+.list-filter-panel__dates label { display: grid; grid-template-columns: 68px minmax(0, 1fr); gap: 12px; align-items: center; color: var(--color-text-secondary); font-size: 13px; }
+.list-filter-panel__hint, .list-filter-panel__sort-hint { margin: 12px 0 0; color: var(--color-text-secondary); font-size: 12px; line-height: 1.6; }
+.list-filter-panel__sort-hint { flex: 0 0 auto; margin: 0; padding: 0 20px 20px; }
+.list-filter-panel .list-dropdown__date-error { margin: 12px 0 0; color: var(--color-danger, #B14435); font-size: 13px; line-height: 1.5; }
+.list-filter-panel__empty { margin: 16px 0; color: var(--color-text-secondary); font-size: 14px; line-height: 1.6; text-align: center; }
+.list-filter-panel [hidden] { display: none !important; }
+.list-filter-panel__footer { display: grid; grid-template-columns: 1fr 1.6fr; flex: 0 0 auto; gap: 12px; padding: 12px 20px 16px; border-top: 1px solid var(--color-border); }
+.list-filter-panel__footer button { min-height: 48px; padding: 10px 12px; border: 1px solid var(--color-border); border-radius: 10px; font-size: 14px; font-weight: 650; }
+.list-filter-panel__reset { color: var(--color-text-secondary); background: var(--color-surface); }
+.list-filter-panel__footer .list-filter-panel__apply { border-color: var(--color-primary); color: #fff; background: var(--color-primary); }
+.list-filter-panel button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.list-filter-panel button:active { filter: brightness(.96); }
+@media (hover: hover) { .list-filter-panel .list-dropdown__item:hover, .list-filter-panel__cancel:hover, .list-filter-panel__reset:hover { background: var(--color-primary-light); } }
+@media (min-width: 600px) { .list-filter-overlay { align-items: center; padding: 24px; } .list-filter-panel { max-height: min(80vh, 680px); border-radius: 18px; padding-bottom: 0; box-shadow: 0 16px 64px rgba(28, 41, 43, .18); } }
+@keyframes list-filter-enter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes list-filter-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .list-filter-panel, .list-filter-panel__backdrop { animation: none; } .list-filter-panel .list-dropdown__item { transition: none; } }

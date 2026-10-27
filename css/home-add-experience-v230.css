@@ -1,0 +1,50 @@
+/* v230：首页突出预算余额，记账选项保持位置稳定。 */
+#view-home .home-summary { padding: 18px; box-shadow: 0 8px 18px rgba(15, 89, 102, .14); }
+#view-home .home-summary__top { display: flex; align-items: flex-start; gap: 12px; }
+#view-home .home-summary__top > div { min-width: 0; }
+#view-home .home-summary__top > div:first-child { flex: 1; }
+#view-home .home-summary__amount { font-size: clamp(28px, 8vw, 36px); overflow-wrap: anywhere; }
+#view-home .home-summary__label,
+#view-home .home-summary__context { color: rgba(255,255,255,.85); }
+#view-home .home-summary__context { font-size: 13px; margin-top: 10px; }
+#view-home .home-today { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 0; padding: 0 0 0 12px; border: 0; border-left: 1px solid rgba(255,255,255,.25); border-radius: 0; background: transparent; flex: 0 1 43%; }
+#view-home .home-today[hidden] { display: none; }
+#view-home .home-today__label-row { gap: 6px; flex-wrap: wrap; }
+#view-home .home-today__label,
+#view-home .home-today__count,
+#view-home .home-today__diff { color: rgba(255,255,255,.85); font-size: 12px; }
+#view-home .home-today__diff { text-align: left; }
+#view-home .home-today__diff .home-overview__diff--up { color: #ffd0c7; }
+#view-home .home-today__diff .home-overview__diff--down { color: #bcebdd; }
+#view-home .home-today__amount { color: #fff; font-size: 20px; line-height: 1.1; overflow-wrap: anywhere; }
+#view-home .home-budget-brief { padding: 10px 16px 14px; }
+#view-home .home-budget-brief__action { min-height: 44px; min-width: 44px; justify-content: flex-end; font-size: 13px; }
+#view-home .home-budget-brief__body { margin-top: 0; flex-wrap: wrap; gap: 6px; }
+#view-home .home-budget-brief__balance { color: var(--budget-tone); font-size: 25px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+#view-home .home-budget-brief__progress-meta { margin-top: 10px; font-size: 13px; color: var(--color-text-secondary); gap: 8px; }
+#view-home .home-budget-brief__usage { line-height: 1.6; }
+#view-home .home-budget-brief__decision { margin-top: 10px; padding: 0; background: none; flex-wrap: wrap; gap: 4px 8px; font-size: 13px; }
+#view-home #home-budget-summary-days { color: var(--color-text-secondary); font-weight: 400; }
+#view-home .home-budget-brief__forecast { margin-top: 8px; padding-top: 8px; font-size: 13px; }
+#view-home .home-budget-brief--over .home-budget-brief__status,
+#view-home .home-budget-brief--over .home-budget-brief__decision { display: none; }
+#view-home .home-budget-brief__setup-copy { margin-top: 0; font-size: 13px; color: var(--color-text-secondary); }
+#view-home .home-section__all { min-height: 44px; }
+
+#view-add .add-container { gap: 8px; }
+#view-add .add-payment-section,
+#view-add .add-payment-section--selected,
+#view-add .add-necessity-section { gap: 3px; padding: 0 0 4px; }
+#view-add .add-payment-summary,
+#view-add .add-necessity-summary { min-height: 44px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+#view-add #add-payment-summary-text,
+#view-add #add-necessity-summary-text { font-size: 13px; color: var(--color-text-secondary); }
+#view-add .add-payment-summary:focus-visible,
+#view-add .add-necessity-summary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: 6px; }
+#view-add .chip[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--color-primary); }
+@media (max-width: 359px) {
+  #view-home .home-summary { padding: 16px; }
+  #view-home .home-summary__top { gap: 8px; }
+  #view-home .home-today { padding-left: 8px; }
+  #view-home .home-today__amount { font-size: 18px; }
+}

@@ -48,7 +48,7 @@ function listContext() {
   const categories = { food: { name: '餐饮' }, coffee: { name: '咖啡', parentId: 'food' } };
   const context = vm.createContext({ ExpenseDB: { getCategory: id => categories[id] } });
   let script = source('list');
-  script = script.replace('return { render, initFilters };', 'return { render, initFilters, apply: _applyFilters, filters: _filters };');
+  script = script.replace(/return \{ render, initFilters(?:, openFromStats, clearContext(?:, hasPendingFilters)?)? \};/, 'return { render, initFilters, apply: _applyFilters, filters: _filters };');
   vm.runInContext(script + ';globalThis.list = ExpenseList;', context);
   return context.list;
 }
