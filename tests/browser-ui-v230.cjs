@@ -1,11 +1,11 @@
-/* v230 体验回归：只在全新本地浏览器上下文中使用合成数据。 */
+/* 四视图体验回归：只在全新本地浏览器上下文中使用合成数据。 */
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
-const out = process.env.ARTIFACT_DIR || path.join(root,'output/verification-v230/ui');
+const out = process.env.ARTIFACT_DIR || path.join(root,'output/verification-v231/ui');
 fs.mkdirSync(out,{recursive:true});
 const server = http.createServer((req, res) => {
   const pathname = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
@@ -40,13 +40,51 @@ async function measure(page, selectors) {
     results.errors = [];
     page.on('pageerror', error => results.errors.push(error.message));
     await page.goto('http://127.0.0.1:' + server.address().port);
-    await page.locator('#onboarding-skip').click();
+    await page.locator('#onboarding-next').waitFor({ state: 'visible' });
+    await page.screenshot({ path: path.join(out, 'onboarding-390.png'), animations: 'disabled' });
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'onboarding-skip');
+    await page.keyboard.press('Shift+Tab');
+    for (const title of ['看看这个月花了多少', '备份你的账本']) {
+      await page.keyboard.press('Enter');
+      assert.equal(await page.locator('.onboarding-slide[aria-hidden="false"] h2').innerText(), title);
+    }
+    await page.keyboard.press('Enter');
+    assert.equal(await page.locator('#onboarding-overlay').isVisible(), false);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'home-primary-add');
     for (const size of [{ width: 390, height: 844 }, { width: 320, height: 740 }]) {
       await page.setViewportSize(size);
       await page.locator('[data-view="add"]').click();
       await page.waitForTimeout(350);
       results.sizes[size.width] = { freshAdd: await measure(page, ['.add-header', '.add-amount-display', '.add-category-area', '.add-payment-section', '.add-necessity-section', '#add-more-fields', '#add-numpad', '[data-key="0"]', '[data-key="submit"]', '.tab-bar']) };
       await page.screenshot({ path: path.join(out, `add-empty-${size.width}.png`) });
+      if (size.width === 320) {
+        for (const digit of '99999999.99') await page.locator(`[data-key="${digit}"]`).click();
+        assert.equal(await page.locator('#add-submit-amount').innerText(), '¥99999999.99');
+        const fits = await page.evaluate(() => {
+          const fitsIn = (text, parent) => {
+            const range = document.createRange();
+            range.selectNodeContents(document.querySelector(text));
+            const content = range.getBoundingClientRect();
+            const frame = document.querySelector(parent).getBoundingClientRect();
+            return content.left >= frame.left && content.right <= frame.right;
+          };
+          return fitsIn('#add-amount-decimal', '.add-amount-display')
+            && fitsIn('#add-submit-amount', '[data-key="submit"]');
+        });
+        assert.ok(fits, '八位整数和两位小数在金额区和保存键中完整可见');
+        await page.locator('#add-category-all').click();
+        assert.equal(await page.evaluate(() => document.activeElement.id), 'add-category-picker-close');
+        await page.keyboard.press('Shift+Tab');
+        assert.equal(await page.evaluate(() => document.activeElement.id), 'add-manage-categories');
+        await page.keyboard.press('Tab');
+        await page.screenshot({ path: path.join(out, 'category-picker-320.png'), animations: 'disabled' });
+        await page.keyboard.press('Escape');
+        assert.equal(await page.evaluate(() => document.activeElement.id), 'add-category-all');
+        await page.locator('#add-discard-draft').click();
+        await page.locator('.confirm-dialog--open [data-confirm-ok]').click();
+        assert.equal(await page.locator('#add-amount-display').innerText(), '0');
+      }
       await page.locator('[data-view="home"]').click();
     }
     await page.setViewportSize({ width: 390, height: 844 });
@@ -65,13 +103,23 @@ async function measure(page, selectors) {
       window.uiReviewSnapshot = JSON.stringify(ExpenseDB.getExpenses());
       Chart.defaults.animation = false;
     });
-    for (const width of [320, 390, 430, 1280]) {
+    for (const width of [320, 390, 430, 768, 1280]) {
       await page.setViewportSize({ width, height: 844 });
       for (const view of ['home', 'add', 'list', 'stats']) {
         await page.locator(`[data-view="${view}"]`).click();
         await page.waitForTimeout(250);
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, view + ' 横向溢出');
         await page.screenshot({ path: path.join(out, `${view}-${width}.png`) });
+        if (view === 'home' && width === 1280) {
+          const summary = await page.locator('.home-summary').boundingBox();
+          const budget = await page.locator('#home-budget-summary').boundingBox();
+          assert.ok(budget.x >= summary.x + summary.width && Math.abs(budget.y - summary.y) <= 2, '宽屏月度支出与预算并排');
+          const record = page.locator('.home-recent__item').first();
+          await record.focus();
+          await page.keyboard.press('Enter');
+          await page.locator('#edit-btn-save').waitFor({ state: 'visible' });
+          await page.locator('#overlay-edit-back').click();
+        }
         if (view === 'home' && width === 390) {
           results.home = await measure(page, ['.home-summary', '#home-budget-summary', '#home-recent', '.tab-bar']);
           const second = await page.locator('.home-recent__item').nth(1).boundingBox();
@@ -163,11 +211,12 @@ async function measure(page, selectors) {
     await page.locator('[data-filter="date"]').click();
     const date = await page.locator('.list-dropdown__date-from').evaluate(el => ({ font: getComputedStyle(el).fontSize, height: el.getBoundingClientRect().height }));
     assert.equal(date.font,'16px'); assert.ok(date.height >= 44);
-    await page.screenshot({ path: path.join(out,'date-filter-390.png') });
+    await page.screenshot({ path: path.join(out,'date-filter-390.png'), animations: 'disabled' });
     await page.locator('.list-filter-panel__cancel').click();
     await page.locator('#list-search-input').fill('示例地点24');
     await page.locator('[data-view="stats"]').click();
     await page.locator('#stats-month-prev').click();
+    assert.equal(await page.locator('.stats-period [aria-pressed="true"]').count(), 0);
     assert.equal(await page.locator('#stats-month-input').inputValue(), '2026-09');
     assert.match(await page.locator('#stats-range-label').innerText(), /2026\/09\/01.*2026\/09\/30.*完整月份/);
     const expectedSeptember = await page.evaluate(() => ExpenseSummary.money(ExpenseSummary.sumCents(ExpenseDB.getExpenses().filter(e => e.date.startsWith('2026-09')))));

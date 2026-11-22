@@ -97,6 +97,7 @@ async function main() {
     // 覆盖层拥有自己的键盘输入；不能修改背后的金额。
     await page.locator('#add-category-summary').click();
     await page.locator('#add-manage-categories').click();
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'overlay-categories-back');
     await page.locator('#overlay-categories-add').focus();
     await page.keyboard.press('Enter');
     assert.equal(await page.locator('#new-cat-name').isVisible(), true);

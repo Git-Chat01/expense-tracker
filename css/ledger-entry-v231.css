@@ -1,0 +1,244 @@
+/* 记账单沿用页面滚动，金额是草稿中持续可见的一项。 */
+#view-add .add-container {
+  width: min(100%, 620px);
+  gap: 6px;
+}
+
+#view-add .add-draft-tools {
+  gap: 8px;
+}
+
+.add-heading {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.25;
+  letter-spacing: -.03em;
+}
+
+#view-add .add-date-quick {
+  border-radius: 9px;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+#view-add .add-date-quick__chevron,
+#view-add .add-category-all__chevron {
+  width: 7px;
+  height: 7px;
+  margin: -3px 2px 0 4px;
+  border: solid currentColor;
+  border-width: 0 1.5px 1.5px 0;
+  font-size: 0;
+  transform: rotate(45deg);
+}
+
+#view-add .add-date-quick[aria-expanded="true"] .add-date-quick__chevron {
+  margin-top: 3px;
+  transform: rotate(225deg);
+}
+
+#view-add .add-date-controls input,
+#view-add .add-more-fields input {
+  min-height: 44px;
+  font-size: 16px;
+}
+
+#view-add .add-amount-display {
+  padding: 10px 16px 6px;
+  gap: 3px;
+  border: 1px solid #cbd9ce;
+  border-radius: 14px;
+  background: #eaf1e9;
+  font-family: inherit;
+  text-align: left;
+}
+
+#view-add .add-amount__label {
+  color: #45614f;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+#view-add .add-amount__row {
+  justify-content: flex-start;
+  color: #153e32;
+}
+
+#view-add .add-amount__value {
+  color: inherit;
+  font-weight: 650;
+  letter-spacing: -.045em;
+}
+
+#view-add .add-amount__currency,
+#view-add .add-amount__decimal,
+#view-add .add-amount__value--empty {
+  color: #54735f;
+}
+
+#view-add .add-amount-display--invalid {
+  border-color: var(--color-danger);
+}
+
+#view-add .add-amount-display--invalid .add-amount__row > span {
+  color: var(--color-danger);
+}
+
+#view-add .add-budget-impact {
+  justify-content: flex-start;
+  padding-inline: 0;
+}
+
+#view-add .add-budget-impact__value,
+#view-add .numpad__submit-amount {
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+#view-add .add-category-area .add-category-all {
+  min-height: 44px;
+  gap: 2px;
+  font-size: 13px;
+}
+
+#view-add .add-required {
+  margin-left: 3px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+#view-add .add-quick-category,
+#add-category-picker :is(.cat-btn, .cat-chip) {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: none;
+}
+
+#view-add .add-quick-category__name,
+#add-category-picker :is(.cat-btn__name, .cat-chip__name) {
+  font-size: 13px;
+}
+
+#view-add .add-category-summary,
+#view-add .add-quick-category--pinned,
+#add-category-picker :is(.cat-btn--selected, .cat-chip--selected) {
+  border-color: #71927d;
+  background: var(--color-primary-light);
+}
+
+#view-add .add-payment-summary__label,
+#view-add .add-more-fields summary {
+  color: var(--color-text-primary);
+  font-size: 15px;
+}
+
+/* 共享渲染器写入内联品牌色，记账单统一使用描边和墨绿选中态。 */
+#view-add .chip[aria-pressed] {
+  border-color: var(--color-border) !important;
+  background: var(--color-surface) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+#view-add .chip[aria-pressed="true"] {
+  border-color: var(--color-primary) !important;
+  background: var(--color-primary) !important;
+  color: white !important;
+  box-shadow: none;
+}
+
+#view-add .add-numpad {
+  gap: 1px;
+  margin-top: 4px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-border);
+}
+
+#view-add .numpad__key {
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 550;
+}
+
+#view-add .numpad__key--fn {
+  background: #edf0e9;
+  color: var(--color-primary-dark);
+}
+
+#view-add .numpad__key--submit {
+  padding-inline: 2px;
+  background: var(--color-primary);
+  font-weight: 650;
+}
+
+#view-add .numpad__submit-amount {
+  color: #ebf4ec;
+  font-size: 12px;
+}
+
+@media (max-width: 350px) {
+  /* 最长八位整数及两位小数也能完整放进保存键。 */
+  #view-add .numpad__submit-amount {
+    font-size: 11px;
+    letter-spacing: -.025em;
+  }
+}
+
+#view-add .numpad__key:active {
+  background: #d7e3d7;
+}
+
+#view-add .numpad__key--submit:active {
+  background: var(--color-primary-dark);
+}
+
+#add-category-picker .category-picker__sheet {
+  width: min(100%, 620px);
+  background: var(--color-bg);
+}
+
+#add-category-picker .category-picker__header,
+#add-category-picker .category-picker__footer {
+  background: var(--color-bg);
+}
+
+#add-category-picker .category-picker__close {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+#view-add :is(button, summary, input):focus-visible,
+#add-category-picker button:focus-visible {
+  outline: 2px solid var(--color-primary-dark);
+  outline-offset: -2px;
+}
+
+#view-add .chip[aria-pressed="true"]:focus-visible,
+#view-add .numpad__key--submit:focus-visible {
+  outline-color: white;
+  outline-offset: -4px;
+}
+
+@media (hover: hover) {
+  #view-add .add-quick-category:hover,
+  #add-category-picker :is(.cat-chip, .cat-btn):hover {
+    border-color: #71927d;
+    background: var(--color-primary-light);
+  }
+
+  #view-add .chip[aria-pressed="false"]:hover {
+    border-color: #71927d !important;
+  }
+
+  #view-add .numpad__key:not(:active):hover {
+    background: #e3ebe1;
+  }
+
+  #view-add .numpad__key--submit:not(:active):hover {
+    background: var(--color-primary-dark);
+  }
+}

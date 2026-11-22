@@ -1,0 +1,234 @@
+/* 四个视图共用纸色、墨色和交互色；警告及超支保留独立色义。 */
+:root {
+  --color-primary: #244c3e;
+  --color-primary-dark: #153e32;
+  --color-primary-light: #e3ece3;
+  --color-bg: #f7f6f1;
+  --color-surface: #fffefa;
+  --color-border: #d8dfd5;
+  --color-divider: #e5e8df;
+  --color-text-primary: #202e28;
+  --color-text-secondary: #506057;
+  --color-text-tertiary: #607066;
+  --color-need: #49785c;
+  --color-want: #af8141;
+  --color-impulse: #ab5647;
+  --color-budget-safe: #49785c;
+  --color-budget-watch: #89601e;
+  --color-budget-warn: #8f4e1b;
+  --color-budget-danger: #9b3d32;
+  --color-budget-over: #842e28;
+  --shadow-sm: 0 1px 3px rgba(38, 49, 37, .05);
+  --shadow-md: 0 6px 18px rgba(38, 49, 37, .10);
+}
+
+body { background: #eaece5; }
+.app-container { box-shadow: none; }
+
+/* 收起的面板移出焦点顺序，避免按 Tab 时进入屏幕外的表单。 */
+.page-overlay:not(.page-overlay--open),
+.bottom-sheet:not(.bottom-sheet--open) { visibility: hidden; }
+:is(.page-overlay, .bottom-sheet) .btn {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+}
+.page-overlay__back { width: 44px; height: 44px; }
+
+/* 底栏沿用原来的高度与安全区，确保键盘、回顶和更新卡按同一边界避让。 */
+.tab-bar {
+  background: var(--color-surface);
+  backdrop-filter: none;
+  padding-inline: 6px;
+}
+.tab-bar__item { padding: 3px 0; gap: 1px; }
+.tab-bar__icon { width: 44px; height: 25px; border-radius: 8px; }
+.tab-bar__item--active .tab-bar__icon { transform: none; }
+.tab-bar__label { font-size: 12px; line-height: 1.4; }
+.tab-bar__item:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -3px; border-radius: 8px; }
+
+#view-home { --home-gutter: clamp(14px, 4.5vw, 22px); }
+.home-header {
+  align-items: center;
+  gap: 10px;
+  margin: 0 var(--home-gutter) 16px;
+  padding: 20px 0 15px;
+  border-bottom: 1px solid var(--color-border);
+}
+.home-header__brand { display: flex; align-items: center; gap: 10px; }
+.home-header__mark {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 43px;
+  border-radius: 7px;
+  background: var(--color-primary-dark);
+  color: #f6f5e9;
+}
+.home-header__mark svg { width: 25px; height: 25px; }
+.home-header__eyebrow { font-size: 11px; color: var(--color-text-secondary); letter-spacing: .09em; }
+.home-header__title { font-size: 25px; line-height: 1.2; letter-spacing: .01em; }
+.home-header__date {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-dashboard {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0 var(--home-gutter);
+}
+.home-dashboard .home-section { padding: 0; min-width: 0; }
+.home-dashboard__secondary { display: grid; align-content: start; gap: 12px; min-width: 0; }
+.home-section__title-row { align-items: center; min-height: 40px; margin: 0; }
+.home-section__title,
+.home-budget-brief__eyebrow { color: var(--color-text-primary); font-size: 16px; font-weight: 650; letter-spacing: 0; }
+
+#view-home .home-summary {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 19px;
+  border-radius: 14px;
+  background: var(--color-primary-dark);
+  box-shadow: none;
+}
+#view-home .home-summary__label { font-size: 14px; color: #d8e6d9; font-weight: 550; }
+#view-home .home-summary__amount {
+  font-family: var(--font-family);
+  font-size: clamp(32px, 9vw, 42px);
+  font-weight: 650;
+  line-height: 1.1;
+  letter-spacing: -.035em;
+}
+#view-home .home-today { flex-basis: 37%; }
+.home-today__diff span { white-space: nowrap; }
+#view-home .home-today__amount,
+.home-summary__context-value,
+.home-recent__amount {
+  font-family: var(--font-family);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.015em;
+}
+.home-summary__footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  border-top: 1px solid rgba(230, 242, 230, .24);
+  padding-top: 12px;
+}
+#view-home .home-summary__context { margin: 0; column-gap: 5px; row-gap: 2px; }
+.home-summary__context-item { flex-wrap: wrap; white-space: normal; }
+.home-summary__context-value { overflow-wrap: anywhere; }
+.home-primary-action {
+  width: auto;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 14px;
+  flex: none;
+  justify-content: center;
+  gap: 5px;
+  border-radius: 8px;
+  background: #eff3e6;
+}
+.home-primary-action strong { font-size: 15px; }
+
+#view-home .home-budget-brief {
+  margin: 0;
+  padding: 4px 16px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+#view-home .home-budget-brief--watch { --budget-tone: #875115; }
+#view-home .home-budget-brief--over { --budget-tone: #a43f31; }
+.home-budget-brief__status { border-radius: 5px; padding: 3px 6px; }
+.home-budget-brief__progress-meta strong,
+.home-budget-brief__decision strong { font-family: var(--font-family); }
+.home-budget-brief__setup-copy { border-top: 1px solid var(--color-divider); padding-top: 10px; }
+.home-budget-brief__label { font-size: 15px; color: var(--color-text-primary); }
+.home-budget-brief__forecast,
+.home-budget-brief__usage,
+.home-budget-brief__decision { overflow-wrap: anywhere; }
+
+/* 标题和表项共享一张账页；仅摘要行截短，打开记录可阅读完整内容。 */
+.home-dashboard .home-ledger {
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+.home-ledger .home-section__title-row { padding: 3px 16px; border-bottom: 1px solid var(--color-divider); }
+.home-ledger .home-recent { border: 0; border-radius: 0 0 14px 14px; background: transparent; box-shadow: none; }
+.home-recent__item {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 16px;
+  gap: 10px;
+  border: 0;
+  border-bottom: 1px solid var(--color-divider);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.home-recent__item:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -3px; }
+.home-recent__name, .home-recent__meta { display: block; }
+.home-recent__name { font-weight: 600; }
+.home-recent__meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.home-recent__amount { font-size: 16px; font-weight: 650; max-width: 50%; overflow-wrap: anywhere; }
+.home-recent__empty-icon { border-radius: 8px; }
+.home-recent__empty-icon .meta-icon { width: 19px; height: 19px; }
+.home-data-management { background: var(--color-surface); border-radius: 12px; }
+.home-data-management__summary { padding-inline: 16px; }
+.home-data-management__summary:focus-visible { outline-offset: -3px; }
+.home-data-management__title { color: var(--color-text-primary); font-size: 14px; }
+.home-data-management .btn--small { min-height: 44px; }
+.home-data-management .home-backup__actions { gap: 20px; }
+.home-alert { padding-block: 2px; padding-right: 3px; }
+.home-alert__close { width: 44px; height: 44px; }
+.app-version-slot { margin-block-start: 10px; }
+
+@media (min-width: 431px) and (max-width: 859px) {
+  :root { --app-max-width: 680px; }
+}
+@media (max-width: 430px) {
+  #view-home .home-summary__context { display: grid; justify-items: start; }
+  #view-home .home-summary__context-dot { display: none; }
+}
+@media (min-width: 860px) {
+  #view-home { --home-gutter: 32px; }
+  .home-header { margin-bottom: 22px; padding: 30px 0 20px; }
+  .home-header__title { font-size: 29px; }
+  .home-header__date { font-size: 14px; }
+  .home-dashboard {
+    grid-template-columns: minmax(0, 1.45fr) minmax(285px, 1fr);
+    grid-template-areas: "summary budget" "recent support";
+    gap: 18px;
+  }
+  #view-home .home-summary { grid-area: summary; padding: 24px; gap: 24px; }
+  #view-home .home-summary__amount { font-size: 46px; }
+  #view-home .home-budget-brief { grid-area: budget; padding: 9px 20px 18px; }
+  .home-budget-brief__setup-copy { padding-top: 18px; }
+  .home-ledger { grid-area: recent; align-self: start; }
+  .home-dashboard__secondary { grid-area: support; }
+  .tab-bar { padding-inline: 22px; gap: 8px; }
+  .tab-bar__item { min-height: 44px; border-radius: 8px; }
+  .tab-bar__item--active { background: var(--color-primary-light); }
+  .tab-bar__icon { width: 26px; }
+  .tab-bar__label { font-size: 14px; }
+}
+@media (max-width: 359px) {
+  #view-home .home-summary { padding: 16px; }
+  .home-summary__footer { gap: 6px; }
+  .home-primary-action { padding-inline: 10px; }
+}
+@media (hover: hover) {
+  .home-recent__item:hover,
+  .home-data-management__summary:hover,
+  .tab-bar__item:not(.tab-bar__item--active):hover { background: #f0f2ea; }
+}
