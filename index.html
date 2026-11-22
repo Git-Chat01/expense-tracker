@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0F5966">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#244c3e">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="消费轨迹">
   <link rel="apple-touch-icon" href="icon-192.png?v=67">
-  <link rel="manifest" href="manifest.json?v=1">
+  <link rel="manifest" href="manifest.json?v=231">
   <title>消费轨迹</title>
 
   <!-- CSS -->
@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="css/add-choice-alignment-v218.css">
   <link rel="stylesheet" href="css/list.css?v=175">
   <link rel="stylesheet" href="css/stats.css?v=194">
-  <link rel="stylesheet" href="css/onboarding.css?v=176">
+  <link rel="stylesheet" href="css/onboarding-v231.css">
   <link rel="stylesheet" href="css/monthly-report-v223.css">
   <link rel="stylesheet" href="css/display-fixes-v224.css">
   <link rel="stylesheet" href="css/experience-v225.css">
@@ -34,6 +34,9 @@
   <link rel="stylesheet" href="css/list-experience-v230.css">
   <link rel="stylesheet" href="css/stats-experience-v230.css">
   <link rel="stylesheet" href="css/edit-experience-v230.css">
+  <link rel="stylesheet" href="css/ledger-shell-v231.css">
+  <link rel="stylesheet" href="css/ledger-entry-v231.css">
+  <link rel="stylesheet" href="css/ledger-review-v231.css">
 </head>
 <body>
 
@@ -48,91 +51,93 @@
   <main id="view-home" class="main-view main-view--active">
     <!-- 标题栏 -->
     <header class="home-header">
-      <div>
-        <p class="home-header__eyebrow">个人账本</p>
-        <h1 class="home-header__title">消费轨迹</h1>
+      <div class="home-header__brand">
+        <span class="home-header__mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h13a1 1 0 0 1 1 1v17H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3Z"/><path d="M3 18a3 3 0 0 1 3-3h14M8 3v12m4-7h4"/></svg>
+        </span>
+        <div>
+          <p class="home-header__eyebrow">个人账本</p>
+          <h1 class="home-header__title">消费轨迹</h1>
+        </div>
       </div>
       <span class="home-header__date" id="home-date"></span>
     </header>
 
     <div class="home-dashboard">
-      <div class="home-dashboard__primary">
-        <!-- 首页唯一主任务：看清本月，再记一笔 -->
-        <section class="home-section">
-          <div class="home-summary card">
-            <div class="home-summary__top">
-              <div>
-                <p class="home-summary__label" id="home-month-label">本月支出</p>
-                <p class="home-summary__amount" id="home-month-amount">¥0</p>
-              </div>
-              <div class="home-today" id="home-today" hidden>
-                <div class="home-today__label-row">
-                  <span class="home-today__label">今日消费</span>
-                  <span class="home-today__count" id="home-today-count">0 笔</span>
-                </div>
-                <span class="home-today__amount" id="home-today-amount">¥0</span>
-                <span class="home-today__diff" id="home-today-diff"></span>
-              </div>
+      <!-- 阅读和键盘顺序：月度概览、预算、最近记录，再到辅助操作。 -->
+      <section class="home-summary card" aria-labelledby="home-month-label">
+        <div class="home-summary__top">
+          <div>
+            <p class="home-summary__label" id="home-month-label">本月支出</p>
+            <p class="home-summary__amount" id="home-month-amount">¥0</p>
+          </div>
+          <div class="home-today" id="home-today" hidden>
+            <div class="home-today__label-row">
+              <span class="home-today__label">今日消费</span>
+              <span class="home-today__count" id="home-today-count">0 笔</span>
             </div>
-            <div class="home-summary__context" aria-label="本月消费摘要">
-              <span class="home-summary__context-item">本月已记 <strong class="home-summary__context-value" id="home-month-count">0 笔</strong></span>
-              <span class="home-summary__context-dot" id="home-month-context-dot" aria-hidden="true" hidden>·</span>
-              <span class="home-summary__context-item" id="home-month-comparison" hidden>较上月同期 <strong class="home-summary__context-value" id="home-month-diff">—</strong></span>
-            </div>
-
-            <button class="home-primary-action" id="home-primary-add" type="button">
-              <span class="home-primary-action__copy"><strong>记一笔</strong></span>
-              <span class="home-primary-action__icon" aria-hidden="true">＋</span>
-            </button>
+            <span class="home-today__amount" id="home-today-amount">¥0</span>
+            <span class="home-today__diff" id="home-today-diff"></span>
+          </div>
+        </div>
+        <div class="home-summary__footer">
+          <div class="home-summary__context" aria-label="本月消费摘要">
+            <span class="home-summary__context-item">本月已记 <strong class="home-summary__context-value" id="home-month-count">0 笔</strong></span>
+            <span class="home-summary__context-dot" id="home-month-context-dot" aria-hidden="true" hidden>·</span>
+            <span class="home-summary__context-item" id="home-month-comparison" hidden>较上月同期 <strong class="home-summary__context-value" id="home-month-diff">—</strong></span>
           </div>
 
-          <div class="home-budget-brief card home-budget-brief--setup" id="home-budget-summary" aria-label="本月预算">
-            <div class="home-budget-brief__header">
-              <span class="home-budget-brief__eyebrow">本月预算</span>
-              <button class="home-budget-brief__action" id="home-set-budget" type="button">
-                <span id="home-budget-action-label">去设置</span><span aria-hidden="true">→</span>
-              </button>
-            </div>
-            <div class="home-budget-brief__setup-copy">
-              <strong class="home-budget-brief__label" id="home-budget-summary-label">还没有设置本月预算</strong>
-              <span>设置后会告诉你每天可花多少</span>
-            </div>
-            <div class="home-budget-brief__body">
-              <strong class="home-budget-brief__balance" id="home-budget-summary-remaining">还剩 ¥0</strong>
-              <span class="home-budget-brief__status" id="home-budget-summary-status">节奏正常</span>
-            </div>
-            <p id="home-budget-prebooked" class="home-budget-prebooked" hidden></p>
-            <div class="home-budget-brief__progress-meta">
-              <span class="home-budget-brief__usage"><span id="home-budget-spent-label">本月已花</span> <span id="home-budget-summary-spent">¥0</span> <span id="home-budget-summary-limit">/ ¥0</span></span>
-              <strong id="home-budget-summary-percentage">0%</strong>
-            </div>
-            <div class="home-budget-brief__track" role="progressbar" aria-label="预算使用进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-              <span class="home-budget-brief__progress" id="home-budget-summary-progress"></span>
-            </div>
-            <div class="home-budget-brief__decision" aria-live="polite">
-              <span><span id="home-budget-summary-decision-label">今天可安心花</span> <strong id="home-budget-summary-decision-value">¥0</strong></span>
-              <span id="home-budget-summary-days">本月剩 0 天</span>
-            </div>
-            <p class="home-budget-brief__forecast" id="home-budget-summary-forecast" hidden></p>
-          </div>
-        </section>
+          <button class="home-primary-action" id="home-primary-add" type="button">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <strong>记一笔</strong>
+          </button>
+        </div>
+      </section>
 
-        <!-- 最近记录 -->
-        <section class="home-section">
-          <div class="home-section__title-row">
-            <h2 class="home-section__title">最近记录</h2>
-            <button class="home-section__all" id="home-view-all" type="button" style="display:none">查看账单 <span aria-hidden="true">→</span></button>
-          </div>
-          <div class="home-recent card" id="home-recent">
-            <div class="empty-state">
-              <div class="empty-state__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5M10 9H8m8 4H8m8 4H8"/></g></svg></div>
-              <p class="empty-state__text">还没有消费记录</p>
-              <p class="empty-state__hint">从一笔真实消费开始</p>
-            </div>
-          </div>
-        </section>
-      </div>
+      <section class="home-budget-brief card home-budget-brief--setup" id="home-budget-summary" aria-label="本月预算">
+        <div class="home-budget-brief__header">
+          <h2 class="home-budget-brief__eyebrow">本月预算</h2>
+          <button class="home-budget-brief__action" id="home-set-budget" type="button">
+            <span id="home-budget-action-label">去设置</span><span aria-hidden="true">→</span>
+          </button>
+        </div>
+        <div class="home-budget-brief__setup-copy">
+          <strong class="home-budget-brief__label" id="home-budget-summary-label">还没有设置本月预算</strong>
+          <span>设置后会告诉你每天可花多少</span>
+        </div>
+        <div class="home-budget-brief__body">
+          <strong class="home-budget-brief__balance" id="home-budget-summary-remaining">还剩 ¥0</strong>
+          <span class="home-budget-brief__status" id="home-budget-summary-status">节奏正常</span>
+        </div>
+        <p id="home-budget-prebooked" class="home-budget-prebooked" hidden></p>
+        <div class="home-budget-brief__progress-meta">
+          <span class="home-budget-brief__usage"><span id="home-budget-spent-label">本月已花</span> <span id="home-budget-summary-spent">¥0</span> <span id="home-budget-summary-limit">/ ¥0</span></span>
+          <strong id="home-budget-summary-percentage">0%</strong>
+        </div>
+        <div class="home-budget-brief__track" role="progressbar" aria-label="预算使用进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <span class="home-budget-brief__progress" id="home-budget-summary-progress"></span>
+        </div>
+        <div class="home-budget-brief__decision" aria-live="polite">
+          <span><span id="home-budget-summary-decision-label">今天可安心花</span> <strong id="home-budget-summary-decision-value">¥0</strong></span>
+          <span id="home-budget-summary-days">本月剩 0 天</span>
+        </div>
+        <p class="home-budget-brief__forecast" id="home-budget-summary-forecast" hidden></p>
+      </section>
 
+      <!-- 最近记录 -->
+      <section class="home-section home-ledger" aria-labelledby="home-ledger-title">
+        <div class="home-section__title-row">
+          <h2 class="home-section__title" id="home-ledger-title">最近记录</h2>
+          <button class="home-section__all" id="home-view-all" type="button" style="display:none">查看账单 <span aria-hidden="true">→</span></button>
+        </div>
+        <div class="home-recent card" id="home-recent">
+          <div class="empty-state">
+            <div class="empty-state__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5M10 9H8m8 4H8m8 4H8"/></g></svg></div>
+            <p class="empty-state__text">还没有消费记录</p>
+            <p class="empty-state__hint">从一笔真实消费开始</p>
+          </div>
+        </div>
+      </section>
       <aside class="home-dashboard__secondary">
         <!-- 分类预算提醒（仅在需要关注时出现） -->
         <section class="home-section home-section--alerts" id="home-alerts-section" style="display:none">
@@ -176,7 +181,7 @@
 
     <!-- 首页底部版本位：新版本等待时原地切换为更新说明卡 -->
     <div id="app-version-slot" class="app-version-slot">
-      <div id="app-version" class="app-version" data-version="230" aria-label="当前应用版本">v20261027-230</div>
+      <div id="app-version" class="app-version" data-version="231" aria-label="当前应用版本">v20261122-231</div>
       <section id="sw-update-bar" class="sw-update-bar" aria-labelledby="sw-update-bar-title" aria-live="polite" hidden>
         <button type="button" class="sw-update-bar__head" id="sw-update-bar-head" aria-expanded="false" aria-controls="sw-update-bar-detail">
           <svg class="sw-update-bar__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 0-15.5-6.2L3 8.3M3 3v5.3h5.3M3 12a9 9 0 0 0 15.5 6.2l2.5-2.5M21 21v-5.3h-5.3"/></svg>
@@ -206,12 +211,11 @@
       <header class="add-header">
         <div class="add-header__meta">
           <div class="add-draft-tools">
-            <p class="add-header__eyebrow" id="add-draft-eyebrow">快速记一笔</p>
+            <h1 class="add-heading">记一笔</h1>
             <button id="add-discard-draft" type="button" hidden>清空草稿</button>
           </div>
           <div class="add-date-row">
             <button class="add-date-quick" id="add-date-quick" type="button" aria-expanded="false" aria-controls="add-date-inputs">
-              <span aria-hidden="true">日历</span>
               <span id="add-date-label">今天</span>
               <span id="add-time-label"></span>
               <span class="add-date-quick__chevron" aria-hidden="true">⌄</span>
@@ -233,6 +237,7 @@
 
       <!-- 仅金额区域吸顶；日期与其他表单区域随页面自然滚动 -->
       <div class="add-amount-display">
+        <span class="add-amount__label">支出金额</span>
         <div class="add-amount__row" aria-live="polite" aria-label="本次支出金额">
           <span class="add-amount__currency">¥</span>
           <span class="add-amount__value" id="add-amount-display">0</span>
@@ -251,12 +256,12 @@
           <div>
             <h2 class="add-section__title" id="add-category-title">分类 <span class="add-required">必填</span></h2>
           </div>
-          <button class="add-category-all" id="add-category-all" type="button" aria-haspopup="dialog" aria-controls="add-category-picker">
+          <button class="add-category-all" id="add-category-all" type="button" aria-haspopup="dialog" aria-controls="add-category-picker" aria-expanded="false">
             <span>全部分类</span>
             <span class="add-category-all__chevron" aria-hidden="true">⌄</span>
           </button>
         </div>
-        <button class="add-category-summary" id="add-category-summary" type="button" style="display:none" aria-haspopup="dialog" aria-controls="add-category-picker">
+        <button class="add-category-summary" id="add-category-summary" type="button" style="display:none" aria-haspopup="dialog" aria-controls="add-category-picker" aria-expanded="false">
           <span class="add-category-summary__icon" id="add-category-summary-icon"></span>
           <span class="add-category-summary__text" id="add-category-summary-text"></span>
           <span class="add-category-summary__edit" id="add-category-summary-edit">更换</span>
@@ -308,7 +313,7 @@
       </details>
 
       <!-- 数字键盘：与其他表单功能区一样留在页面内，不吸底、不悬浮 -->
-      <div class="add-numpad numpad" id="add-numpad">
+      <div class="add-numpad numpad" id="add-numpad" role="group" aria-label="金额键盘">
         <button class="numpad__key" data-key="1" type="button">1</button>
         <button class="numpad__key" data-key="2" type="button">2</button>
         <button class="numpad__key" data-key="3" type="button">3</button>
@@ -335,14 +340,13 @@
   </main>
 
   <!-- 手机端分类选择抽屉：完整分类不再撑开记账主页面 -->
-  <div class="category-picker" id="add-category-picker" aria-hidden="true">
+  <div class="category-picker" id="add-category-picker" aria-hidden="true" inert>
     <button class="category-picker__backdrop" id="add-category-picker-backdrop" type="button" tabindex="-1" aria-label="关闭分类选择"></button>
     <section class="category-picker__sheet" role="dialog" aria-modal="true" aria-labelledby="add-category-picker-title">
       <div class="category-picker__handle" aria-hidden="true"></div>
       <header class="category-picker__header">
         <div>
-          <p class="category-picker__eyebrow">全部分类</p>
-          <h2 id="add-category-picker-title">选择这笔支出属于哪里</h2>
+          <h2 id="add-category-picker-title">选择消费分类</h2>
         </div>
         <button class="category-picker__close" id="add-category-picker-close" type="button" aria-label="关闭分类选择">✕</button>
       </header>
@@ -360,7 +364,7 @@
        账单 View
        ============================================================== -->
   <main id="view-list" class="main-view">
-    <!-- 账单工具栏：标题常驻，搜索按需展开 -->
+    <!-- 搜索与五项筛选共享同一操作区。 -->
     <header class="list-toolbar">
       <div class="list-toolbar__heading">
         <h1 tabindex="-1">账单</h1>
@@ -387,9 +391,11 @@
 
     <!-- 全部筛选结果的汇总，放在记录前便于核对 -->
     <div class="list-summary" id="list-summary" style="display:none">
+      <div class="list-summary__metric">
+        <span>结果合计</span>
+        <strong class="amount" id="list-summary-total">¥0</strong>
+      </div>
       <span id="list-summary-count">共 0 笔</span>
-      <span class="list-summary__divider">|</span>
-      <span>合计 <strong class="amount" id="list-summary-total">¥0</strong></span>
     </div>
 
     <!-- 记录列表（静态占位，JS 加载后会替换） -->
@@ -414,7 +420,7 @@
     <div class="stats-container" id="stats-container">
       <!-- 时间选择 -->
       <div class="stats-period">
-        <button class="chip" data-period="day">日</button>
+        <button class="chip" data-period="day">今日</button>
         <button class="chip" data-period="week">近7天</button>
         <button class="chip chip--active" data-period="month">本月</button>
         <button class="chip" data-period="3month">近3月</button>
@@ -428,11 +434,11 @@
           <p class="stats-card__value" id="stats-card-total">¥0</p>
         </div>
         <div class="stats-card">
-          <p class="stats-card__label">日均</p>
+          <p class="stats-card__label">日均支出</p>
           <p class="stats-card__value" id="stats-card-daily">¥0</p>
         </div>
         <div class="stats-card">
-          <p class="stats-card__label">笔数</p>
+          <p class="stats-card__label">消费笔数</p>
           <p class="stats-card__value" id="stats-card-count">0</p>
         </div>
       </div>
@@ -441,7 +447,7 @@
            放进 #stats-dynamic 内会被 _renderEmptyDynamic 替换掉（stats.js:234） -->
       <button type="button" class="mr-entry" id="mr-entry" hidden aria-label="查看月度报告">
         <span class="mr-entry__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-3-9 2 2 4-4"/></svg>
+          <svg viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 17v-3m4 3v-6m4 6v-4"/></g></svg>
         </span>
         <span class="mr-entry__text">
           <span class="mr-entry__title">月度报告</span>
@@ -510,7 +516,7 @@
        ============================================================== -->
   <div class="page-overlay" id="overlay-budget">
     <div class="page-overlay__header">
-      <button class="page-overlay__back" id="overlay-budget-back">←</button>
+      <button class="page-overlay__back" id="overlay-budget-back" aria-label="返回首页">←</button>
       <span class="page-overlay__title">预算设置</span>
     </div>
     <div class="page-overlay__body" id="overlay-budget-body">
@@ -538,7 +544,7 @@
     <div class="page-overlay__header">
       <span class="page-overlay__title">分类管理</span>
       <button class="btn btn--ghost btn--small" id="overlay-categories-add">+ 新增</button>
-      <button class="page-overlay__back" id="overlay-categories-back">✕</button>
+      <button class="page-overlay__back" id="overlay-categories-back" aria-label="关闭分类管理">✕</button>
     </div>
     <div class="page-overlay__body" id="overlay-categories-body">
       <!-- JS 动态渲染 -->
@@ -558,7 +564,7 @@
     </div>
     <!-- 头部 -->
     <div class="bottom-sheet__header">
-      <button class="bottom-sheet__btn-back" id="overlay-edit-back">←</button>
+      <button class="bottom-sheet__btn-back" id="overlay-edit-back" aria-label="关闭编辑记录">←</button>
       <span class="bottom-sheet__title">编辑记录</span>
       <button class="btn btn--danger btn--small" id="overlay-edit-delete">删除</button>
     </div>
@@ -570,12 +576,13 @@
        新手引导（首次访问全屏分步介绍，仅展示一次）
        ============================================================== -->
   <div class="onboarding-overlay" id="onboarding-overlay" role="dialog" aria-modal="true" aria-label="欢迎使用消费轨迹">
-    <button class="onboarding-skip" id="onboarding-skip" type="button">跳过</button>
     <div class="onboarding-card">
+      <button class="onboarding-skip" id="onboarding-skip" type="button">跳过引导</button>
       <div class="onboarding-slides">
         <div class="onboarding-track" id="onboarding-track"></div>
       </div>
       <div class="onboarding-dots" id="onboarding-dots"></div>
+      <span class="onboarding-progress" id="onboarding-progress" role="status"></span>
       <button class="btn btn--primary btn--block" id="onboarding-next" type="button">下一步</button>
     </div>
   </div>
@@ -616,20 +623,20 @@
 <script src="js/data.js?v=221"></script>
 <script src="js/summary-v224.js"></script>
 <script src="js/icons.js?v=200"></script>
-<script src="js/home-v230.js"></script>
-<script src="js/categories.js?v=195"></script>
+<script src="js/home-v231.js"></script>
+<script src="js/categories-v231.js"></script>
 <script src="js/list-v230.js"></script>
 <script src="js/list-back-top-v230.js"></script>
-<script src="js/stats-v230.js"></script>
+<script src="js/stats-v231.js"></script>
 <script src="js/monthly-report-v229.js"></script>
-<script src="js/onboarding.js?v=194"></script>
+<script src="js/onboarding-v231.js"></script>
 <!-- 主控制器拆分出的独立模块（审计高危 No.2；运行时互相引用，加载顺序按依赖逻辑排列） -->
 <script src="js/toast.js"></script>
 <script src="js/confirm-dialog-v229.js"></script>
 <script src="js/ui-utils.js"></script>
 <script src="js/habit-predictor-v229.js"></script>
 <script src="js/budget-overlay-v224.js"></script>
-<script src="js/category-manager.js"></script>
+<script src="js/category-manager-v231.js"></script>
 <script src="js/edit-expense-v230.js"></script>
 <script src="js/backup-manager-v229.js"></script>
 <script src="js/app-v230.js"></script>

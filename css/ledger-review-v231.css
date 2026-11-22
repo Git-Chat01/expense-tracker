@@ -1,0 +1,378 @@
+/* 查账与统计使用同一页边距，让日期、金额和图例都有稳定的阅读起点。 */
+#view-list,
+#view-stats {
+  --review-gutter: clamp(14px, 4vw, 24px);
+  --review-tint: #eef2eb;
+  --review-line: #d7ded4;
+}
+
+#view-list .list-toolbar {
+  padding: 16px var(--review-gutter) 0;
+}
+
+#view-list .list-toolbar__heading,
+#view-stats .stats-heading__row {
+  margin-bottom: 12px;
+}
+
+#view-list .list-toolbar__heading h1,
+#view-stats .stats-heading h1 {
+  font-size: clamp(23px, 3.2vw, 30px);
+  line-height: 1.25;
+  letter-spacing: -.03em;
+}
+
+#view-list .list-toolbar__sort {
+  padding-inline: 13px;
+  border: 1px solid var(--review-line);
+  background: var(--color-surface);
+  color: var(--color-primary-dark);
+}
+
+#view-list .list-toolbar__search {
+  border-color: var(--review-line);
+  border-radius: 12px;
+}
+
+#view-list .list-toolbar__search:focus-within {
+  border-color: var(--color-primary);
+}
+
+#view-list .list-toolbar #list-filter-bar {
+  gap: 2px;
+  margin-block: 8px 14px;
+  padding: 3px;
+  background: var(--review-tint);
+  border: 1px solid var(--review-line);
+  border-radius: 11px;
+}
+
+#view-list .list-toolbar #list-filter-bar .chip {
+  color: var(--color-text-secondary);
+}
+
+#view-list .list-toolbar #list-filter-bar .chip--active,
+#view-stats .stats-period .chip--active {
+  border-color: transparent;
+  color: white;
+  background: var(--color-primary);
+}
+
+#view-list #list-active-filters {
+  padding-inline: var(--review-gutter);
+}
+
+#view-list #list-summary {
+  align-items: center;
+  margin: 0 var(--review-gutter) 2px;
+  padding: 12px 16px;
+  border: 1px solid var(--review-line);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.list-summary__metric {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+#view-list #list-summary-total {
+  color: var(--color-primary-dark);
+  font: 650 clamp(24px, 5vw, 32px)/1.2 var(--font-family);
+  letter-spacing: -.035em;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+#view-list #list-summary-count {
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+#view-list .list-content {
+  padding-inline: var(--review-gutter);
+}
+
+#view-list .list-group-header {
+  gap: 8px;
+  padding: 14px 2px 7px;
+  border: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+#view-list .list-group-header__date {
+  font-size: 13px;
+}
+
+#view-list .list-group-header__summary {
+  color: var(--color-text-secondary);
+  text-align: right;
+}
+
+/* 日期排序按日收拢；切换到金额排序后，相邻记录仍组成一张连续的流水表。 */
+#view-list .list-item {
+  min-height: 62px;
+  margin: 0;
+  padding: 10px 12px;
+  gap: 10px;
+  border: 1px solid var(--review-line);
+  border-bottom-width: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#view-list .list-item:first-child,
+#view-list .list-group-header + .list-item {
+  border-start-start-radius: 12px;
+  border-start-end-radius: 12px;
+}
+
+#view-list .list-item:last-child,
+#view-list .list-item:has(+ :is(.list-group-header, .list-load-more)) {
+  border-bottom-width: 1px;
+  border-end-start-radius: 12px;
+  border-end-end-radius: 12px;
+}
+
+#view-list .list-item__category-icon,
+#view-list .list-item__category-icon .category-icon {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+  border-radius: 10px;
+}
+
+#view-list .list-item__category-icon {
+  background: var(--review-tint);
+}
+
+#view-list .list-item__meta {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+#view-list .list-item__amount {
+  font-family: var(--font-family);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+
+#view-list .list-item:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -3px;
+}
+
+#view-list .list-item:active {
+  background: var(--color-primary-light);
+}
+
+/* 统计页面先读期间和总额，再按图表进入明细。 */
+#view-stats .stats-container {
+  padding: 16px var(--review-gutter) var(--space-lg);
+}
+
+#view-stats .stats-month-nav {
+  border: 1px solid var(--review-line);
+  border-radius: 10px;
+  background: var(--color-surface);
+}
+
+#view-stats .stats-context {
+  gap: 2px 12px;
+}
+
+#view-stats .stats-context p {
+  font-size: 12px;
+}
+
+#view-stats .stats-period {
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--review-line);
+  border-radius: 11px;
+  background: var(--review-tint);
+}
+
+#view-stats .stats-period .chip {
+  min-width: 0;
+  padding-inline: 2px;
+  border: 0;
+  border-radius: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+#view-stats .stats-period .chip:not(.chip--active) {
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+#view-stats .stats-overview {
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.15fr) minmax(0, .85fr);
+  align-items: center;
+  gap: 0;
+  padding: 18px 0;
+  border: 1px solid var(--review-line);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+#view-stats .stats-card {
+  padding: 0 clamp(8px, 2.5vw, 18px);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  box-shadow: none;
+}
+
+#view-stats .stats-card + .stats-card {
+  border-left: 1px solid var(--review-line);
+}
+
+#view-stats .stats-card__label {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
+#view-stats .stats-card__value {
+  font: 650 clamp(16px, 3.7vw, 24px)/1.25 var(--font-family);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.025em;
+}
+
+#view-stats #stats-card-total {
+  color: var(--color-primary-dark);
+  font-size: clamp(20px, 4.5vw, 32px);
+}
+
+#view-stats .mr-entry {
+  margin-bottom: 14px;
+  border-color: var(--review-line);
+  background: var(--review-tint);
+  box-shadow: none;
+}
+#view-stats .mr-entry__badge {
+  background: #dce8dc;
+  color: var(--color-primary-dark);
+}
+#stats-dynamic .stats-chart-legend__amount {
+  font-family: var(--font-family);
+  font-variant-numeric: tabular-nums;
+}
+
+#stats-dynamic {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 14px;
+}
+
+#stats-dynamic .stats-chart-section,
+#stats-dynamic .stats-empty,
+#view-list .empty-state {
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--review-line);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+#stats-dynamic .stats-chart-section {
+  padding: 14px;
+}
+
+#stats-dynamic .stats-chart-section__title {
+  margin: 0 0 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-divider);
+  font-size: 16px;
+  letter-spacing: -.02em;
+}
+
+#stats-dynamic .stats-chart-section__title::before {
+  content: none;
+}
+
+#stats-dynamic .stats-chart-wrapper {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#stats-dynamic .stats-chart-legend__item--active {
+  background: var(--review-tint);
+}
+
+#stats-dynamic .stats-ranking-list {
+  padding: 4px 0 0;
+  border-top: 1px solid var(--color-divider);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+#stats-dynamic .stats-payment-details {
+  padding: 0;
+}
+
+#stats-dynamic .stats-payment-details summary {
+  padding: 12px 14px;
+  min-height: 52px;
+}
+
+#stats-dynamic .stats-payment-details .stats-chart-wrapper {
+  padding: 4px 14px 14px;
+}
+
+#view-stats .stats-fallback__fill--c0 {
+  background: #315f4f;
+}
+
+#view-list .empty-state,
+#stats-dynamic .stats-empty {
+  padding: clamp(32px, 6vw, 64px) 16px;
+  text-align: center;
+}
+
+#view-list .empty-state__icon,
+#stats-dynamic .stats-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 14px;
+  border-radius: 16px;
+  background: var(--review-tint);
+  color: var(--color-primary);
+}
+
+#view-list .empty-state__icon svg,
+#stats-dynamic .stats-empty__icon svg {
+  width: 26px;
+  height: 26px;
+}
+
+@media (min-width: 860px) {
+  #view-list, #view-stats { --review-gutter: 32px; }
+  #view-list .list-toolbar, #view-stats .stats-container { padding-top: 24px; }
+  #view-list .list-item { min-height: 65px; padding-inline: 16px; gap: 14px; }
+  #view-list .list-item__name { font-size: 15px; }
+  #view-list .list-item__amount { font-size: 17px; }
+  #view-stats .stats-period { width: min(100%, 440px); }
+  #view-stats .stats-overview { padding-block: 22px; }
+  #stats-dynamic { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #stats-dynamic .stats-empty { grid-column: 1 / -1; }
+}
+
+@media (hover: hover) {
+  #view-list .list-item:hover,
+  #view-list .list-toolbar #list-filter-bar .chip:not(.chip--active):hover,
+  #view-stats .stats-period .chip:not(.chip--active):hover {
+    background: var(--color-primary-light);
+  }
+}

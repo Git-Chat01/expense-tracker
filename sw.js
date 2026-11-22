@@ -3,7 +3,7 @@
    PWA 离线缓存：首次访问后，无网络也能打开
    ================================================================ */
 
-const APP_VERSION = '230';
+const APP_VERSION = '231';
 const CACHE_NAME = 'expense-tracker-v' + APP_VERSION;
 const RELEASE_STATE_CACHE = 'expense-tracker-release-state';
 const RELEASE_STATE_URL = new URL(
@@ -26,7 +26,7 @@ const CORE_PRE_CACHE = [
   'css/add-choice-alignment-v218.css',
   'css/list.css',
   'css/stats.css',
-  'css/onboarding.css',
+  'css/onboarding-v231.css',
   'css/monthly-report-v223.css',
   'css/display-fixes-v224.css',
   'css/experience-v225.css',
@@ -37,18 +37,21 @@ const CORE_PRE_CACHE = [
   'css/list-experience-v230.css',
   'css/stats-experience-v230.css',
   'css/edit-experience-v230.css',
+  'css/ledger-shell-v231.css',
+  'css/ledger-entry-v231.css',
+  'css/ledger-review-v231.css',
   'js/storage.js',
   'js/storage-v229.js',
   'js/data.js',
   'js/summary-v224.js',
   'js/icons.js',
-  'js/home-v230.js',
-  'js/categories.js',
+  'js/home-v231.js',
+  'js/categories-v231.js',
   'js/list-v230.js',
   'js/list-back-top-v230.js',
-  'js/stats-v230.js',
+  'js/stats-v231.js',
   'js/monthly-report-v229.js',
-  'js/onboarding.js',
+  'js/onboarding-v231.js',
   'js/app.js',
   'js/app-v230.js',
   'js/toast.js',
@@ -56,7 +59,7 @@ const CORE_PRE_CACHE = [
   'js/ui-utils.js',
   'js/habit-predictor-v229.js',
   'js/budget-overlay-v224.js',
-  'js/category-manager.js',
+  'js/category-manager-v231.js',
   'js/edit-expense-v230.js',
   'js/backup-manager-v229.js',
   'js/budget-impact-v214.js',

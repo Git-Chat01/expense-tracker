@@ -65,7 +65,7 @@ function load({ today = '2026-10-27', expenses = [], categories = {} } = {}) {
   });
   vm.runInContext(fs.readFileSync(path.join(root, 'js/data.js'), 'utf8') + '\n'
     + fs.readFileSync(path.join(root, 'js/summary-v224.js'), 'utf8'), context);
-  let source = fs.readFileSync(path.join(root, 'js/stats-v230.js'), 'utf8');
+  let source = fs.readFileSync(path.join(root, 'js/stats-v231.js'), 'utf8');
   const marker = source.lastIndexOf('return {');
   source = source.slice(0, marker) + source.slice(marker).replace('return {', `return {
     _monthRange, _getPeriodRange, _calcPeriodSummary, _renderOverview, _categoryGroups, _renderCategoryChart,

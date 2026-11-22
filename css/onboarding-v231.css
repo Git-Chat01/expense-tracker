@@ -1,0 +1,78 @@
+/* 首次使用的三步说明。关闭状态同时退出指针、键盘和读屏导航。 */
+.onboarding-overlay { display: none; }
+.onboarding-overlay--open {
+  position: fixed;
+  inset: 0;
+  z-index: 350;
+  display: grid;
+  place-items: center;
+  padding: max(12px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgb(21 43 35 / 54%);
+}
+.onboarding-card {
+  position: relative;
+  width: min(100%, 360px);
+  padding: 24px;
+  margin-block: auto;
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+}
+.onboarding-skip {
+  position: absolute;
+  z-index: 1;
+  top: 14px;
+  right: 16px;
+  padding: 0 10px;
+  min-height: 44px;
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.onboarding-slides { overflow: hidden; }
+.onboarding-track { display: flex; transition: transform 180ms ease-out; }
+.onboarding-slide { flex: 0 0 100%; min-width: 0; }
+.onboarding-slide__icon {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 13px;
+  background: var(--color-primary-light);
+  color: var(--color-primary-dark);
+  font-size: 26px;
+}
+.onboarding-slide__title {
+  margin: 22px 0 8px;
+  font-size: 23px;
+  line-height: 1.35;
+}
+.onboarding-slide__desc {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+}
+.onboarding-dots { display: flex; gap: 5px; margin: 22px 0; }
+.onboarding-dot { width: 22px; height: 3px; background: var(--color-border); border-radius: 3px; }
+.onboarding-dot--active { background: var(--color-primary); }
+.onboarding-progress {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+#onboarding-next { min-height: 46px; background: var(--color-primary); }
+@media (hover: hover) {
+  .onboarding-skip:hover { background: var(--color-primary-light); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-track { transition: none; }
+}
